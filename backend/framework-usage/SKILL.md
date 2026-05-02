@@ -1,7 +1,13 @@
 ---
 name: framework-usage
-description: Framework 各组件功能说明及使用方法。当用户询问 framework 各个模块的作用、如何使用某个模块、查询工具类或枚举时使用此 skill。包含 yzj-common、yzj-cache、yzj-cache-spring-boot-starter、yzj-mybatis、yzj-security、yzj-security-spring-boot-starter 等模块的详细使用指南。
+description: "[DEPRECATED] 此 skill 已弃用，功能已拆分至独立的组件级 skill：common（通用工具）、cache（缓存与分布式锁）、mybatis（数据库查询构建）、security（安全认证）。请直接使用对应的组件 skill。"
 ---
+
+> **⚠️ DEPRECATED**: 此 skill 已弃用。请使用以下替代 skill：
+> - `common` — 通用工具类、枚举、异常、SessionContext
+> - `cache` — 缓存注解、分布式锁、API 调度锁
+> - `mybatis` — IQueryChain 查询构建、分页排序
+> - `security` — JWT/OAuth 认证、Token 上下文
 
 # Framework 各组件功能说明及使用方法
 
