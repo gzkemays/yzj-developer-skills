@@ -179,10 +179,118 @@ return CommonResult.failed(ErrorMsg.XXX);
 
 ---
 
-## 五、禁止事项
+## 五、HTTP 方法选择规范
+
+### 5.1 RESTful 原则
+
+接口设计遵循 RESTful，**合理运用** `GetMapping` / `PostMapping` / `PutMapping` / `DeleteMapping`，不要只用 GET 和 POST：
+
+| HTTP 方法 | 语义 | 使用场景 |
+|----------|------|----------|
+| `@GetMapping` | 查询，无副作用，可缓存 | 简单查询（参数 ≤ 3 且非数组） |
+| `@PostMapping` | 新增 / 复杂查询 | 创建资源；复杂查询（参数 > 3 或含数组） |
+| `@PutMapping` | 完整更新 / 幂等修改 | 整体更新；状态变更等幂等写操作 |
+| `@DeleteMapping` | 删除 | 删除资源 |
+
+### 5.2 GET vs POST 的强制选择
+
+**满足以下任一条件，必须使用 POST**（即使语义上是查询）：
+
+1. **请求参数大于 3 个**
+2. **任一参数需要支持数组传参**（如 `List<Long> ids`）
+3. 需要传嵌套对象（如范围查询 `TimeRange`、`NumberRange`）
+
+> 原因：URL 参数承载能力差、数组语义不规范、可读性差。
+
+**这种 POST 查询接口的 Request DTO 通常继承 `CommonQuery<T>`**：
+
+```java
+// ✅ 推荐：参数多 / 含数组 → POST + CommonQuery 子类
+@Data
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+public class UserInfoQuery extends CommonQuery<UserInfoDTO> {
+    private List<Long> roleIds;       // 数组
+    private String keyword;
+    private TimeRange createTimeRange; // 嵌套
+    private Integer status;
+}
+
+@PostMapping("/page")
+public CommonResult<CommonPage<UserInfoDTO>> page(@RequestBody UserInfoQuery query) {
+    return CommonResult.successPage(userService.getDtoPageByQuery(query));
+}
+
+// ✅ 简单查询（参数 ≤ 3、无数组）→ GET
+@GetMapping("/{id}")
+public CommonResult<UserDTO> getById(@PathVariable Long id) {
+    return CommonResult.success(userService.getDtoById(id));
+}
+
+// ❌ 反例：5 个参数还用 GET
+@GetMapping("/list")
+public CommonResult<List<UserVO>> list(
+        @RequestParam String keyword,
+        @RequestParam Integer status,
+        @RequestParam Long roleId,
+        @RequestParam Long deptId,
+        @RequestParam Integer type) {  // 参数 > 3，应改为 POST + Query
+    ...
+}
+```
+
+### 5.3 完整方法示例
+
+```java
+@RestController
+@RequestMapping("/v1/admin/user")
+public record AdminUserV1Controller(UserService userService) {
+
+    // 简单查询 → GET
+    @GetMapping("/{id}")
+    public CommonResult<UserDTO> getById(@PathVariable Long id) {
+        return CommonResult.success(userService.getDtoById(id));
+    }
+
+    // 复杂查询 → POST + CommonQuery
+    @PostMapping("/page")
+    public CommonResult<CommonPage<UserDTO>> page(@RequestBody UserInfoQuery query) {
+        return CommonResult.successPage(userService.getDtoPageByQuery(query));
+    }
+
+    // 新增 → POST + Operate
+    @PostMapping
+    public CommonResult<Void> add(@RequestBody @Valid AddUserOperate operate) {
+        userService.add(operate);
+        return CommonResult.success();
+    }
+
+    // 更新（幂等）→ PUT + Operate
+    @PutMapping
+    public CommonResult<Void> update(@RequestBody @Valid UpdateUserOperate operate) {
+        userService.update(operate);
+        return CommonResult.success();
+    }
+
+    // 删除 → DELETE
+    @DeleteMapping("/{id}")
+    public CommonResult<Void> remove(@PathVariable Long id) {
+        userService.removeById(id);
+        return CommonResult.success();
+    }
+}
+```
+
+---
+
+## 六、禁止事项
 
 1. Controller 中编写业务逻辑
 2. Controller 中直接操作 Mapper
 3. Controller 中跨业务调用多个 Service（应通过 Flow）
 4. 使用传统 class + @Resource 方式编写 Controller（使用 record 类）
 5. API 路径不包含版本号
+6. 参数 > 3 个或含数组类型时仍使用 GET（应改用 POST + CommonQuery）
+7. 写操作仅用 POST，不区分更新/删除（应使用 PUT/DELETE）

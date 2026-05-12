@@ -55,6 +55,32 @@ public interface UserService extends IService<UserEntity> {
 
 > **禁止**自行创建 Page 类。始终使用 `com.mybatisflex.core.paginate.Page` 和 `com.yeziji.common.model.CommonPage`。
 
+### 分页转换流程图
+
+```
+┌─────────────────┐   pageAs()    ┌─────────────────────────┐
+│  QueryChain     │ ────────────► │  Page<T>                │
+│  (mybatis-flex) │               │  com.mybatisflex...Page │
+└─────────────────┘               └──────────┬──────────────┘
+                                             │ Service 层返回 Page<T>
+                                             ▼
+                                  ┌─────────────────────────┐
+                                  │  Controller 层          │
+                                  │  CommonResult.successPage(page) │
+                                  └──────────┬──────────────┘
+                                             │ 自动转 CommonPage<T>
+                                             ▼
+                                  ┌─────────────────────────┐
+                                  │  CommonResult<CommonPage<T>> │
+                                  │  返回前端                │
+                                  └─────────────────────────┘
+```
+
+**关键节点**：
+- Service 层只与 `Page<T>` 打交道，不感知 `CommonPage`
+- Controller 层用 `CommonResult.successPage(page)` 完成转换，**禁止**手动 `new CommonPage<>(...)`
+- 业务代码任何位置都不应该 `import com.yeziji.common.model.CommonPage` 单独构造，统一走 `CommonResult.successPage()`
+
 **Service 层** — 返回 `Page<T>`：
 
 ```java

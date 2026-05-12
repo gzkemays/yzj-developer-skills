@@ -99,6 +99,17 @@ public class UserInfoVO {
 
 用于增删改操作的入参，继承 `CommonOperate`。
 
+**命名规则（强制）**：`{操作动词}{业务名}Operate`，**动词必须在前**。
+
+| ✅ 正确 | ❌ 错误 |
+|---------|---------|
+| `AddUserOperate` | `UserAddOperate` |
+| `UpdateUserOperate` | `UserUpdateOperate` |
+| `RemoveUserOperate` | `UserRemoveOperate` |
+| `EnableUserOperate` | `UserEnableOperate` |
+
+> 与 Service 方法命名规约对齐（`add(AddUserOperate)`、`update(UpdateUserOperate)`），保持动词同位置可读性更强。
+
 ```java
 @Data
 @SuperBuilder

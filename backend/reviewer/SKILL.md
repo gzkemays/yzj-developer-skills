@@ -32,42 +32,28 @@ description: 后端代码审查 skill。当用户要求 review 代码、审查�
 
 ## 二、命名规范审查
 
-### 类名规范
+> **权威规范在各子 skill 中定义**，本节只列审查要点 + 高频违规。详细规则参考：
+> - 类命名 / 包结构 → `project-structure`
+> - Model / Operate / Query / DTO / VO → `model-conventions`
+> - Service 方法命名 → `service-conventions`
+> - Controller 命名与路径 → `controller-conventions`
 
-| 检查项 | 规范要求 | 正确示例 | 错误示例 |
-|--------|----------|----------|----------|
-| 类名格式 | UpperCamelCase | `UserService` | `userService` |
-| 抽象类 | Base 开头 | `BaseInitializer` | `AbstractUserService` |
-| 异常类 | Exception 结尾 | `BusinessException` | `BusinessError` |
-| 测试类 | 测试类名 + Tests | `UserServiceTests` | `TestUserService` |
-| 枚举类 | Enum 后缀 | `StatusEnum` | `Status` |
-| Controller | record 类 + `{平台}{业务}{版本}Controller` | `AdminAuthV1Controller` | `AuthController` |
+### 高频违规速查
 
-### 方法名与变量名
-
-| 检查项 | 规范要求 | 正确示例 | 错误示例 |
-|--------|----------|----------|----------|
-| 方法名/参数名/变量名 | lowerCamelCase | `getUserById` | `GetUserById` |
-| 常量名 | 全大写 + 下划线 | `MAX_RETRY_COUNT` | `maxRetryCount` |
-| 布尔变量 | 禁止 is 开头（旧项目兼容除外） | `enabled` | `isEnabled` |
-
-### Service 方法命名
-
-| 操作 | 前缀 | 示例 |
-|------|------|------|
-| 获取单个 | `get` | `getDtoById()` |
-| 获取多个 | `getxxxList` | `getDtoListByQuery()` |
-| 获取统计 | `statistics` | `statisticsUserCount()` |
-| 插入 | `add` | `add(operate)` |
-| 删除 | `remove` | `removeById()` |
-| 修改 | `update` | `update(operate)` |
-
-### 数据转换方法
-
-| 场景 | 规范 | 示例 |
-|------|------|------|
-| POJO 内转换（单处引用） | `convert` 开头 | `convertToUserInfoVo()` |
-| 多处引用的转换 | `ConvertAid` 类 | `UserInfoConvertAid` |
+| 检查项 | 违规示例 | 正确示例 | 出自 |
+|--------|----------|----------|------|
+| 类名非 UpperCamelCase | `userService` | `UserService` | project-structure |
+| 抽象类非 Base 开头 | `AbstractUserService` | `BaseUserService` | project-structure |
+| 异常类非 Exception 结尾 | `BusinessError` | `BusinessException` | common |
+| 枚举非 Enum 后缀 | `Status` | `StatusEnum` | common |
+| Controller 非 record 类 | `class XxxController` | `record XxxController(...)` | controller-conventions |
+| Controller 命名不符 | `AuthController` | `AdminAuthV1Controller` | controller-conventions |
+| 方法名非 lowerCamelCase | `GetUserById` | `getUserById` | — |
+| 常量非全大写下划线 | `maxRetryCount` | `MAX_RETRY_COUNT` | — |
+| 布尔变量以 is 开头（新代码） | `isEnabled` | `enabled` | model-conventions |
+| Operate 命名动词在后 | `UserAddOperate` | `AddUserOperate` | model-conventions |
+| Service 方法命名违规 | `selectUserById` | `getDtoById` | service-conventions |
+| 转换方法命名违规 | `toUserInfoVo()` | `convertToUserInfoVo()` | model-conventions |
 
 ---
 
@@ -211,6 +197,13 @@ description: 后端代码审查 skill。当用户要求 review 代码、审查�
 | 14 | 自行创建 Page 类而非使用 MyBatis-Flex 的 `Page` | 🔴 严重 |
 | 15 | CommonEnum 子类重复标注 `@EnumValue` | 🟡 警告 |
 | 16 | DTO/VO 直接放在 `model/` 而非 `model/dto/` 或 `model/vo/` | 🟡 警告 |
+| 17 | Operate 命名为 `{业务}{操作}Operate`（动词在后） | 🟡 警告 |
+| 18 | 参数 > 3 或含数组类型时仍用 `@GetMapping`（应改 POST + CommonQuery） | 🟡 警告 |
+| 19 | 写操作仅用 POST，未合理使用 PUT / DELETE | 🟡 警告 |
+| 20 | 事务内调用写操作型外部 RPC/HTTP（应用 `TransactionUtils.asyncExecuteAfterCommit`） | 🔴 严重 |
+| 21 | 事务内发送业务驱动型 MQ（下游会写库的，应用 `TransactionUtils.asyncExecuteAfterCommit`） | 🔴 严重 |
+| 22 | 直接 `throw new RuntimeException(...)` 而非 `ApiException` | 🟡 警告 |
+| 23 | 手动 `new CommonPage<>()` 而非 `CommonResult.successPage(page)` | 🟡 警告 |
 
 ---
 

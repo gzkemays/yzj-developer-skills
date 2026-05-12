@@ -218,9 +218,109 @@ public class LoadPermissionInitializer extends BaseInitializer {
 
 ---
 
-## 八、禁止事项
+## 八、Flow 与事务边界
+
+YZJ **不禁止** Flow 在事务中调用 RPC / HTTP / MQ，但必须遵守"提交前限定 / 提交后开放"的约束。
+
+### 8.1 事务提交前（事务进行中）的允许范围
+
+只允许执行以下操作：
+
+| 操作 | 允许 | 说明 |
+|------|:----:|------|
+| 本地数据库写（通过 Service） | ✅ | 事务内的核心写操作 |
+| **查询性** RPC / HTTP 调用 | ✅ | 仅查询数据，不产生副作用 |
+| **通知性** MQ 发送 | ✅ | 仅起通知/广播作用，下游失败不影响主流程 |
+| **写操作** RPC / HTTP 调用 | ❌ | 会产生外部副作用，本地事务回滚也无法撤销 |
+| **业务驱动型** MQ 发送（下游有写操作） | ❌ | 同上，必须放到提交后 |
+
+**判断标准**：如果外部操作会产生**无法回滚的副作用**，必须放到事务提交后。
+
+### 8.2 事务提交后：使用 TransactionUtils
+
+需要在事务提交后才能安全执行的操作（写操作 RPC / HTTP、业务驱动 MQ、缓存清理等），使用 `com.yeziji.common.utils.TransactionUtils`：
+
+```java
+@Slf4j
+@Component
+public class OrderCreateFlow {
+
+    @Resource
+    private OrderService orderService;
+    @Resource
+    private AccountService accountService;
+    @Resource
+    private NotifyMqProducer notifyMqProducer;
+    @Resource
+    private ThreadPoolTaskExecutor commonTaskExecutor;
+
+    @Transactional(rollbackFor = Exception.class)
+    public void create(AddOrderOperate operate) {
+        // 1. 本地写操作（事务内）
+        Long orderId = orderService.add(operate);
+
+        // 2. 事务内：查询性 RPC 调用 ✅
+        UserInfoDTO user = userRpcClient.getById(operate.getUserId());
+
+        // 3. 事务内：通知性 MQ ✅（仅通知，下游失败不影响）
+        notifyMqProducer.send(new OrderCreatedNotifyEvent(orderId));
+
+        // 4. 事务内：账户冻结（写操作）❌ → 改用 TransactionUtils
+        TransactionUtils.asyncExecuteAfterCommit(
+                () -> accountService.freeze(operate.getUserId(), operate.getAmount()),
+                commonTaskExecutor
+        );
+
+        // 5. 事务内：业务驱动 MQ（下游会写库）❌ → 改用 TransactionUtils
+        TransactionUtils.asyncExecuteAfterCommit(
+                () -> orderEventMqProducer.send(new OrderCreatedEvent(orderId)),
+                commonTaskExecutor
+        );
+    }
+}
+```
+
+### 8.3 TransactionUtils 工具方法
+
+```java
+package com.yeziji.common.utils;
+
+/**
+ * 异步事务提交后执行（事务未开启时直接异步）
+ */
+public class TransactionUtils {
+    public static void asyncExecuteAfterCommit(
+            Runnable action,
+            ThreadPoolTaskExecutor threadPoolTaskExecutor) {
+        // 未开启事务 → 直接异步执行
+        // 已开启事务 → 注册 TransactionSynchronization.afterCommit() 回调
+    }
+}
+```
+
+**行为说明**：
+- 若调用时未在事务上下文中（`TransactionSynchronizationManager.isActualTransactionActive() == false`），直接通过线程池异步执行
+- 若已在事务上下文中，会注册到 Spring 的 `TransactionSynchronization`，事务**成功提交**后再异步执行；事务回滚则不执行
+
+### 8.4 决策速查
+
+```
+要在 Flow 内调用外部？
+    │
+    ├── 查询性 RPC / HTTP        → 直接调用（事务内）
+    ├── 通知性 MQ（下游不依赖结果） → 直接调用（事务内）
+    ├── 写操作 RPC / HTTP        → TransactionUtils.asyncExecuteAfterCommit
+    ├── 业务驱动 MQ（下游会写库）  → TransactionUtils.asyncExecuteAfterCommit
+    └── 缓存失效 / 索引更新等副作用 → TransactionUtils.asyncExecuteAfterCommit
+```
+
+---
+
+## 九、禁止事项
 
 1. Flow 中直接操作 Mapper（应通过 Service）
 2. Service 中处理跨业务域的写操作（应在 Flow 中）
 3. Controller 中直接编排多个 Service（应抽取为 Flow）
 4. Initializer 中不继承 BaseInitializer
+5. 事务内调用**写操作型**外部 RPC/HTTP（必须用 `TransactionUtils.asyncExecuteAfterCommit`）
+6. 事务内发送**业务驱动型** MQ（下游会写库的，必须用 `TransactionUtils.asyncExecuteAfterCommit`）

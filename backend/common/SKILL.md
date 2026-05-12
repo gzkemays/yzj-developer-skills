@@ -54,6 +54,10 @@ public enum UserErrorMsg implements ErrorMsgEnum {
 
 ## 三、异常规范
 
+### 3.1 ApiException — 通用业务异常（默认使用）
+
+`ApiException` 是框架的**通用业务异常**，被全局异常处理器自动捕获并转换为 `CommonResult.failed(...)` 响应。**绝大多数业务异常都应使用它**：
+
 ```java
 // 业务异常默认统一使用 ApiException
 throw new ApiException(UserErrorMsg.USER_NOT_FOUND);
@@ -61,25 +65,58 @@ throw new ApiException(UserErrorMsg.USER_NOT_FOUND);
 // 禁止直接 throw new RuntimeException("...")
 ```
 
-**自定义异常**：当特定业务场景需要通过 `catch` 区分异常类型进行不同处理时，允许定义自定义异常：
+**行为**：抛出后 → 全局异常处理器 → 自动返回 `CommonResult.failed(errorMsg)`，无需业务代码兜底处理。
+
+### 3.2 {Business}Exception — 自定义业务异常（特殊处理场景）
+
+当业务逻辑需要**对特定异常做非 `CommonResult.failed` 的处理**时（即需要 catch 后改变默认行为），可以定义自定义 `{Business}Exception`：
+
+**典型使用场景**：
+- 调用方需要 catch 后**降级返回成功响应**（不视为 failed）
+- 调用方需要 catch 后**重试 / 走分支逻辑**
+- 在跨业务 Flow 中需要区分具体异常类型来决定回滚策略
 
 ```java
-// 允许：需要在调用方通过 catch 区分处理
+// 1. 定义自定义异常（可继承 ApiException 或 RuntimeException，按场景选择）
 public class UserDuplicateException extends ApiException {
     public UserDuplicateException() {
         super(UserErrorMsg.USER_DUPLICATE);
     }
 }
 
-// 调用方
+// 2. Service 抛出
+public void add(AddUserOperate operate) {
+    if (existsByUsername(operate.getUsername())) {
+        throw new UserDuplicateException();
+    }
+    // ...
+}
+
+// 3. Flow 中特殊处理：catch 后改写为"幂等成功"而非 failed
 try {
     userService.add(operate);
 } catch (UserDuplicateException e) {
-    // 针对用户重复的特殊业务处理
+    log.info("用户已存在，按幂等成功处理, username={}", operate.getUsername());
+    return; // 不抛出，不返回 failed
 }
 ```
 
-> 如非特殊业务需要，统一使用 `ApiException` 即可，不要为每种错误都创建自定义异常类。
+### 3.3 异常选择决策
+
+```
+抛出业务异常时：
+    │
+    ├── 调用方不需要特殊处理（直接走全局异常处理器 → failed）
+    │       → 使用 ApiException(ErrorMsgEnum) ✅
+    │
+    └── 调用方需要 catch 后做非 failed 处理（降级/重试/幂等）
+            → 自定义 {Business}Exception ✅
+```
+
+**原则**：
+- ApiException 是**默认选择**，不要为每个错误码都创建专属异常类
+- 只有"需要被 catch 后改写行为"的场景，才创建 `{Business}Exception`
+- 自定义异常通常以业务命名（如 `UserDuplicateException`、`OrderExpiredException`），表达"什么业务场景"
 
 ---
 
