@@ -14,7 +14,8 @@ description: >
 3. 引导用户在恰当的时机使用对应的 backend skill
 4. 编码后的自检与提交规范
 
-> **细节规范请按需读取对应 backend skill**：`project-structure`、`model-conventions`、`service-conventions`、`controller-conventions`、`integration-flow`、`mybatis`、`cache`、`security`、`common`、`logging`、`database-design`、`grpc`、`reviewer`。
+> **细节规范请按需读取对应 backend skill**：`project-structure`、`model-conventions`、`service-conventions`、`controller-conventions`、`integration-flow`、`mybatis`、`cache`、`security`、`common`、`logging`、`database-design`、`grpc`、`tabledef`、`db-migration`、`reviewer`。
+> 完整研发生命周期（含开发者门禁、进度台账、沉淀核对）由通用 skill `dev-session` 编排，本 skill 对应其 P3 后端路径。
 
 ---
 
@@ -28,11 +29,13 @@ description: >
 
 ```
 - [ ] 开发计划已写入并由用户 approve
+- [ ] 对齐结论已落档（.document/plan/ 文档 + STATUS.md 台账登记）
 - [ ] 场景类型已确认（A 新项目 / B 旧项目新功能 / C 旧项目迭代）
 - [ ] 风险等级已确认（LOW / HIGH）
 - [ ] 涉及的业务域已确认
 - [ ] 层归属已确认（domain / integration / interfaces / support）
 - [ ] 接口类型已确认（api / sdk / grpc）
+- [ ] 已查能力登记册（CAPABILITY.md），可复用能力已列入计划
 ```
 
 **如果上述任一条件未满足，停止编码并提示用户先完成 `pre-dev-alignment`。**
@@ -58,7 +61,7 @@ description: >
 - [ ] 涉及分布式锁：@DistributedLock 的 prefix + key 已规划
 - [ ] 涉及鉴权：使用 SessionContext / SecurityToken 上下文
 - [ ] 涉及敏感字段：已加 @Encryption 注解
-- [ ] 涉及 DDL：TableDef 重新生成方案已确认
+- [ ] 涉及 DDL：TableDef 已按 `tabledef` skill 同步维护，迁移脚本按 `db-migration` 生成
 - [ ] 涉及 proto：字段编号未复用（删除需 reserved）
 ```
 
@@ -93,8 +96,8 @@ project/
         ↓ 参考 project-structure
 2. 定义 Entity（@Table，继承 CommonEntity）
         ↓
-3. 代码生成器生成 Mapper + TableDef
-   （在 support/TableDefCollect.java 中统一引用）
+3. 创建 Mapper + 手动编写 TableDef（参考 `tabledef` skill）
+   （在 support/TableDefCollect.java 中统一注册）
         ↓
 4. 创建 Operate / Query / DTO / VO
         ↓ 参考 model-conventions
@@ -313,7 +316,7 @@ public record AdminUserV1Controller(UserService userService) {
 - [ ] 优先使用 QueryChain（仅在 QueryChain 无法表达时用 XML）
 - [ ] TableDef 通过 TableDefCollect 引用
 - [ ] 敏感字段已加 @Encryption
-- [ ] entity/table/ 下的 TableDef 未被手动修改
+- [ ] 新增 / 变更字段已同步到手写 TableDef，并注册到 TableDefCollect（参考 `tabledef` skill）
 ```
 
 ### 5.5 接口自检
@@ -398,7 +401,7 @@ public record AdminUserV1Controller(UserService userService) {
 | 9 | GrpcServiceImpl 中 `builder.setXxx(null)` | 🔴 | grpc |
 | 10 | 使用 `@Builder` 替代 `@SuperBuilder`（有继承时） | 🟡 | model-conventions |
 | 11 | 域专属枚举放在 common 中 | 🟡 | project-structure / common |
-| 12 | 手动修改 entity/table/ 下的 TableDef | 🟡 | project-structure |
+| 12 | 新增 Entity 后未同步创建 / 更新 TableDef | 🟡 | tabledef |
 | 13 | support 包中放业务逻辑 | 🟡 | project-structure |
 | 14 | Controller 不使用 record 类 | 🟡 | controller-conventions |
 | 15 | API 路径无版本号 | 🟡 | controller-conventions |
@@ -424,6 +427,9 @@ public record AdminUserV1Controller(UserService userService) {
 | 用 ApiException、CommonResult、SessionContext、CommonEnum | `common` |
 | 打日志 / 日志级别 / 敏感字段脱敏 | `logging` |
 | 与开发者讨论新表 / 字段 / 索引设计（不生成 DDL） | `database-design` |
+| 新增 Entity / 字段变更后维护 TableDef | `tabledef` |
+| 生成 SQL 迁移脚本（up + down） | `db-migration` |
 | 编写 proto / gRPC 服务 | `grpc` |
 | 代码审查 / 规范检查 | `reviewer` |
 | 一开始的需求对齐 | `pre-dev-alignment` |
+| 修复/纠正后的同类问题回溯 | `similar-issue-sweep`（通用） |

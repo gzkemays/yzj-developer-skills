@@ -1,0 +1,117 @@
+# YZJ 团队共享技能库（skills）
+
+> 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
+> 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
+
+---
+
+## 一、仓库结构
+
+```
+skills/
+├── .claude/skills/          # 通用能力（项目根 .claude/skills/）
+│   ├── dev-session/         #   研发生命周期编排（12 阶段 + 门禁 + 全程规则）★ 总入口
+│   ├── pre-dev-alignment/   #   开发前对齐（前后端统一版 + 结论落档）
+│   ├── iteration-planner/   #   迭代规划（session 开局对齐上下文）
+│   ├── progress-tracker/    #   进度维护（STATUS.md 需求台账 + 并行开发）
+│   ├── team-memory/         #   团队记忆体系（纠正即沉淀硬规则）
+│   ├── capability-registry/ #   能力登记册（复用前查册、沉淀后登记、反哺）
+│   ├── similar-issue-sweep/ #   同类问题回溯扫描（修复必回溯）
+│   ├── api-contract-checker/#   前后端契约校验（5 条规则）
+│   ├── dev-output/          #   开发成果报告
+│   ├── yzj-dev-workflow/    #   YZJ 后端开发流程总入口
+│   └── skill-creator/       #   技能创建与评测
+├── backend/                 # 后端能力（后端仓库 .claude/skills/）
+│   ├── reviewer/            #   后端审查（七步硬流程 + 40 条禁止清单 + 漏检史）★
+│   ├── project-structure / model-conventions / service-conventions
+│   ├── controller-conventions / integration-flow / mybatis / cache
+│   ├── security / common / logging / database-design / grpc / framework-usage
+│   ├── tabledef/            #   TableDef 手写维护规范
+│   └── db-migration/        #   SQL 迁移脚本生成（up + down）
+├── frontend/                 # 前端能力（前端仓库 .claude/skills/）
+│   ├── reviewer/            #   前端审查（七步硬流程 + 契约/i18n/token 扫描）★
+│   ├── view-conventions/    #   页面开发规范（Vue 3 + Naive UI CRUD 模式）
+│   └── i18n-automation/     #   i18n 自动化（补齐/校验/硬编码审计 + 脚本）
+└── templates/               # 新项目引入模板
+    ├── CLAUDE.md.template   #   项目根 CLAUDE.md 骨架
+    └── .document/           #   项目文档目录骨架（plan/STATUS.md、memory、capability、adr）
+```
+
+---
+
+## 二、新项目引入步骤
+
+```
+1. 拷贝通用能力 →  {project}/.claude/skills/        ← 本仓库 .claude/skills/*
+2. 拷贝后端能力 →  {project}/{backend}/.claude/skills/   ← 本仓库 backend/*
+3. 拷贝前端能力 →  {project}/{frontend}/.claude/skills/  ← 本仓库 frontend/*
+4. 拷贝文档骨架 →  {project}/.document/             ← 本仓库 templates/.document/*
+5. 用 templates/CLAUDE.md.template 建项目根 CLAUDE.md，填好占位符
+   （仓库路径、构建命令、设计系统 token 前缀、契约约定）
+6. 首次会话验证：说"今天做什么" → 应触发 iteration-planner 读取台账与计划
+```
+
+> Claude Code 按**当前工作目录**加载对应 CLAUDE.md 与 skills：项目根管流程，子仓库管前/后端规范。
+> 引入后项目可在各自仓库追加**项目级 skill**（业务特定约定），通用部分演进后反哺回本仓库。
+
+---
+
+## 三、核心研发流程
+
+所有开发任务统一走 `dev-session` 12 阶段：
+
+```
+P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 开发(对齐落档→编码)
+→ P4 AI Review(前后端 reviewer 硬流程+回溯扫描) → P5 自测
+→ P6 开发者 Review(ARCH 深评/NORMAL 知会) → P7 开发者测试 → P8 确认
+→ P9 更新进度(台账硬门禁) → P10 沉淀核对 → P11 提交 → P12 成果报告
+```
+
+**全程规则**（凌驾于单阶段）：
+
+| 规则 | 内容 | 对应 skill |
+|------|------|-----------|
+| 纠正即沉淀 | 开发者纠正 → 修正后**立即**写 feedback memory，不等收尾 | `team-memory` |
+| 修复必回溯 | 修一处 → 全库扫同类，一并修复或列清单 | `similar-issue-sweep` |
+| 进度实时更新 | 状态迁移当下改台账，台账是并行开发唯一可信源 | `progress-tracker` |
+| P4 不可跳过 | 任何编码后必过 reviewer 硬流程，"改动小"不是理由 | 前后端 `reviewer` |
+
+**变更分级**（开发者注意力分配）：
+
+- **ARCH 架构级**（架构/数据模型/安全/跨域/契约/不可逆）→ 开发者深度评审 + 测试 + 确认
+- **NORMAL 常规级**（普通需求迭代）→ AI 严格自审，开发者知会式过目即可
+- 拿不准按 ARCH；NORMAL 漏检被捕获 → 沉淀 + 同类变更升级 ARCH
+
+---
+
+## 四、设计依据（来自 YAPD 项目实战复盘）
+
+| 实战痛点 | 本仓库的对策 |
+|----------|--------------|
+| 纠正过的问题没沉淀，重复犯错返工 | `team-memory` 纠正即沉淀硬规则 + 重复犯错升级机制（进 reviewer 漏检史） |
+| 修一处不回溯同类，靠开发者查漏补缺 | `similar-issue-sweep` + dev-session 规则 2 + reviewer 同类违规回溯 |
+| 规范明确却频繁违规、选择性 Review | 前后端 `reviewer` 七步硬流程：echo 协议、强制 Grep 扫描、逐维度×逐文件矩阵、漏检史必查 |
+| 需求完成后进度不更新，后续误判 | `progress-tracker` STATUS.md 台账 + P9 硬门禁（不更新台账不算完成）+ 并行需求可见 |
+| 技能/能力沉淀在各项目，复用率低 | `capability-registry` 复用前查册 + 待反哺区 + 本仓库作为总能力池 |
+| 决策都做了但文档输出差 | `pre-dev-alignment` 对齐结论落档（plan 文档 + 台账 + ADR），口头对齐不落档 = 未对齐 |
+| 开发者陷在逐行 review 中 | dev-session 变更分级：ARCH 深评 / NORMAL 知会，开发者专注方向与架构 |
+
+---
+
+## 五、反哺流程（项目 → framework）
+
+1. 项目开发中，可复用产出按 `capability-registry` 登记，跨项目通用的进「待反哺 framework」区
+2. 迭代间歇做通用化改造（去项目专有命名/路径/业务假设）
+3. 按归属落位：流程方法论 → `.claude/skills/`；后端规范 → `backend/`；前端规范 → `frontend/`
+4. 提交本仓库：`feat(capability): 反哺 {能力} from {项目}`
+5. 项目登记册标记 `已反哺`；其他项目拉取更新即可受益
+
+**项目侧技能与本仓库的同步**：项目内拷贝的 skill 发生演进（规则更新、漏检史追加）时，通用部分应同步回本仓库，项目专有部分留在项目副本——以本仓库为基线，项目副本只增不删。
+
+---
+
+## 六、维护约定
+
+- 每个 skill 一个目录，入口 `SKILL.md`（frontmatter：`name` + 触发场景写入 `description`）
+- 修改流程类 skill（dev-session / reviewer / progress-tracker）需团队过目——它们是所有项目的执行协议
+- 新增 skill 用 `skill-creator` 创建并评测；提交信息遵循 `type(scope): 简述`

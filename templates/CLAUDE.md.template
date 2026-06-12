@@ -1,0 +1,87 @@
+# {项目名} — {一句话定位}
+
+> 团队共享的 Claude Code 项目指令。Updated: {yyyy-MM-dd}
+> 模板来源：framework/skills/templates/CLAUDE.md.template（占位符 {xxx} 全部替换后删除本行）
+
+## Project Structure
+
+```
+{project}/
+  {backend-repo}/          # {后端技术栈，如 Spring Boot 3 + YZJ Framework (Java 21)}
+    .claude/skills/        # ← 后端开发 SKILL（引自 framework/skills/backend）
+  {frontend-repo}/         # {前端技术栈，如 Vue 3 + Naive UI + Pinia}
+    .claude/skills/        # ← 前端开发 SKILL（引自 framework/skills/frontend）
+  .claude/skills/          # ← 通用流程 SKILL（引自 framework/skills/.claude）
+  .document/
+    plan/                  # 迭代计划 + STATUS.md 需求进度台账
+    adr/                   # 架构决策记录
+    developer/memory/      # 团队共享技术沉淀（MEMORY.md 索引）
+    developer/capability/  # 能力登记册（CAPABILITY.md）
+    developer/output/      # 开发成果报告
+```
+
+## Working Directory Routing
+
+| 工作目录 | 加载范围 | 适用场景 |
+|---------|---------|---------|
+| `{project}/`（root） | 本文件 + 通用流程 skills + `.document/` | 需求分析、迭代规划、跨前后端协调 |
+| `{project}/{backend-repo}/` | 后端 CLAUDE.md + 后端 skills | 后端业务开发、代码审查 |
+| `{project}/{frontend-repo}/` | 前端 CLAUDE.md + 前端 skills | 前端页面开发、UI/UX 优化 |
+
+## Build Commands
+
+- **Backend compile**: `cd {backend-repo} && {如 mvn compile -pl xxx -am -q}`
+- **Frontend dev**: `cd {frontend-repo} && {如 pnpm dev}`（port {xxxx}）
+- **Frontend build**: `cd {frontend-repo} && {如 npx vite build}`
+
+## Session Workflow
+
+所有开发任务遵循 `dev-session` skill 定义的 12 阶段研发生命周期：
+
+```
+P1 分析需求(台账+定级) → P2 加载沉淀 → P3 开发(对齐落档) → P4 AI Review → P5 自测
+  → P6 开发者 Review（ARCH 深评 / NORMAL 知会） → P7 开发者测试 → P8 确认
+  → P9 更新进度(台账硬门禁) → P10 沉淀核对 → P11 提交 → P12 成果报告
+```
+
+**全程规则（不可妥协）**：
+
+1. **纠正即沉淀**：开发者纠正 → 修正后立即写 feedback memory（`team-memory`）
+2. **修复必回溯**：修一处 → 全库扫同类（`similar-issue-sweep`）
+3. **进度实时更新**：状态迁移当下改 `STATUS.md` 台账（`progress-tracker`）
+4. **P4 不可跳过**：任何编码后必过前/后端 `reviewer` 硬流程，"改动小"不是理由
+
+**变更分级**：ARCH（架构/数据模型/安全/跨域/契约/不可逆）→ 开发者深度评审；NORMAL（常规迭代）→ 知会式确认。拿不准按 ARCH。
+
+## Cross-Cutting Contracts (前后端契约)
+
+### API Return Type Alignment
+
+| 后端操作 | 后端返回 | 前端泛型 | `if (res.data)` |
+|----------|---------|----------|-----------------|
+| 创建 | `CommonResult<Long>` | `number`/`string` | ✅ |
+| 更新/删除 | `CommonResult<Boolean>` | `boolean` | ✅ |
+| 分页 | `CommonResult<CommonPage<T>>` | `PageResponse<T>` | ✅ |
+| 登录等 Void | `CommonResult<Void>` | — | ❌ 用 `code` 判断 |
+
+### {多租户 / 权限 / 其他项目专有契约}
+
+{按项目填写：如多租户 Header 约定、权限 key 约定、字段命名强制项；
+权威长文档放 .document/adr/，此处只放速查表}
+
+## Shared Developer Memory & Capability
+
+- 团队共享沉淀：`.document/developer/memory/`（`MEMORY.md` 索引，随代码入库）
+- 能力登记册：`.document/developer/capability/CAPABILITY.md`（开发前必查，开发后登记）
+
+## Known Cross-Cutting Gotchas
+
+- **CommonResult\<Void\> 静默失败**：`data` 为 null，前端 `if (res.data)` 永远 falsy → 写操作禁止返回 Void
+- **前端类型必须对齐后端 VO/Operate**：不能有后端不存在的字段
+- **前端表单验证对齐后端 @Size**：min/max 必须一致
+- {项目踩坑随迭代追加；重复出现的进 memory 并在此放一行指针}
+
+## Design System（前端）
+
+{设计系统名称}：所有样式必须使用 `var(--{prefix}-*)` token（定义于 {路径}），禁止硬编码颜色。
+{核心 token 速查表按项目填写}
