@@ -1,5 +1,5 @@
 ---
-name: code-reviewer
+name: reviewer
 description: 后端代码审查 skill。当用户要求 review 代码、审查代码规范、检查代码质量、要求优化代码，或 dev-session P4 AI Review 阶段触发时使用。审查范围覆盖：命名规范、代码格式、OOP 规范、注释规范、项目结构、Model 层、Service 层、Controller 层、Integration 层、Proto3 编写规范。按七步硬流程执行，逐维度 × 逐文件全覆盖，禁止选择性抽查。审查标准以各职能 skill 为准。
 ---
 
