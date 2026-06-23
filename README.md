@@ -2,6 +2,13 @@
 
 > 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
 > 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
+>
+> **当前基线**：`2026-06-23`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
+> **适用前提**：Claude Code（按工作目录加载 CLAUDE.md + skills）。流程方法论 skill **与技术栈无关**
+> （dev-session / pre-dev-alignment / progress-tracker / team-memory / capability-registry /
+> similar-issue-sweep / dev-output / iteration-planner / project-onboarding），任意项目可直接用；
+> **栈相关 skill**（`yzj-dev-workflow`、`api-contract-checker`、`backend/*` = YZJ 四层 + MyBatis-Flex、
+> `frontend/*` = Vue 3 + Naive UI）需同栈才适用——异栈项目取流程层，按 `skill-creator` 自建规范层。
 
 ---
 
@@ -20,6 +27,7 @@ skills/
 │   ├── api-contract-checker/#   前后端契约校验（5 条规则）
 │   ├── dev-output/          #   开发成果报告
 │   ├── yzj-dev-workflow/    #   YZJ 后端开发流程总入口
+│   ├── project-onboarding/  #   引入/融入向导（新项目初始化 + 既有项目对比合并）★
 │   └── skill-creator/       #   技能创建与评测
 ├── backend/                 # 后端能力（后端仓库 .claude/skills/）
 │   ├── reviewer/            #   后端审查（七步硬流程 + 40 条禁止清单 + 漏检史）★
@@ -61,6 +69,39 @@ skills/
 
 > Claude Code 按**当前工作目录**加载对应 CLAUDE.md 与 skills：项目根管流程，子仓库管前/后端规范。
 > 引入后项目可在各自仓库追加**项目级 skill**（业务特定约定），通用部分演进后反哺回本仓库。
+
+### 引入后验证清单（多项目通用 · 全绿才算"AI 能识别并执行"）
+
+每个项目引入或同步后逐项确认；**B 组的 diff 是跨项目验证基线对齐的核心手段，可脚本化定期跑**。
+
+**A. 三件套就位（结构）**
+
+```
+- [ ] 项目根 CLAUDE.md 占位符全部替换，无残留 {xxx}
+- [ ] 根 .claude/skills/ 有流程层；后端 / 前端仓库各有 .claude/skills/
+- [ ] .document/ 含 plan/STATUS.md、design/、adr/、developer/memory + capability
+- [ ] 每个 skill 的 name 与目录名一致（无 code-reviewer vs reviewer 类错位）
+```
+
+**B. 基线一致（版本）—— 多项目验证核心**
+
+```
+- [ ] 流程 skill 与本仓库当前版逐字一致：
+      diff --strip-trailing-cr {项目}/.claude/skills/{skill}/SKILL.md {framework}/.claude/skills/{skill}/SKILL.md  → 空
+- [ ] reviewer / 规范 skill = 基线 + 项目专有项（diff 差异仅漏检史 / 项目注解 / 设计 token / 命名规则）
+- [ ] 项目 CLAUDE.md 顶部记录引入时的 framework 基线（commit 短号或日期），落后于「当前基线」即提示 re-sync
+```
+
+**C. AI 能识别并触发（行为）**
+
+```
+- [ ] 新会话说"今天做什么" → 触发 iteration-planner，读到 STATUS.md
+- [ ] 说"开发 XX" → 触发 dev-session（P1 定级 + 变更分级），L2/L3 走编码前文档门禁
+- [ ] 任意编码后 → 自动跑 reviewer 七步硬流程（输出 echo 协议确认句）
+- [ ] 后端业务开发 → 触发 yzj-dev-workflow + 对应 backend 子 skill
+```
+
+> 任一项不过 → 回 `project-onboarding` 对应步骤补齐。把 B 组 diff 写成脚本（遍历 skill 目录逐一比对），即可在每个项目本地 / CI 定期运行，实现**多项目持续验证基线对齐**。
 
 ---
 
@@ -130,3 +171,4 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 - 每个 skill 一个目录，入口 `SKILL.md`（frontmatter：`name` + 触发场景写入 `description`）
 - 修改流程类 skill（dev-session / reviewer / progress-tracker）需团队过目——它们是所有项目的执行协议
 - 新增 skill 用 `skill-creator` 创建并评测；提交信息遵循 `type(scope): 简述`
+- 重大流程变更（dev-session / reviewer / 文档门禁 / 契约规则）→ 更新本 README 顶部「当前基线」日期；各引入项目据此判断是否需 re-sync（用「引入后验证」B 组 diff 确认）

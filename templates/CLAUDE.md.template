@@ -1,6 +1,7 @@
 # {项目名} — {一句话定位}
 
 > 团队共享的 Claude Code 项目指令。Updated: {yyyy-MM-dd}
+> **framework 基线**：{引入时 skills 的 commit 短号 / 日期}（落后于 skills/README「当前基线」时，按「引入后验证」B 组 diff 决定 re-sync）
 > 模板来源：framework/skills/templates/CLAUDE.md.template（占位符 {xxx} 全部替换后删除本行）
 
 ## Project Structure
