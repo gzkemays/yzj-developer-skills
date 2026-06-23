@@ -1,5 +1,5 @@
 ---
-name: grpc-development
+name: grpc
 description: gRPC 服务开发流程与规范指南。当用户需要创建新的 gRPC 接口、开发 gRPC 服务、实现 proto 文件、编写 GrpcServiceImpl 时使用此 skill。包含 proto 文件编写规范、服务端实现规范、调用方使用示例等。
 ---
 
