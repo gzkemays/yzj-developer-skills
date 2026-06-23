@@ -34,7 +34,7 @@ skills/
 │   └── i18n-automation/     #   i18n 自动化（补齐/校验/硬编码审计 + 脚本）
 └── templates/               # 新项目引入模板
     ├── CLAUDE.md.template   #   项目根 CLAUDE.md 骨架
-    └── .document/           #   项目文档目录骨架（plan/STATUS.md、memory、capability、adr）
+    └── .document/           #   项目文档目录骨架（plan/STATUS.md、design、memory、capability、adr）
 ```
 
 ---
@@ -61,11 +61,17 @@ skills/
 所有开发任务统一走 `dev-session` 12 阶段：
 
 ```
-P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 开发(对齐落档→编码)
+P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 开发(文档产出+评审门禁→编码)
 → P4 AI Review(前后端 reviewer 硬流程+回溯扫描) → P5 自测
 → P6 开发者 Review(ARCH 深评/NORMAL 知会) → P7 开发者测试 → P8 确认
 → P9 更新进度(台账硬门禁) → P10 沉淀核对 → P11 提交 → P12 成果报告
 ```
+
+**P3 编码前文档分层与门禁**（按 `pre-dev-alignment` 任务分级）：
+
+- **L2** → 输出**技术设计文档**（`design/`），交**开发者**技术审核 + 二次评估，通过才编码
+- **L3** → 先输出**需求/调整文档**（`plan/`）交**用户**复核对齐，再输出**技术设计文档**（`design/`）交**开发者**技术审核 + 二次评估，通过才编码
+- **视觉交互 DEMO（按需）** → 用户要求视觉方案 / 全新无参照视觉时，产出 `design/{slug}-demo.html` 或复用前端既有组件做 DEMO，定稿后判断是否抽为复用组件并登记 `CAPABILITY.md`
 
 **全程规则**（凌驾于单阶段）：
 
@@ -93,7 +99,8 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 | 规范明确却频繁违规、选择性 Review | 前后端 `reviewer` 七步硬流程：echo 协议、强制 Grep 扫描、逐维度×逐文件矩阵、漏检史必查 |
 | 需求完成后进度不更新，后续误判 | `progress-tracker` STATUS.md 台账 + P9 硬门禁（不更新台账不算完成）+ 并行需求可见 |
 | 技能/能力沉淀在各项目，复用率低 | `capability-registry` 复用前查册 + 待反哺区 + 本仓库作为总能力池 |
-| 决策都做了但文档输出差 | `pre-dev-alignment` 对齐结论落档（plan 文档 + 台账 + ADR），口头对齐不落档 = 未对齐 |
+| 决策都做了但文档输出差 | `pre-dev-alignment` 对齐结论落档（需求文档→plan + 技术设计文档→design + 台账 + ADR），口头对齐不落档 = 未对齐 |
+| 需求评审与技术评审混在一份、视觉方案靠口头想象 | L2/L3 **文档分层**：需求/调整文档(用户复核) 与 技术设计文档(开发者技术审核 + 二次评估) 分两道门禁；视觉方案按需出 HTML / 复用组件 DEMO |
 | 开发者陷在逐行 review 中 | dev-session 变更分级：ARCH 深评 / NORMAL 知会，开发者专注方向与架构 |
 
 ---

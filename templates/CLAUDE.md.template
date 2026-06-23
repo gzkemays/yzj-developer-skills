@@ -13,7 +13,8 @@
     .claude/skills/        # ← 前端开发 SKILL（引自 framework/skills/frontend）
   .claude/skills/          # ← 通用流程 SKILL（引自 framework/skills/.claude）
   .document/
-    plan/                  # 迭代计划 + STATUS.md 需求进度台账
+    plan/                  # 迭代计划 + STATUS.md 台账（L3 需求/调整文档）
+    design/                # 技术设计文档（L2/L3 编码前评审）+ 视觉交互 DEMO
     adr/                   # 架构决策记录
     developer/memory/      # 团队共享技术沉淀（MEMORY.md 索引）
     developer/capability/  # 能力登记册（CAPABILITY.md）
