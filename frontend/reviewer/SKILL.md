@@ -1,5 +1,5 @@
 ---
-name: code-reviewer
+name: reviewer
 description: 前端代码审查 skill（Vue 3 + TypeScript 技术栈）。当用户要求 review 前端代码、审查页面/组件规范、检查前端代码质量，或 dev-session P4 AI Review 阶段触发时使用。审查范围覆盖：类型对齐后端契约、i18n 完整性、设计系统 token、数据展示工具方法、表单校验对齐、组件规范、API 调用约定。按七步硬流程执行，逐维度 × 逐文件全覆盖，禁止选择性抽查。
 ---
 
