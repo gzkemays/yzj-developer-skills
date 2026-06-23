@@ -40,9 +40,11 @@ skills/
 │   ├── reviewer/            #   前端审查（七步硬流程 + 契约/i18n/token 扫描）★
 │   ├── view-conventions/    #   页面开发规范（Vue 3 + Naive UI CRUD 模式）
 │   └── i18n-automation/     #   i18n 自动化（补齐/校验/硬编码审计 + 脚本）
-└── templates/               # 新项目引入模板
-    ├── CLAUDE.md.template   #   项目根 CLAUDE.md 骨架
-    └── .document/           #   项目文档目录骨架（plan/STATUS.md、design、memory、capability、adr）
+├── templates/               # 新项目引入模板
+│   ├── CLAUDE.md.template   #   项目根 CLAUDE.md 骨架
+│   └── .document/           #   项目文档目录骨架（plan/STATUS.md、design、memory、capability、adr）
+└── scripts/                 # 工具脚本
+    └── verify-baseline.sh   #   校验项目 skill 与基线对齐（布局无关，自动识别前/后端）
 ```
 
 ---
@@ -72,7 +74,7 @@ skills/
 
 ### 引入后验证清单（多项目通用 · 全绿才算"AI 能识别并执行"）
 
-每个项目引入或同步后逐项确认；**B 组的 diff 是跨项目验证基线对齐的核心手段，可脚本化定期跑**。
+每个项目引入或同步后逐项确认；**B 组的 diff 是跨项目验证基线对齐的核心手段，已封装为 `scripts/verify-baseline.sh`**。
 
 **A. 三件套就位（结构）**
 
@@ -101,7 +103,9 @@ skills/
 - [ ] 后端业务开发 → 触发 yzj-dev-workflow + 对应 backend 子 skill
 ```
 
-> 任一项不过 → 回 `project-onboarding` 对应步骤补齐。把 B 组 diff 写成脚本（遍历 skill 目录逐一比对），即可在每个项目本地 / CI 定期运行，实现**多项目持续验证基线对齐**。
+> 任一项不过 → 回 `project-onboarding` 对应步骤补齐。
+>
+> **一键校验**：`bash scripts/verify-baseline.sh {项目根}`（framework 省略时取本仓库）。它**按标志文件自动识别项目的前/后端仓库布局**（不依赖目录名，支持分仓 / mono-repo / 单栈），逐 skill 输出 `✓ 一致 / Δ 流程漂移 / ℹ 项目专有差异 / ⊘ 项目专有 / ✗ 结构错误`，并查 `name` 与目录名是否一致、root 流程 skill 是否齐全。可在各项目本地 / CI 定期跑，实现多项目持续校验。加 `--show-diff` 看差异、`--strict` 让流程漂移即失败。
 
 ---
 

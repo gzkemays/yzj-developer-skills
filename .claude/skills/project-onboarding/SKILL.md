@@ -22,10 +22,22 @@ description: >
 - 目标无 `.claude/skills/` 且无 `.document/plan/` → **A 新项目**（全量初始化）
 - 已有其一 → **B 既有项目**（对比融入，外科手术式处理）
 
-## 第一步 · 识别项目结构（两种场景都做）
+## 第一步 · 识别项目结构（两种场景都做，**不要假设仓库叫什么名字**）
 
-- 找后端仓库（`pom.xml`/`build.gradle` + `domain/integration/interfaces/support`）、前端仓库（`package.json` + `src/views`）；判定 mono-repo 还是分仓，记录各自相对路径
-- 提取占位符素材：构建命令（pom modules / package.json scripts）、设计系统 token 前缀（前端 `variables.*` / theme 文件）、契约约定（CommonResult / 分页 / 多租户 Header 等）
+**按标志文件识别，而非按目录名**——不同项目布局不同（分仓 / mono-repo / 单栈 / 嵌套 Maven 都要支持）：
+
+| 角色 | 识别标志（命中任一） |
+|------|----------------------|
+| **后端仓库** | 目录内直接有 `pom.xml` / `build.gradle*`；或同时有 `domain/`+`integration/`；或 `src/main/java` |
+| **前端仓库** | `package.json` 依赖含 `vue`；或有 `src/views/` |
+| **项目根** | 含 `.document/`，或前后端仓库的共同父目录 |
+
+- 用 `Glob`/`Grep` 扫描目标项目定位上述标志，得出 **{root} / {backend-repo} / {frontend-repo} 的实际相对路径**（可能分仓、mono-repo `apps/api`+`apps/web`、或单栈）。
+- **命中多个 / 零个 / 拿不准 → 列候选问用户**，不臆测、不照搬别项目（如 YAPD 的 `yadp-server`/`yadp-web`）的命名。
+- 把识别结果写进项目根 `CLAUDE.md` 的「Project Structure」与「Working Directory Routing」，作为该项目布局的权威记录（后续 re-sync / 校验据此）。
+- 提取占位符素材：构建命令（pom modules / package.json scripts）、设计系统 token 前缀（前端 `variables.*` / theme 文件）、契约约定（CommonResult / 分页 / 多租户 Header 等）。
+
+> 这套标志被 `scripts/verify-baseline.sh` 复用（自动判定每个 `.claude/skills` 属于前/后/根，再对应 framework 比对）——识别逻辑两边一致。
 
 ---
 
@@ -37,7 +49,7 @@ description: >
    - `frontend/*` → `{frontend-repo}/.claude/skills/`
 2. **实例化 CLAUDE.md**：以 `templates/CLAUDE.md.template` 为骨架，用第一步发现填占位符；**推断不出的列出来问用户，不臆造**。
 3. **文档骨架**：拷 `templates/.document/*`（`plan/STATUS.md`、`design/`、`adr/`、`developer/memory`+`capability`）。
-4. **校验**：列落地清单；说"今天做什么"应触发 `iteration-planner` 读 STATUS.md（识别成功的信号）。
+4. **校验**：列落地清单；跑 `bash scripts/verify-baseline.sh {项目根}` 过结构 + 基线（见 README「引入后验证」）；说"今天做什么"应触发 `iteration-planner` 读 STATUS.md（识别成功的信号）。
 
 ---
 
@@ -60,7 +72,7 @@ description: >
 6. **修常见问题**：
    - skill `name` 与目录名不一致（如 `name: code-reviewer` 而目录是 `reviewer`）→ 改 `name` 对齐目录
    - 路由：CLAUDE.md 声明在 root 触发的 skill（如 P1 `iteration-planner`、P9 `progress-tracker`）必须在 `{root}/.claude/skills/` 有副本
-7. **校验**：每个被处理副本 `diff` 基线，结果应为"完全一致"或"基线 + 已知项目专有项"，确认无意外丢失。
+7. **校验**：跑 `bash scripts/verify-baseline.sh {项目根} --show-diff`——流程 skill 应"✓ 一致"，`reviewer`/规范 skill 的差异（ℹ）应仅为项目专有项，确认无意外丢失。
 
 ### reviewer 合并标准动作（B-3 细化）
 
