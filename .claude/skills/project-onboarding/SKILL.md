@@ -63,7 +63,7 @@ description: >
 
    | 类别 | 处理 |
    |------|------|
-   | 流程 skill（dev-session / pre-dev-alignment / progress-tracker / iteration-planner / yzj-dev-workflow / dev-output / team-memory / capability-registry / similar-issue-sweep / api-contract-checker） | 落后基线且无项目专有内容 → **framework 当前版直接覆盖** |
+   | 流程 skill（dev-session / pre-dev-alignment / progress-tracker / iteration-planner / yzj-dev-workflow / dev-output / team-memory / capability-registry / similar-issue-sweep / api-contract-checker / git-commit） | 落后基线且无项目专有内容 → **framework 当前版直接覆盖** |
    | **reviewer（前 / 后端）** | **合并不覆盖**（见下「reviewer 合并标准动作」） |
    | 各域规范 skill（backend / frontend 各 skill） | 同流程 skill；留意项目对示例 / 关键词的本地增补，按"只增不删"保留 |
    | 项目专有 skill（项目独有业务约定，如 `auth-conventions` / `notification-conventions`） | **不动** |

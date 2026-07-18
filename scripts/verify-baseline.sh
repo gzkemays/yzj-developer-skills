@@ -25,9 +25,9 @@ done
 PROJECT="$(cd "$PROJECT" 2>/dev/null && pwd)" || { echo "项目路径不存在"; exit 2; }
 
 # 流程方法论 skill：与栈无关，应与基线逐字一致（漂移→需确认是否有意增补）
-FLOW="dev-session pre-dev-alignment progress-tracker iteration-planner team-memory capability-registry similar-issue-sweep dev-output project-onboarding"
+FLOW="dev-session pre-dev-alignment progress-tracker iteration-planner team-memory capability-registry similar-issue-sweep dev-output project-onboarding git-commit"
 # 其中应在项目根「存在」的（project-onboarding 是引入器，项目不强制具备）
-REQUIRED="dev-session pre-dev-alignment progress-tracker iteration-planner team-memory capability-registry similar-issue-sweep dev-output"
+REQUIRED="dev-session pre-dev-alignment progress-tracker iteration-planner team-memory capability-registry similar-issue-sweep dev-output git-commit"
 is_flow () { case " $FLOW " in *" $1 "*) return 0;; *) return 1;; esac; }
 
 # glob 是否匹配到东西（compgen -G 逐模式判断，避开 `ls a b c` 任一不存在即非零的坑）

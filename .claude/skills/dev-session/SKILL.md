@@ -295,12 +295,13 @@ NORMAL 级在 P6 知会确认中合并完成，不再二次询问。
 
 ## P11：提交代码
 
-**执行者**：AI
+**执行者**：AI | **关联 skill**：`git-commit`
 
 1. `git status` + `git diff` 确认变更
 2. 前后端仓库各自独立提交；`.document/` 变更（台账/报告/memory）随同提交
-3. Commit message：`type(scope): 简述`（feat / fix / refactor / docs / style / chore）
-4. 提交后 `git status` 确认干净
+3. 按 `git-commit` skill 编写 message：**feat / opt / fix 三分法**（scope 可选），多类型按 `feat → opt → fix` 分段
+4. **需开发者授权方可提交**；commit 中**禁止任何 AI 记号**（无 `Co-Authored-By` / `Generated with` / 模型名）
+5. 提交后 `git status` 确认干净
 
 ---
 

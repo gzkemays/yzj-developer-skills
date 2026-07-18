@@ -46,6 +46,8 @@ P1 分析需求(台账+定级) → P2 加载沉淀 → P3 开发(对齐落档) �
   → P9 更新进度(台账硬门禁) → P10 沉淀核对 → P11 提交 → P12 成果报告
 ```
 
+> **P11 提交**遵循 `git-commit` skill：feat/opt/fix 三分法（scope 可选），commit 中不留任何 AI 记号。
+
 **全程规则（不可妥协）**：
 
 1. **纠正即沉淀**：开发者纠正 → 修正后立即写 feedback memory（`team-memory`）

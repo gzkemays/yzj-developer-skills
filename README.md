@@ -3,10 +3,10 @@
 > 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
 > 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
 >
-> **当前基线**：`2026-06-23`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
+> **当前基线**：`2026-07-18`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
 > **适用前提**：Claude Code（按工作目录加载 CLAUDE.md + skills）。流程方法论 skill **与技术栈无关**
 > （dev-session / pre-dev-alignment / progress-tracker / team-memory / capability-registry /
-> similar-issue-sweep / dev-output / iteration-planner / project-onboarding），任意项目可直接用；
+> similar-issue-sweep / dev-output / iteration-planner / project-onboarding / git-commit），任意项目可直接用；
 > **栈相关 skill**（`yzj-dev-workflow`、`api-contract-checker`、`backend/*` = YZJ 四层 + MyBatis-Flex、
 > `frontend/*` = Vue 3 + Naive UI）需同栈才适用——异栈项目取流程层，按 `skill-creator` 自建规范层。
 
@@ -28,6 +28,7 @@ skills/
 │   ├── dev-output/          #   开发成果报告
 │   ├── yzj-dev-workflow/    #   YZJ 后端开发流程总入口
 │   ├── project-onboarding/  #   引入/融入向导（新项目初始化 + 既有项目对比合并）★
+│   ├── git-commit/          #   Git 提交规范（feat/opt/fix + AI 自主提交铁律 + 无 AI 记号）
 │   └── skill-creator/       #   技能创建与评测
 ├── backend/                 # 后端能力（后端仓库 .claude/skills/）
 │   ├── reviewer/            #   后端审查（七步硬流程 + 40 条禁止清单 + 漏检史）★
@@ -174,5 +175,5 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 
 - 每个 skill 一个目录，入口 `SKILL.md`（frontmatter：`name` + 触发场景写入 `description`）
 - 修改流程类 skill（dev-session / reviewer / progress-tracker）需团队过目——它们是所有项目的执行协议
-- 新增 skill 用 `skill-creator` 创建并评测；提交信息遵循 `type(scope): 简述`
+- 新增 skill 用 `skill-creator` 创建并评测；提交信息遵循 `git-commit` skill（feat/opt/fix 三分法，scope 可选，禁止 AI 记号）
 - 重大流程变更（dev-session / reviewer / 文档门禁 / 契约规则）→ 更新本 README 顶部「当前基线」日期；各引入项目据此判断是否需 re-sync（用「引入后验证」B 组 diff 确认）
