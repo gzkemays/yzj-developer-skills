@@ -3,7 +3,7 @@
 > 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
 > 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
 >
-> **当前基线**：`2026-07-18`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
+> **当前基线**：`2026-08-18`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
 > **适用前提**：Claude Code（按工作目录加载 CLAUDE.md + skills）。流程方法论 skill **与技术栈无关**
 > （dev-session / pre-dev-alignment / progress-tracker / team-memory / capability-registry /
 > similar-issue-sweep / dev-output / iteration-planner / project-onboarding / git-commit），任意项目可直接用；
@@ -28,7 +28,7 @@ skills/
 │   ├── dev-output/          #   开发成果报告
 │   ├── yzj-dev-workflow/    #   YZJ 后端开发流程总入口
 │   ├── project-onboarding/  #   引入/融入向导（新项目初始化 + 既有项目对比合并）★
-│   ├── git-commit/          #   Git 提交规范（feat/opt/fix + AI 自主提交铁律 + 无 AI 记号）
+│   ├── git-commit/          #   Git 提交与分支规范（分支门禁 + feat/opt/fix + 无 AI 记号）★
 │   └── skill-creator/       #   技能创建与评测
 ├── backend/                 # 后端能力（后端仓库 .claude/skills/）
 │   ├── reviewer/            #   后端审查（七步硬流程 + 40 条禁止清单 + 漏检史）★
@@ -127,6 +127,14 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 - **L3** → 先输出**需求/调整文档**（`plan/`）交**用户**复核对齐，再输出**技术设计文档**（`design/`）交**开发者**技术审核 + 二次评估，通过才编码
 - **视觉交互 DEMO（按需）** → 用户要求视觉方案 / 全新无参照视觉时，产出 `design/{slug}-demo.html` 或复用前端既有组件做 DEMO，定稿后判断是否抽为复用组件并登记 `CAPABILITY.md`
 
+**P11 提交与分支门禁**（按 `git-commit`）：
+
+- 开发者授权（含笼统的"允许 / 提交吧"）**默认** = 从当前主干切开发分支 `{feat|opt|fix}/{yyyy.MM.dd}-{business}`
+  （如 `feat/2026.08.18-edit-password`）→ 提交 → `push -u origin` → **由开发者自行合并主干**
+- **已在开发分支**（名字合规）→ 原地提交推送，无需额外授权
+- **主干直提**须开发者本次明确说"允许直接从主干提交"，**单次有效、下次必须重问、禁止 AI 自主判断**，且不得沉淀为常驻规则
+- AI 一律不做：合并主干 / 开合 PR·MR / `push --force` / 删分支 / `git add -A` 盲加
+
 **全程规则**（凌驾于单阶段）：
 
 | 规则 | 内容 | 对应 skill |
@@ -175,5 +183,5 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 
 - 每个 skill 一个目录，入口 `SKILL.md`（frontmatter：`name` + 触发场景写入 `description`）
 - 修改流程类 skill（dev-session / reviewer / progress-tracker）需团队过目——它们是所有项目的执行协议
-- 新增 skill 用 `skill-creator` 创建并评测；提交信息遵循 `git-commit` skill（feat/opt/fix 三分法，scope 可选，禁止 AI 记号）
+- 新增 skill 用 `skill-creator` 创建并评测；提交与分支遵循 `git-commit` skill（授权后切 `{feat|opt|fix}/{yyyy.MM.dd}-{business}` 开发分支提交并推送、开发者自行合并主干；feat/opt/fix 三分法，scope 可选，禁止 AI 记号）
 - 重大流程变更（dev-session / reviewer / 文档门禁 / 契约规则）→ 更新本 README 顶部「当前基线」日期；各引入项目据此判断是否需 re-sync（用「引入后验证」B 组 diff 确认）
