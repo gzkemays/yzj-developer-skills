@@ -46,7 +46,9 @@ P1 分析需求(台账+定级) → P2 加载沉淀 → P3 开发(对齐落档) �
   → P9 更新进度(台账硬门禁) → P10 沉淀核对 → P11 提交 → P12 成果报告
 ```
 
-> **P11 提交**遵循 `git-commit` skill：feat/opt/fix 三分法（scope 可选），commit 中不留任何 AI 记号。
+> **P11 提交**遵循 `git-commit` skill：feat/opt/fix 三分法（scope 可选），commit 与分支名中不留任何 AI 记号。
+> 授权提交默认**从当前主干切开发分支** `{feat|opt|fix}/{yyyy.MM.dd}-{business}`（如 `feat/2026.08.18-edit-password`）
+> → 提交 → `push -u origin` → **由开发者自行合并主干**；主干直提须开发者本次明确授权，**单次有效、下次重问、不可自主判断**。
 
 **全程规则（不可妥协）**：
 

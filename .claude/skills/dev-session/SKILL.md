@@ -298,10 +298,17 @@ NORMAL 级在 P6 知会确认中合并完成，不再二次询问。
 **执行者**：AI | **关联 skill**：`git-commit`
 
 1. `git status` + `git diff` 确认变更
-2. 前后端仓库各自独立提交；`.document/` 变更（台账/报告/memory）随同提交
-3. 按 `git-commit` skill 编写 message：**feat / opt / fix 三分法**（scope 可选），多类型按 `feat → opt → fix` 分段
-4. **需开发者授权方可提交**；commit 中**禁止任何 AI 记号**（无 `Co-Authored-By` / `Generated with` / 模型名）
-5. 提交后 `git status` 确认干净
+2. **需开发者授权方可提交**；授权（含笼统的"允许 / 提交吧"）默认走 `git-commit` 分支流程
+3. **分支门禁**：`git rev-parse --abbrev-ref HEAD` 确认当前分支
+   - 已在开发分支（`{feat|opt|fix}/{yyyy.MM.dd}-{business}`）→ 原地提交
+   - 在主干 → **从当前主干切开发分支**（如 `feat/2026.08.18-edit-password`）再提交
+   - **主干直提**：仅当开发者本次明确说"允许直接从主干提交"；**单次有效，下次必须重问，禁止自主判断**
+4. 前后端仓库各自独立提交、**分支名一致**；`.document/` 变更（台账/报告/memory）随同提交
+5. 按 `git-commit` skill 编写 message：**feat / opt / fix 三分法**（scope 可选），多类型按 `feat → opt → fix` 分段；
+   commit 与分支名中**禁止任何 AI 记号**（无 `Co-Authored-By` / `Generated with` / 模型名）
+6. `git push -u origin {分支名}` → 输出交接四项（分支 / 提交 / 推送 / 待办：请自行合并主干）；
+   **AI 不合并主干、不开合 PR/MR、不 force push**
+7. 提交后 `git status` 确认干净
 
 ---
 
