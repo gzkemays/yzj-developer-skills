@@ -261,6 +261,7 @@ L3 在编码前分**两道门禁、两份文档**（顺序不可颠倒）：
 | 需求/调整文档（L3 必产；用户复核通过后） | `.document/plan/{编号}-{模块}.md` | 新需求新建模块文档（含任务 checkbox 清单）；既有模块的迭代追加「迭代记录」小节。L2 同样在此登记需求载体与 checkbox 清单 |
 | 技术设计文档（L2/L3 必产；开发者技术审核 + 二次评估通过后） | `.document/design/{yyyy-MM-dd}_{slug}-design.md` | 技术方案 + 开发前检查清单 + 实现步骤；L3 含系统影响评估 + ADR 章节 |
 | 视觉交互 DEMO（按需） | `.document/design/{slug}-demo.html` | 用户要求视觉方案 / 全新无参照视觉时产出；定稿后判断是否抽为复用组件并登记 `CAPABILITY.md` |
+| 测试用例文档（dev-session P5 产出） | `.document/design/{yyyy-MM-dd}_{slug}-testcases.md` | P5 自测前产出（TC 正常/边界/异常/回归范围 + 执行记录），P6 随 Review 材料确认，P7 据此验收 / AI E2E；轻量任务可内联在知会摘要 |
 | 需求台账条目 | `.document/plan/STATUS.md` | 按 `progress-tracker` 登记，状态 `开发中` |
 | 重大架构决策（L3 / 不可逆变更） | `.document/adr/adr-{NNN}-{slug}.md` | ADR 格式：背景 / 选项与权衡 / 决定 / 后果 |
 | 开发中的需求变更与中途决策 | 同上对应文档 | **当场更新**，并在 P12 报告「需求变动」维度记录 |
