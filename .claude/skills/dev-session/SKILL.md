@@ -80,7 +80,7 @@ description: >
 **执行者**：AI | **关联 skill**：`iteration-planner`、`progress-tracker`
 
 1. 读取 `.document/plan/STATUS.md` 台账：当前**进行中**的需求有哪些（含其他人/其他会话并行项）、本任务是否已在台账中
-2. 读取 `.document/plan/00-plan-overview.md` 定位当前迭代阶段；读取用户指定的模块文档，解析未完成任务
+2. 读取 `.document/plan/00-plan-overview.md` 定位当前迭代阶段；读取用户指定的模块文档，解析未完成任务（`- [⛔]` 已废弃项不算未完成）；扫 `plan/backlog-*.md` 中相关主题，判断是否本次顺带立项
 3. 若用户未指定任务，列出当前阶段未完成模块供选择
 4. **并行冲突检查**：若本任务与台账中其他进行中需求涉及相同模块/文件，明确提示开发者潜在冲突
 5. 判定变更级别（ARCH / NORMAL），连同开发范围一句话向开发者确认
@@ -140,9 +140,10 @@ description: >
 
 ### 全栈路径
 
-1. 先后端 → 后前端（后端完成不暂停，直接进前端）
-2. 运行 `api-contract-checker` 检查前后端契约一致性
-3. P6-P8 在前后端全部完成后统一触发
+1. 接口契约已在技术设计文档「契约」章节冻结（`pre-dev-alignment`）；开发中契约要变 → **先改设计文档再改两端实现**，禁止先改实现后补文档
+2. 先后端 → 后前端（后端完成不暂停，直接进前端）；前端按「前端对接映射」表逐条对接并回填两端状态
+3. 运行 `api-contract-checker` 以契约章节为对照检查前后端一致性
+4. P6-P8 在前后端全部完成后统一触发
 
 **出口**：代码实现完成
 
@@ -290,7 +291,7 @@ NORMAL 级在 P6 知会确认中合并完成，不再二次询问。
 
 **执行者**：AI | **关联 skill**：`progress-tracker`
 
-1. `.document/plan/` 对应模块文档勾选完成任务（`- [ ]` → `- [x]`），同步文档状态与"最后更新"日期
+1. `.document/plan/` 对应模块文档按 `progress-tracker`「任务清单回填约定」核对：完成 `- [x]`、废弃 `- [⛔]`（含原因与替代）、描述与实现不符当场改；砍掉 / 推迟的内容已落 `backlog-*.md`；同步文档状态与"最后更新"日期
 2. **更新 `STATUS.md` 台账**：本需求条目迁移到对应状态（`已完成` 则移入已完成区），记录完成日期
 3. 模块全部完成时更新 `00-plan-overview.md` 阶段状态
 
@@ -326,16 +327,16 @@ NORMAL 级在 P6 知会确认中合并完成，不再二次询问。
 
 **执行者**：AI | **关联 skill**：`git-commit`
 
-1. `git status` + `git diff` 确认变更
+1. `git status` + `git diff` 确认变更；核对计划文档任务清单与本次代码一致（回填 DoD：已完成已勾、已废弃已标 ⛔）
 2. **需开发者授权方可提交**；授权（含笼统的"允许 / 提交吧"）默认走 `git-commit` 分支流程
 3. **分支门禁**：`git rev-parse --abbrev-ref HEAD` 确认当前分支
    - 已在开发分支（`{feat|opt|fix}/{yyyy.MM.dd}-{business}`）→ 原地提交
    - 在主干 → **从当前主干切开发分支**（如 `feat/2026.08.18-edit-password`）再提交
    - **主干直提**：仅当开发者本次明确说"允许直接从主干提交"；**单次有效，下次必须重问，禁止自主判断**
-4. 前后端仓库各自独立提交、**分支名一致**；`.document/` 变更（台账/报告/memory）随同提交
+4. 前后端仓库各自独立提交、**分支名一致**；`.document/` 变更（台账/报告/memory）随同提交；暂存按 `git-commit` 2.4：逐项 `git add -- <路径>`、`git diff --cached --name-only` 核对，并行开发只提交自己的改动
 5. 按 `git-commit` skill 编写 message：**feat / opt / fix 三分法**（scope 可选），多类型按 `feat → opt → fix` 分段；
-   commit 与分支名中**禁止任何 AI 记号**（无 `Co-Authored-By` / `Generated with` / 模型名）
-6. `git push -u origin {分支名}` → 输出交接四项（分支 / 提交 / 推送 / 待办：请自行合并主干）；
+   commit 与分支名中**禁止任何 AI 记号**（无 `Co-Authored-By` / `Generated with` / 模型名），commit 与代码注释中**禁止进度词**（FIXED / Step / Phase）
+6. `git push -u origin {分支名}` → 输出交接四项（分支 / 提交 / 推送 / 待办：请自行合并主干；多仓逐仓列「仓库 ↔ 分支 ↔ 提交」对照）；
    **AI 不合并主干、不开合 PR/MR、不 force push**
 7. 提交后 `git status` 确认干净
 
@@ -372,3 +373,7 @@ NORMAL 级在 P6 知会确认中合并完成，不再二次询问。
 ### 中断与续作
 
 session 中断后续作时：先读台账定位本需求当前状态，从对应阶段继续，不重头走流程。
+
+### 并行会话与 Worktree 隔离
+
+同一仓库有其他会话 / 其他需求并行改动时：多文件、多任务的需求按 `git-commit` 第八章开 worktree 隔离（放项目根 `.worktree/{business}/{repo}`，进度与沉淀只写项目根 `.document/`，不写树内副本）；快速改动不开树，按 `git-commit` 2.4 只暂存自己的改动。

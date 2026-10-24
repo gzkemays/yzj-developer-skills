@@ -4,8 +4,10 @@ description: >
   Git 提交与分支规范（团队通用）。定义提交前的分支门禁——授权提交默认「从当前主干切
   {feat/opt/fix}/{yyyy.MM.dd}-{business} 开发分支 → 提交 → 推送 → 交开发者自行合并主干」，
   主干直提须开发者单次明确授权且永不继承；并定义 feat/opt/fix 三类前缀、header/body 书写格式、
-  多类型合并写法，以及"AI 自主编写提交信息、commit 中不得留任何 AI 记号"两条铁律。
-  当需要提交代码、编写 commit message、切开发分支、推送分支，开发者说"提交吧"/"允许"/"帮我 commit"/
+  多类型合并写法，以及"AI 自主编写提交信息、commit 中不得留任何 AI 记号与进度词"等铁律；
+  另定义并行开发下只提交自己改动的安全暂存细则、多仓交接对照，以及 Worktree 隔离开发指引。
+  当需要提交代码、编写 commit message、切开发分支、推送分支、在并行会话下安全暂存、开 worktree 隔离开发，
+  开发者说"提交吧"/"允许"/"帮我 commit"/
   "你来提交代码"/"直接提交"/"允许直接从主干提交"/"git commit"/"git push"，
   或 dev-session 进入 P11 提交阶段时触发；dev-session P11 自动引用。
 ---
@@ -14,7 +16,8 @@ description: >
 
 > 提交历史是团队读得最多的文档之一：规范的 commit 让 diff 可追溯、让每次改动的"为什么"一眼可见；
 > 规范的分支让主干始终可发布、让合并权始终握在开发者手里。
-> 本 skill 定义三件事——**提交前的分支门禁**、**AI 被授权提交时的两条铁律**、**feat/opt/fix 三类前缀 + 书写格式**。
+> 本 skill 定义三件事——**提交前的分支门禁**、**AI 被授权提交时的三条铁律**、**feat/opt/fix 三类前缀 + 书写格式**；
+> 附录给出**并行开发的安全暂存**与 **Worktree 隔离开发**的固定做法。
 
 ---
 
@@ -41,9 +44,9 @@ description: >
 - **不套空话**——禁止 `update code`、`修改若干文件`、`fix bug` 这类无信息量描述；
 - 概述用业务/技术语言写清意图，让不看 diff 的人也能懂这次改了什么、为什么改。
 
-### 铁律 3 — commit 中禁止任何 AI 记号 ← 硬性
+### 铁律 3 — commit 中禁止任何 AI 记号与进度词 ← 硬性
 
-commit message 通篇必须是**纯人类视角的开发内容描述**，不得出现任何 AI 痕迹：
+commit message 通篇必须是**纯人类视角的开发内容描述**，不得出现任何 AI 痕迹，也不得出现对话 / 流程进度词：
 
 | ❌ 禁止出现 | 说明 |
 |-----------|------|
@@ -51,9 +54,10 @@ commit message 通篇必须是**纯人类视角的开发内容描述**，不得�
 | `🤖 Generated with …` / `Generated with Claude Code` | 不加生成来源尾注 |
 | `Claude` / `Claude Code` / `Opus` / 任何模型或工具名 | 正文不提及 AI 工具 |
 | "由 AI 生成" / "AI 辅助" 等字样、AI 水印、署名 emoji | 一律不留 |
+| 进度词：`FIXED` / `Step 3` / `Phase 2` / `P4 已过` 等 | 描述的是对话或流程进度而非代码意图；**代码注释中同样禁止** |
 
 > 此铁律**优先于任何默认的 commit 尾注模板**。提交前自检：整条 message 是否出现上述任一 → 有则删除再提交。
-> 同样适用于**分支名**：分支名里不出现 `claude` / `ai` / 模型名。
+> 同样适用于**分支名**（不出现 `claude` / `ai` / 模型名）与**代码注释**（不出现 AI 记号与进度词）。
 
 ---
 
@@ -103,6 +107,8 @@ fix/2026.08.18-order-remark-npe      # 确认订单备注 NPE
 | `feat/2026.08.18-fix-bug` | business 无信息量，看不出改了什么业务 |
 
 > **同一需求延续开发沿用原分支**：不因跨天而按新日期另开分支；也不因某次改动类型不同（在 `feat` 分支上修了个 bug）而改分支名——分支名跟**需求主导意图**，commit 前缀跟**每次改动意图**。
+>
+> **同一业务需要重开分支**（原分支已合并 / 已废弃，同一 business 要再开一支）：沿用原分支名**追加序号** `-2`、`-3`（如 `opt/2026.08.03-sub-code-config-2`），日期与 business 都不改——序号让人一眼看出这是同一需求的第几轮，不会误当成新需求。
 
 ### 2.3 默认流程（授权后逐步执行）
 
@@ -110,7 +116,7 @@ fix/2026.08.18-order-remark-npe      # 确认订单备注 NPE
 2. **切分支**（当前在主干时）：
    - 可选先 `git fetch`，若当前主干落后远端，**如实告知开发者**，是否 `pull` / `rebase` 由开发者决定——**AI 不自动拉取或变基**（工作区有未提交改动时风险最大）
    - `git switch -c {分支名}`（工作区未提交改动会随之带到新分支，无需 stash）
-3. **暂存**：按 `git status` **逐项确认后**再 `git add` 指定路径；**禁止 `git add -A` / `git add .` 盲加**（避免带入临时文件、他人改动、本地配置）
+3. **暂存**：按 `git status` **逐项确认后**再 `git add -- <显式路径>`；**禁止 `git add -A` / `git add .` / `git commit -am` 盲加**（避免带入临时文件、他人改动、本地配置）；暂存后 `git diff --cached --name-only` 核对一遍再提交——工作区有他人 / 他任务改动时按 **2.4 安全暂存**执行
 4. **提交**：`git commit` —— message 按第三、四章（三分法 + 格式 + **无 AI 记号**）
 5. **推送**：`git push -u origin {分支名}`
 6. **交接输出**（推送后给开发者的固定四项）：
@@ -122,9 +128,25 @@ fix/2026.08.18-order-remark-npe      # 确认订单备注 NPE
    ```
 7. **收尾**：`git status` 确认工作区干净
 
-**多仓库（前后端）**：各仓库独立执行本流程、独立提交；**分支名保持一致**（同一需求同名分支，便于对照合并）。
+**多仓库（前后端 / 多服务）**：各仓库独立执行本流程、独立提交；**分支名保持一致**（同一需求同名分支，便于对照合并）；交接输出**逐仓列出**「仓库 ↔ 分支 ↔ 提交」对照，不能只报其中一个仓：
 
-### 2.4 主干直提：单次授权，永不继承 ← 硬性
+```
+仓库：{backend-repo}   分支：feat/2026.08.18-edit-password   提交：a1b2c3d  已推送
+仓库：{frontend-repo}  分支：feat/2026.08.18-edit-password   提交：d4e5f6a  已推送
+待办：请自行合并两仓分支到 master
+```
+
+### 2.4 并行开发的安全暂存 ← 硬性
+
+工作区可能含**他人 / 他任务 / 他会话的未提交改动**（共享工作区、多会话并行、未开 worktree）时，**只提交自己的改动**：
+
+- 一律 `git add -- <显式路径>` 逐个暂存自己的文件；**禁止** `git add -A` / `git add .` / `git commit -am`
+- 暂存后先核对再提交：`git diff --cached --name-only` + `git status --short`——暂存区只含自己的文件，他人改动仍停留在未暂存 / 未跟踪
+- **共享文件**（i18n locale、台账 `STATUS.md`、`MEMORY.md` 索引、公共配置）被多任务同时改时，**只暂存自己的 hunk，不整文件 add**：`git add -p <file>` 逐块选择；或 `git diff -- <file> > mine.patch` → 删掉不属于自己的 hunk → `git apply --cached mine.patch`
+- 不提交构建产物与本地文件：`dist/`、`target/`、`*.tsbuildinfo`、IDE 配置、`.env*`——它们出现在 `git status` 里时先问开发者是否该进 `.gitignore`，不顺手 add
+- 并行改动多到每次提交都要逐文件甄别时，改用**第八章 Worktree 隔离**，从根上避免工作区污染
+
+### 2.5 主干直提：单次授权，永不继承 ← 硬性
 
 - 只有开发者**本次明确说**"允许直接从主干提交"（或等价明确表述）时，才可在主干 `commit`；
 - 该授权**仅对本次提交有效**。下一次提交**必须重新询问**，不得沿用；
@@ -136,12 +158,13 @@ fix/2026.08.18-order-remark-npe      # 确认订单备注 NPE
 - **禁止把主干直提授权沉淀为常驻规则**：不写入 `team-memory`、不写进 CLAUDE.md。此授权按设计**必须每次重问**。
 - 唯一例外仍是 2.1 首行：**当前本就在开发分支**上——原地提交不需要额外授权。
 
-### 2.5 禁止动作清单 ← 硬性
+### 2.6 禁止动作清单 ← 硬性
 
 | ❌ 禁止 | 说明 |
 |--------|------|
 | 未获授权 `git commit` | 见"触发授权" |
-| 在主干 `commit`（无本次明确授权） | 见 2.4 |
+| 在主干 `commit`（无本次明确授权） | 见 2.5 |
+| `git add -A` / `git add .` / `git commit -am` 盲加 | 会夹带他人改动、临时文件、本地配置，见 2.4 |
 | `git merge` / `git rebase` 到主干、`git push origin HEAD:{主干}` | **合并主干是开发者的动作**，AI 一律不做 |
 | 自行创建 / 合并 PR / MR | 除开发者明确要求；默认只推分支，附上远端返回的链接 |
 | `git push --force` / `--force-with-lease` | 一律不做；推送被拒 → 如实报告原因，等开发者决定 |
@@ -284,9 +307,9 @@ feat(capability): 反哺 verify-baseline 校验脚本 from YAPD
 2. 确认已获开发者提交授权（未授权 → 只展示变更，停）
 3. **分支门禁**：`git rev-parse --abbrev-ref HEAD` → 按 2.1 决策表定动作（主干 → 切 `{type}/{yyyy.MM.dd}-{business}`）
 4. 前后端仓库各自独立提交、分支名一致；`.document/` 变更（台账 / 报告 / memory）随同对应提交
-5. 按本规范归类并编写 message（三分法 + 格式 + **无 AI 记号**）
-6. 逐项 `git add`（不盲加）→ `git commit`
-7. `git push -u origin {分支名}` → 输出交接四项（分支 / 提交 / 推送 / 待办：请自行合并主干）
+5. 按本规范归类并编写 message（三分法 + 格式 + **无 AI 记号 / 无进度词**）
+6. 逐项 `git add -- <显式路径>`（不盲加）→ `git diff --cached --name-only` 核对暂存区（并行开发按 2.4 只暂存自己的改动）→ `git commit`
+7. `git push -u origin {分支名}` → 输出交接四项（分支 / 提交 / 推送 / 待办：请自行合并主干；多仓逐仓列对照）
 8. `git status` 确认工作区干净
 
 ---
@@ -302,6 +325,11 @@ feat(capability): 反哺 verify-baseline 校验脚本 from YAPD
 - [ ] 前后端仓库分支名一致
 - [ ] 未做任何合并主干 / PR / force push / 删分支动作
 
+**暂存**
+
+- [ ] 逐项 `git add -- <路径>`，未用 `-A` / `.` / `-am` 盲加
+- [ ] `git diff --cached --name-only` 已核对：未夹带他人改动、构建产物、本地配置
+
 **提交信息**
 
 - [ ] 前缀 ∈ {`feat`, `opt`, `fix`}，与本次意图一致
@@ -309,8 +337,56 @@ feat(capability): 反哺 verify-baseline 校验脚本 from YAPD
 - [ ] 多事项用 ` & ` 连接；多类型按 `feat → opt → fix` 分段
 - [ ] 关键决策已在 `*` 要点说明（如有必要）
 - [ ] **message 与分支名中无任何 AI 记号**（`Co-Authored-By` / `Generated with` / 模型名 / AI 水印）
+- [ ] **message 与代码注释中无进度词**（`FIXED` / `Step N` / `Phase N`）
 
 **收尾**
 
-- [ ] 已 `push -u origin {分支名}`，并向开发者输出交接四项（分支 / 提交 / 推送 / 待办：请自行合并主干）
+- [ ] 已 `push -u origin {分支名}`，并向开发者输出交接四项（分支 / 提交 / 推送 / 待办：请自行合并主干）；多仓时逐仓列出「仓库 ↔ 分支 ↔ 提交」对照
 - [ ] `git status` 工作区干净
+
+---
+
+## 八、附录：Worktree 隔离开发（并行迭代防冲突 / 防进度脱节）
+
+> 同一仓库有另一会话 / 另一需求在并行改动时，三类事故反复发生：他人切分支清掉本需求**未提交**的 tracked 改动；每次提交都要在污染的工作区里逐文件甄别（2.4）；本需求改动混进他人分支。把本需求隔离到独立 `git worktree` 可以从根上避免。以下是实战踩坑后的固定做法。
+
+### 8.1 何时用
+
+- 共享工作区有活跃并行会话，且本需求是**多文件、多任务、会累积较多未提交改动**的特性
+- 单文件 / 快速改动不开 worktree，按 2.4 安全暂存即可
+
+### 8.2 放置位置与目录结构（强制）
+
+worktree **必须放在项目根内** `{project-root}/.worktree/`，**不放项目外**——放外面会让项目根的 `.claude/`（流程 skill + rules）与 `.document/`（台账 / 沉淀）脱离祖先链，规则和 skill 加载不到。
+
+按「**任务目录镜像根结构**」组织：每个需求一个任务目录，内含该需求用到的各仓 worktree，**子目录名与项目根下的仓库目录名一致**：
+
+```
+{project-root}/.worktree/
+└── {business}/                 ← 一个需求一个目录，与分支的 business 段同名（如 edit-password）
+    ├── {backend-repo}/         ← 后端仓 worktree，检出 feat/2026.08.18-edit-password
+    └── {frontend-repo}/        ← 前端仓 worktree，同名分支（按需）
+```
+
+- 建树命令：`git -C {repo} worktree add {project-root}/.worktree/{business}/{repo} -b {feat|opt|fix}/{yyyy.MM.dd}-{business}`（自当前主干切出，分支名按 2.2）
+- worktree 是**单仓**检出：纯后端 / 纯前端只建对应那一个；全栈各建各的，互不影响
+- 编辑任一仓文件时祖先链含：该仓 `.claude/`（前 / 后端规范）+ 根 `.claude/`（流程）+ 根 `.document/` → 规则与技能全识别
+- `.worktree/` 必须进项目根 `.gitignore`（单仓项目尤其注意，否则整棵树会被当成未跟踪文件）
+- 多需求并行各用各的任务目录与分支（同一仓同一分支只能在一个 worktree 检出）
+
+### 8.3 Windows 路径上限（260）——后端仓必做
+
+后端 Java 包路径深，嵌套一层任务目录后最深文件容易超过 Windows MAX_PATH。**建树前对该仓执行一次 `git config core.longpaths true`**，否则 `git worktree add` 报 `Could not reset index file to revision 'HEAD'`。开启后 git 与读写 / 编辑工具均能正常处理深路径文件。
+
+### 8.4 进度与沉淀只写一份（关键）
+
+- `.document/` 全项目只有项目根这一份：台账 `STATUS.md`、plan / design / 用例文档、memory、能力登记**一律写项目根**，**绝不写进 worktree 内的副本**——单仓项目的 worktree 会自带一份 `.document/` 副本，最容易写错地方 → 进度永不在多棵树间分叉
+- 每完成一个任务**即时**按 `progress-tracker` 回填，并在 worktree 内**分段提交**（每个可独立 review 的语义单元一次），不长期囤大量未提交改动
+- 开树时在台账该条目「最近动态」记一行：worktree 路径 + 分支名 + 所属仓，避免跨会话丢失上下文
+
+### 8.5 提交、合并与收尾
+
+- 提交推送按 2.3 默认流程：在 worktree 内 `commit` → `push -u origin {分支名}` → 交接四项
+- 基线漂移：主干推进较多时**如实告知开发者**，是否 `rebase` 由开发者决定（AI 不自动变基，同 2.3）
+- 收尾由开发者完成：合并分支回主干 → `git worktree remove .worktree/{business}/{repo}` → 删除已合并分支（AI 不删分支，见 2.6；开发者明确要求时 AI 可代执行 `git worktree remove`）
+- 迁移既有未提交改动进 / 出 worktree：`git diff -- <file> > x.patch` + `git -C <tree> apply x.patch`，**不要整仓 stash**——stash 会把他人改动一起带走

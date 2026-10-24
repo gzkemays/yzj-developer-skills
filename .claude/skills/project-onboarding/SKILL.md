@@ -3,8 +3,9 @@ name: project-onboarding
 description: >
   将本 framework 的研发流程与前后端规范 skill 引入或融入目标项目。当用户说"引入这套规范/skills"、
   "新项目接入框架"、"把框架/skills 同步到 XX 项目"、"初始化项目 skill/规范"、"旧项目融入这套流程"、
-  "adopt framework skills" 时触发。区分新项目（全量初始化）与既有项目（按基线对比合并、保留项目专有沉淀），
-  产出 CLAUDE.md + .claude/skills + .document 三件套，让 AI 一进项目即可识别这套规范。
+  "adopt framework skills" 时触发。区分新项目（全量初始化）与既有项目（按基线对比合并、保留项目专有沉淀、
+  流程 skill 的项目专有硬约束按「📌 项目覆写约定」回注），产出 CLAUDE.md + .claude/rules + .claude/skills + .document
+  四件套，让 AI 一进项目即可识别这套规范。
 ---
 
 # 项目引入 / 融入向导（project-onboarding）
@@ -43,11 +44,12 @@ description: >
 
 ## A · 新项目全量初始化
 
-1. **拷贝 skill**（按 cwd 分层放置）：
+1. **拷贝 skill 与常驻规则**（按 cwd 分层放置）：
+   - `templates/.claude/rules/*` → `{root}/.claude/rules/`（协作原则 + 契约速查；Claude Code 自动加载，契约占位符按项目填）
    - `.claude/skills/*` → `{root}/.claude/skills/`
    - `backend/*` → `{backend-repo}/.claude/skills/`
    - `frontend/*` → `{frontend-repo}/.claude/skills/`
-2. **实例化 CLAUDE.md**：以 `templates/CLAUDE.md.template` 为骨架，用第一步发现填占位符；**推断不出的列出来问用户，不臆造**。
+2. **实例化 CLAUDE.md**：以 `templates/CLAUDE.md.template` 为骨架，用第一步发现填占位符；**推断不出的列出来问用户，不臆造**。契约速查表只填在 `rules/api-contract.md`，CLAUDE.md 不重复。
 3. **文档骨架**：拷 `templates/.document/*`（`plan/STATUS.md`、`design/`、`adr/`、`developer/memory`+`capability`）。
 4. **校验**：列落地清单；跑 `bash scripts/verify-baseline.sh {项目根}` 过结构 + 基线（见 README「引入后验证」）；说"今天做什么"应触发 `iteration-planner` 读 STATUS.md（识别成功的信号）。
 
@@ -63,11 +65,11 @@ description: >
 
    | 类别 | 处理 |
    |------|------|
-   | 流程 skill（dev-session / pre-dev-alignment / progress-tracker / iteration-planner / yzj-dev-workflow / dev-output / team-memory / capability-registry / similar-issue-sweep / api-contract-checker / git-commit） | 落后基线且无项目专有内容 → **framework 当前版直接覆盖** |
+   | 流程 skill（dev-session / pre-dev-alignment / progress-tracker / iteration-planner / yzj-dev-workflow / dev-output / team-memory / capability-registry / similar-issue-sweep / api-contract-checker / git-commit） | 落后基线且无项目专有内容 → **framework 当前版直接覆盖**；含项目专有硬约束 → 按下「📌 项目覆写约定」回注后覆盖 |
    | **reviewer（前 / 后端）** | **合并不覆盖**（见下「reviewer 合并标准动作」） |
    | 各域规范 skill（backend / frontend 各 skill） | 同流程 skill；留意项目对示例 / 关键词的本地增补，按"只增不删"保留 |
    | 项目专有 skill（项目独有业务约定，如 `auth-conventions` / `notification-conventions`） | **不动** |
-4. **补骨架**：缺 `.document/design/` → 建 + 拷 `templates/.document/design/README.md`；缺 `.document/plan/STATUS.md` → 建。
+4. **补骨架**：缺 `.document/design/` → 建 + 拷 `templates/.document/design/README.md`；缺 `.document/plan/STATUS.md` → 建；缺 `.claude/rules/` → 拷 `templates/.claude/rules/*`（项目 CLAUDE.md 已有契约表的，搬进 `rules/api-contract.md` 或留在原处二选一，不重复维护）。
 5. **对齐 CLAUDE.md**：更新「Project Structure」（补 `design/` + STATUS.md）与「Session Workflow」（12 阶段 + 4 全程规则 + ARCH/NORMAL 分级 + P3 编码前文档分层），**保留项目专有段**（契约、多租户、权限、设计系统）。
 6. **修常见问题**：
    - skill `name` 与目录名不一致（如 `name: code-reviewer` 而目录是 `reviewer`）→ 改 `name` 对齐目录
@@ -80,17 +82,29 @@ description: >
 2. **回注项目专有项**（取自备份的旧版 / 项目实际）：项目鉴权注解（如 `@RequireProjectMember`）、多租户豁免注解、设计 token（如 `var(--{prefix}-*)`）、域命名规则、项目已积累的漏检史条目。
 3. `diff` 验证：与 framework 的差异应"**仅为回注的项目专有项**"。
 
+### 📌 项目覆写约定（B-3 细化：流程 skill 带项目专有硬约束时）
+
+流程 skill 原则上与基线逐字一致；项目确有必须偏离的硬约束（如"本项目 AI 只 commit 不 push"、"monorepo 根不是 git 仓，根目录沉淀不提交"）时，**不散改正文**，按以下约定回注，让 re-sync 可机械保留：
+
+1. **文件头差异清单**：frontmatter 之后紧跟一段引用块，逐条列出与基线的差异与依据：
+   > **本文件 = framework 基线 {基线日期} + 项目专有项回注。** 差异仅限以下 N 处，均以「📌 {项目}」标记：① … ② …。其余与基线逐字一致，re-sync 时保留这 N 处。
+2. **正文逐处标记**：每一处偏离的行 / 段落以 `📌 {项目}` 开头（或行内标注），说明覆写内容与依据（指向项目 CLAUDE.md / rules 的哪条）
+3. **只覆写不删除**：基线原文保留（可改写为"基线：…；本项目：…"），便于对照
+4. **re-sync 动作**：`cp` 基线 → 按文件头清单逐条把 📌 段回注 → `diff` 验证差异仅为 📌 行；`verify-baseline.sh` 对含 📌 的流程 skill 报「📌 项目覆写」而非「Δ 流程漂移」
+5. **不得覆写的**：主干直提单次授权、P4 Review 不可跳过、P8 开发者确认之类"按设计必须每次重问 / 不可跳过"的门禁，不得以 📌 固化为常驻放宽
+
 ---
 
-## 让 AI "识别"这套规范的三件套
+## 让 AI "识别"这套规范的四件套
 
 | 产物 | 作用 |
 |------|------|
 | **CLAUDE.md**（项目根 + 各子仓库） | Claude Code 按 cwd 自动加载，AI 进项目的第一识别点 |
+| **.claude/rules/** | 常驻规则（协作原则 + 契约速查），随会话自动加载，执行力最强；可用 `paths:` 限定触发范围 |
 | **.claude/skills/** | 技能随 cwd 加载：流程在 root，前后端规范在各子仓库 |
 | **.document/** | 台账 / 计划 / 设计 / 沉淀，dev-session 各阶段引用 |
 
-> 三者齐备后，新会话只要"今天做什么 / 开发 XX"即可触发 `iteration-planner` → `dev-session` 全流程。
+> 四者齐备后，新会话只要"今天做什么 / 开发 XX"即可触发 `iteration-planner` → `dev-session` 全流程。
 
 ## 反哺回路
 
