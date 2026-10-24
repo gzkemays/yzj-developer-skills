@@ -377,6 +377,9 @@ L3 在编码前分**两道门禁、两份文档**（顺序不可颠倒）：
 - [ ] 分布式锁：@DistributedLock 的 key、prefix、waitTime、leaseTime 已确认
 - [ ] DDL：TableDef 已按 `tabledef` skill 同步维护方案确认
 - [ ] proto：字段编号未复用（删除需 reserved）；敏感字段已加 @Encryption
+- [ ] 支付/资金：金额 BigDecimal、业务单号唯一索引 + 幂等、@DistributedLock(transactional)、行锁、同事务流水（`financial` skill）
+- [ ] 对外接口 / SDK / proto 变更：对接文档同一次提交更新
+- [ ] 含敏感 payload 的接口：加入 yzj.logger.ignore-request-url / ignore-response-url
 ```
 
 ### 前端通用
@@ -433,6 +436,9 @@ L3 在编码前分**两道门禁、两份文档**（顺序不可颠倒）：
 | TableDef 维护 | `tabledef` |
 | DDL 迁移脚本 | `db-migration` |
 | 通用工具（CommonResult / SessionContext / ApiException） | `common` |
+| 金额 / 余额 / 支付 / 退款 / 结算 / 流水 | `financial` |
+| 安全编码红线（持卡人数据 / 密码学 / 注入 / 越权 / SSRF） | `security`（第八节） |
+| 单元测试 | `testing` |
 | 代码审查 | `reviewer` |
 
 ### 前端（frontend/）

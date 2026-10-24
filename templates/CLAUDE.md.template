@@ -34,6 +34,7 @@
 ## Build Commands
 
 - **Backend compile**: `cd {backend-repo} && {如 mvn compile -pl xxx -am -q}`
+- **Backend test**: `cd {backend-repo} && {如 mvn test -pl xxx -am -q}`（覆盖率门禁：{如 Service ≥ 80%，金融 ≥ 90%；未定义按 backend/testing 第六节}）
 - **Frontend dev**: `cd {frontend-repo} && {如 pnpm dev}`（port {xxxx}）
 - **Frontend build**: `cd {frontend-repo} && {如 npx vite build}`
 

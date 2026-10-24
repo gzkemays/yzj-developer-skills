@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: 后端代码审查 skill。当用户要求 review 代码、审查代码规范、检查代码质量、要求优化代码，或 dev-session P4 AI Review 阶段触发时使用。审查范围覆盖：命名规范、代码格式、OOP 规范、注释规范、项目结构、Model 层、Service 层、Controller 层、Integration 层、Proto3 编写规范。按七步硬流程执行，逐维度 × 逐文件全覆盖，禁止选择性抽查。审查标准以各职能 skill 为准。
+description: 后端代码审查 skill。当用户要求 review 代码、审查代码规范、检查代码质量、要求优化代码，或 dev-session P4 AI Review 阶段触发时使用。审查范围覆盖：命名规范、代码格式、OOP 规范、注释规范、项目结构、Model 层、Service 层、Controller 层、Integration 层、Proto3 编写规范、安全编码（PCI / OWASP）、金融（金额 / 幂等 / 事务 / 流水）、单元测试。按七步硬流程执行，逐维度 × 逐文件全覆盖，禁止选择性抽查。审查标准以各职能 skill 为准。
 ---
 
 # 后端代码审查规范
@@ -27,6 +27,12 @@ description: 后端代码审查 skill。当用户要求 review 代码、审查�
 | 私有方法缺 Javadoc | `private\s+(static\s+)?[\w<>\[\]]+\s+\w+\s*\(` 前无 `/**` | #37 |
 | RuntimeException 直抛 | `throw new RuntimeException` | #22 |
 | Controller 手动 stream 转换 | `\.stream\(\)\.map\(` （Controller 内） | #34 |
+| XML `${}` 拼接 | `\$\{` （mapper XML 内） | #41 🔴 |
+| 金额 double 构造 | `new BigDecimal\(\s*[0-9]` / `new BigDecimal\(.*[dD]ouble` | #43 🔴 |
+| 弱哈希 / 弱随机 | `"MD5"` / `"SHA-1"` / `Math\.random\(` / `new Random\(` | #45 🔴 |
+| 控制台输出 / 堆栈直打 | `System\.out\.print` / `printStackTrace\(` | logging #1 / #2 🔴 |
+| 绕开主事务 | `REQUIRES_NEW` | #46 🔴 |
+| 硬编码密钥 | `secret\s*=\s*"` / `password\s*=\s*"` / `@Encryption\(key = "` 字面量 | #47 🔴 |
 
 `this.` 扫描的逐行判定：当前类**实例方法** → 必须 `this.`；**静态方法** → 不需要（建议类名前缀）；lambda/局部函数 → 不需要。**此扫描禁止跳过。**
 
@@ -43,8 +49,15 @@ description: 后端代码审查 skill。当用户要求 review 代码、审查�
 - record vs class 判定正确（需类级 AOP 注解时必须 class + `@Resource`，record 不兼容 CGLIB）
 - 无内联业务逻辑（鉴权用 AOP 注解；DTO→VO 用 `CommonResult.success(data, fn)` 系列）
 - Flow 类有 `@Validated`（方法级参数校验生效的前提）
+- **对外接口 / SDK / gRPC 契约变更**（`interfaces/` 下开放平台 Controller、sdk、proto）：对接文档（项目 CLAUDE.md 指定路径，如 `docs/open-api-integration-guide.md`）已在**同一次提交**内更新——端点 / 入参出参 / 错误码 / 鉴权方式 / 开放范围任一变更都算（#48）
 
-**Step 6 — 按第十三节标准格式输出报告**：逐维度给出结论（通过/问题数），不允许"整体看了没问题"式总结。
+**Step 5+ — 安全 / 金融专项**（每次 Review 至少过安全清单的「输入与注入」「敏感数据」两组；命中关键词的变更全组必做）：
+- 关键词扫描：Grep 本次文件是否含 `amount|balance|pay|transfer|refund|settle|ledger|card|pan|cvv|pin|password|token|secret|encrypt|permission|role`（中英文均扫：金额 / 余额 / 支付 / 退款 / 卡号 / 密码 / 密钥 / 权限）
+- 命中金融 → 按第十三节逐条核对（`financial` skill 第七节清单）；命中安全 → 按第十二节逐条核对（`security` skill 8.8 清单）
+- **HIGH RISK 升级**：命中金融 / 安全关键词时，本次 Review 所有 🟡 警告视同 🔴 严重处理，报告末尾追加「需双人审批」
+- 测试维度按第十四节核对（本次变更的 Service / Flow 是否有对应用例、必测场景是否覆盖）
+
+**Step 6 — 按第十六节标准格式输出报告**：逐维度给出结论（通过/问题数），不允许"整体看了没问题"式总结。
 
 **Step 7 — 自修后复检**：修复所有问题后**重跑 Step 2 ~ Step 6**，验证无回归，输出第二轮结论。
 
@@ -70,6 +83,9 @@ Step 2-6 中**每发现一处违规**，立即在**本次变更的全部文件**
 │  8. Controller 层    → controller-conventions skill              │
 │  9. Integration 层   → integration-flow skill                    │
 │  10. Proto3 / gRPC   → grpc skill                                │
+│  11. 安全编码        → 本文第十二节 + security skill 第八节      │
+│  12. 金融 / 资金     → 本文第十三节 + financial skill（命中时）  │
+│  13. 单元测试        → 本文第十四节 + testing skill             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -324,7 +340,51 @@ DOC 不是 README 也不是 ADR。只回答三件事：
 
 ---
 
-## 十二、禁止事项清单
+## 十二、安全编码审查要点
+
+> 规则在 `security` skill 第八节；本节是 Review 时的核对顺序。**每次 Review 都过「输入与注入」「敏感数据」两组**，命中安全关键词（`auth` `token` `password` `encrypt` `key` `card` `pan` `cvv` `pin` `permission` `role`）时全组逐条过。
+
+| 组 | 必查项 |
+|----|--------|
+| 输入与注入 | Controller 入参 `@Valid`；XML 无 `${}`；动态排序白名单；无字符串拼接 SQL；用户输入进响应前转义 |
+| 认证与授权 | Controller 方法有鉴权注解或在免鉴权清单且已评审；资源操作校验租户 / 用户归属，手写 SQL 显式带隔离条件；Token 有过期、不走 URL；登录失败统一错误 |
+| 敏感数据 | 无 CVV / PIN 存储；PAN `@Encryption` + 日志后 4 位 + 响应脱敏；手机号 / 身份证脱敏；无硬编码密钥 / secret；含敏感 payload 的接口已进 `yzj.logger.ignore-*-url` |
+| 密码学 | BCrypt / Argon2；无 MD5 / SHA-1；`SecureRandom`；AES-256 |
+| 外部调用 | 回调 URL 白名单；外部请求有连接 + 读超时；事务内不调外部 |
+| 日志与配置 | 无 `System.out` / `printStackTrace`；日志无密码 / Token / 密钥；生产无 debug；Actuator 敏感端点未外露；CORS 白名单 |
+| 对外契约 | 对外接口 / SDK / proto 变更的对接文档已同提交更新（#48） |
+
+**框架级出口**：业务代码不打敏感日志 ≠ 敏感数据不入日志——`LoggerFilter` 默认打全量 body（`logging` skill 第九节），这一项必须查配置文件而不是查代码。
+
+---
+
+## 十三、金融 / 资金审查要点（命中关键词时必查）
+
+> 规则在 `financial` skill；本节列 Review 时逐条核对的项，任一不过即 🔴。
+
+- 金额：全 `BigDecimal`；无 `new BigDecimal(double)`；比较 `compareTo`；`divide` 带 scale + `RoundingMode`；分摊补差；中间不 `setScale`
+- 幂等：资金写操作有业务单号唯一索引 + 先查后写按幂等返回；并发入口 `@DistributedLock(transactional = true)`；未用 `@ApiLock` / 前端防抖冒充幂等
+- 事务：编排方法 `@Transactional(rollbackFor = Exception.class)`；被编排方无 `REQUIRES_NEW`；无吞异常；无 `this.` 调自身事务方法；外部调用 / MQ 在 `TransactionUtils.asyncExecuteAfterCommit`
+- 余额：行锁或乐观锁；扣减 SQL 带余额条件并校验 affected rows；无"读-减-整行覆盖"
+- 流水：每次资金变动同事务写流水，含变动前后余额、操作人、单号；流水不可改不可删
+- 脱敏：VO 转换处脱敏；卡号 / 密码不入日志不返回；接口进 `LoggerFilter` 忽略清单
+- 测试：幂等重复、余额不足、affected rows = 0、回滚、分摊精度、并发扣减（`testing` skill 4.2）各有用例
+- **升级规则**：本节任一项不过 → 🔴；本次 Review 其余 🟡 视同 🔴；报告末尾追加「涉及资金核心链路，合并前需双人审批」
+
+---
+
+## 十四、单元测试审查要点
+
+> 规则在 `testing` skill。
+
+- 命名：类 `{被测类}Test`、Mock `mock{Class}`、被测 `{x}UnderTest`、方法 `{method}_{scenario}_{expected}`
+- 必测场景：正常路径 + 校验失败（异常枚举正确、副作用 `never()`）+ 边界；金融 / 权限按 testing 4.2 / 4.3；P7 失败场景已固化
+- 禁止项：单元测试连真实 DB / Redis；`@SpringBootTest` 跑单测；无断言或只 `assertNotNull`；为测试改可见性；`Thread.sleep` 等异步
+- 覆盖率：按项目 CLAUDE.md 门禁，未定义按 testing 第六节建议；覆盖到但无关键断言不算
+
+---
+
+## 十五、禁止事项清单
 
 | # | 禁止事项 | 严重程度 |
 |---|----------|----------|
@@ -368,10 +428,25 @@ DOC 不是 README 也不是 ADR。只回答三件事：
 | 38 | Flow 类缺 `@Validated` | 🟡 警告 |
 | 39 | `updateById`/`deleteById` 前无存在性校验（详见 `api-contract-checker` 规则 5） | 🟡 警告 |
 | 40 | 写操作 Controller 返回 `CommonResult<Void>`（详见 `api-contract-checker` 规则 1） | 🔴 严重 |
+| 41 | MyBatis XML 使用 `${}` 拼接 / 字符串拼接 SQL | 🔴 严重 |
+| 42 | CVV / PIN 以任何形式存储、记录；完整 PAN 出现在日志 / 响应 / 非加密存储 | 🔴 严重 |
+| 43 | 金额用 `float` / `double`，`new BigDecimal(double)`，`equals` / `==` 比较，`divide` 不带舍入 | 🔴 严重 |
+| 44 | 资金写操作无幂等（无唯一索引 + 先查后写），或只靠 `@ApiLock` / 前端防抖 | 🔴 严重 |
+| 45 | 密码 MD5 / SHA-1 / 可逆加密；`Math.random` / `new Random` 生成 token、验证码、盐 | 🔴 严重 |
+| 46 | 被编排方法 `REQUIRES_NEW` 绕开主事务；事务内吞异常；`@Transactional` 缺 `rollbackFor` | 🔴 严重 |
+| 47 | 硬编码密钥 / secret / 密码 / 测试账号（含 `@Encryption(key = "…")` 字面量） | 🔴 严重 |
+| 48 | 对外接口 / SDK / proto 变更未在同一次提交更新对接文档 | 🔴 严重 |
+| 49 | 余额"读-减-整行覆盖"；扣减 SQL 无余额条件或不校验 affected rows；资金变动不写流水 | 🔴 严重 |
+| 50 | 含敏感 payload 的接口未进 `yzj.logger.ignore-request-url` / `ignore-response-url` | 🔴 严重 |
+| 51 | 用户输入直接作为外部请求 URL（SSRF）；外部请求无超时 | 🔴 严重 |
+| 52 | 手写 SQL / XML 查询未带租户 / 用户隔离条件（水平越权） | 🔴 严重 |
+| 53 | 单元测试连真实 DB / Redis，或 `@SpringBootTest` 跑单测 | 🟡 警告 |
+| 54 | 测试无断言 / 方法名无法表达意图 / 为测试改生产可见性 | 🟡 警告 |
+| 55 | 新增 Service 方法名不符命名规约（存量不合规只 🟢 提示） | 🟡 警告 |
 
 ---
 
-## 十三、审查报告格式
+## 十六、审查报告格式
 
 ### 通过
 
@@ -393,6 +468,9 @@ DOC 不是 README 也不是 ADR。只回答三件事：
 | 注释（含私有方法 Javadoc） | ✅ |
 | 结构 / TableDef 同步 | ✅ |
 | Model / Service / Controller / Integration | ✅ |
+| 安全编码（输入与注入 / 敏感数据每次必查；命中关键词全组） | ✅ |
+| 金融 / 资金（命中时） | ✅ / N/A |
+| 单元测试 | ✅ |
 | 漏检史专项核对 | ✅ |
 
 ### 审查结果：✅ 通过
@@ -423,12 +501,23 @@ DOC 不是 README 也不是 ADR。只回答三件事：
 
 ### 严重程度与判定
 
-- 🔴 **严重**：运行时异常、序列化问题、架构违规 | 🟡 **警告**：可读性/维护性/团队规范 | 🟢 **提示**：建议优化
+- 🔴 **严重**：运行时异常、序列化问题、架构违规、安全 / 资金红线 | 🟡 **警告**：可读性/维护性/团队规范 | 🟢 **提示**：建议优化
 - ✅ 通过 = 无严重/警告级问题；❌ 不通过 = 存在 ≥1 个严重/警告级问题
+- **HIGH RISK 升级**：本次变更命中金融 / 安全关键词（Step 5+）→ 所有 🟡 视同 🔴，报告末尾追加「涉及资金 / 安全核心链路，合并前需双人审批」，dev-session 按 ARCH 走 P6
+
+### 复查模式（ARCH 级或多轮 Review 时）
+
+ARCH 级变更的 Review 报告落档 `design/{yyyy-MM-dd}_{slug}-review.md`（与技术设计文档同 slug），之后每一轮都在同一份上**追加**：
+
+- 文件头维护「评审历史」表：`| 次数 | 时间 | 🔴 | 🟡 | 🟢 | 结论 |`，本次为第 N+1 次
+- 历史问题逐条验证并追加状态：✅ 已修复（追加修复记录块）/ ⚠️ 部分修复（追加残留说明）/ ❌ 未修复（保留原条目）
+- 新问题编号**续排**（#N+1 …），**禁止删线、删除历史条目、改写已有修复记录**——历史是开发者判断"反复漏什么"的依据
+- 报告保留「做得好的地方」一小节：值得保留与推广的模式，复查时同样只追加
+- NORMAL 级不落档，报告内联在 P6 知会摘要中
 
 ---
 
-## 十四、漏检史清单（每次 Review 必须主动核对）
+## 十七、漏检史清单（每次 Review 必须主动核对）
 
 > 这里登记**曾被开发者捕获的 AI 漏检项**。每次 Review 把本清单作为必查项过一遍；
 > 项目中新发生的漏检按 `team-memory` 升级机制**当场追加**到项目级清单（项目 memory 或本文件项目副本）。
@@ -447,13 +536,16 @@ DOC 不是 README 也不是 ADR。只回答三件事：
 | `@Column(isLarge=true)` 字段读取未 select ALL_COLUMNS | Step 3 | 曾漏检 |
 | Flow 缺 `@Validated` | #38 | 曾漏检 |
 | **整段跳过 Review**（编码后直接进自测/提交） | dev-session 规则 4 | 曾以"小修复"为由两次跳过，结果漏检且已 commit 后才补查 |
+| 框架 `LoggerFilter` 打全量请求 / 响应体 | 第十二节 / logging 第九节 | 外部项目教训（2026-08）：业务代码未打敏感日志，整份敏感 payload 仍在日志里；且下游配了上游没配、验证也只验了一层 |
+| 资金写操作无幂等、余额读-减-覆盖 | 第十三节 | 金融规则此前不在 reviewer 维度内，属结构性缺口，2026-10 补入——首批命中请在项目副本追加具体案例 |
+| 对外接口改了实现未同步对接文档 | #48 | 外部项目教训：先改接口后补文档拆成两次提交，中间窗口第三方按旧文档对接 |
 
 ---
 
-## 十五、审查流程总览
+## 十八、审查流程总览
 
 ```
 接收变更 → Step 0 装载规则（echo 协议）→ Step 1 文件清单
-→ Step 2 强制 Grep 扫描 → Step 3-5 分层检查 → 漏检史专项核对
+→ Step 2 强制 Grep 扫描 → Step 3-5 分层检查 → Step 5+ 安全 / 金融 / 测试专项 → 漏检史专项核对
 →（发现违规 → 同模式回溯扫描）→ Step 6 报告 → 自修 → Step 7 复检
 ```

@@ -31,10 +31,12 @@ skills/
 │   ├── git-commit/          #   Git 提交与分支规范（分支门禁 + feat/opt/fix + 无 AI 记号/进度词 + 安全暂存 + Worktree 附录）★
 │   └── skill-creator/       #   技能创建与评测
 ├── backend/                 # 后端能力（后端仓库 .claude/skills/）
-│   ├── reviewer/            #   后端审查（七步硬流程 + 40 条禁止清单 + 漏检史）★
+│   ├── reviewer/            #   后端审查（七步硬流程 + 安全/金融/测试维度 + 55 条禁止清单 + 复查模式 + 漏检史）★
 │   ├── project-structure / model-conventions / service-conventions
 │   ├── controller-conventions / integration-flow / mybatis / cache
 │   ├── security / common / logging / database-design / grpc / framework-usage
+│   ├── financial/           #   金融级规范（BigDecimal / 幂等 / 事务 / 行锁 / 流水 / 脱敏）★
+│   ├── testing/             #   单元测试规范（命名 / 模板 / 必测场景 / 禁止项 / 覆盖率）
 │   ├── tabledef/            #   TableDef 手写维护规范
 │   └── db-migration/        #   SQL 迁移脚本生成（up + down）
 ├── frontend/                 # 前端能力（前端仓库 .claude/skills/）
@@ -177,6 +179,9 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 | 全栈契约靠口头，后端先改实现再补文档 | 技术设计文档「契约」章节冻结 + 联动需求接口确认停顿点 + 契约变更先改文档 |
 | 项目专有覆写散落在正文，re-sync 时被基线冲掉 | `project-onboarding`「📌 覆写约定」（文件头差异清单 + 行内标记）+ verify-baseline 识别 📌 |
 | 协作底线只写在 skill 里、按需才加载 | `templates/.claude/rules/` 常驻规则（冲突处理 / 刹车点 / 纠正 vs 妥协 / 契约速查），Claude Code 自动加载 |
+| 后端规范没有金融、安全编码、测试维度，reviewer 十个维度里没有安全 | `backend/financial` + `security` 第八节红线 + `backend/testing`；reviewer 新增安全 / 金融 / 测试维度、HIGH RISK 升级（🟡 视同 🔴 + 双人审批）、ARCH 级复查模式 |
+| 框架日志过滤器默认打全量 body，"业务不打敏感日志"被误当成"敏感数据不入日志" | `logging` 第九节：`LoggerFilter` 忽略清单作为接口 DoD、逐层各配、逐层验证；reviewer 漏检史登记 |
+| 对外接口先改实现后补文档，第三方按旧文档对接 | reviewer #48：对外接口 / SDK / proto 变更的对接文档必须同一次提交更新 |
 
 ---
 
