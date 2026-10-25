@@ -376,4 +376,4 @@ session 中断后续作时：先读台账定位本需求当前状态，从对应
 
 ### 并行会话与 Worktree 隔离
 
-同一仓库有其他会话 / 其他需求并行改动时：多文件、多任务的需求按 `git-commit` 第八章开 worktree 隔离（放项目根 `.worktree/{business}/{repo}`，进度与沉淀只写项目根 `.document/`，不写树内副本）；快速改动不开树，按 `git-commit` 2.4 只暂存自己的改动。
+同一仓库有其他会话 / 其他需求并行改动时：多文件、多任务的需求按 `git-commit` 第八章开 worktree 隔离（放项目根 `.worktree/{business}/{repo}`，进度与沉淀只写项目根 `.document/`，不写树内副本）；快速改动不开树，按 `git-commit` 2.4 只暂存自己的改动。多会话同写根 `.document/` 的台账 / 索引 → 按 `progress-tracker`「并行开发的文档冲突约定」（写前重读、只改自己的行、写完即提交；追加型文件冲突双方保留；结构化文档单一写者）。

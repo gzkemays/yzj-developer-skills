@@ -11,6 +11,7 @@
 #     --strict               流程 skill 出现漂移即非零退出（默认仅结构错误才非零）
 #
 # 流程 skill 含「📌」标记视为项目覆写（project-onboarding「📌 项目覆写约定」），报 📌 而非 Δ，--strict 下不算漂移。
+# 扫描时跳过 .worktree/（git-commit 第八章的 worktree 副本）、node_modules、.git、.bak-*，避免同一 skill 被重复计数。
 set -uo pipefail
 
 PROJECT=""; FW=""; SHOW_DIFF=0; STRICT=0
@@ -69,7 +70,7 @@ echo "目标项目:       $PROJECT"
 echo
 
 mapfile -t SKILLDIRS < <(find "$PROJECT" -type d -path '*/.claude/skills' \
-  -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/.bak-*/*' 2>/dev/null | sort)
+  -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/.bak-*/*' -not -path '*/.worktree/*' 2>/dev/null | sort)
 [ "${#SKILLDIRS[@]}" -gt 0 ] || { echo "✗ 未发现任何 .claude/skills —— 项目尚未引入？"; exit 1; }
 
 for SD in "${SKILLDIRS[@]}"; do

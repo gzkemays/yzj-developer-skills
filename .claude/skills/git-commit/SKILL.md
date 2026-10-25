@@ -142,7 +142,7 @@ fix/2026.08.18-order-remark-npe      # 确认订单备注 NPE
 
 - 一律 `git add -- <显式路径>` 逐个暂存自己的文件；**禁止** `git add -A` / `git add .` / `git commit -am`
 - 暂存后先核对再提交：`git diff --cached --name-only` + `git status --short`——暂存区只含自己的文件，他人改动仍停留在未暂存 / 未跟踪
-- **共享文件**（i18n locale、台账 `STATUS.md`、`MEMORY.md` 索引、公共配置）被多任务同时改时，**只暂存自己的 hunk，不整文件 add**：`git add -p <file>` 逐块选择；或 `git diff -- <file> > mine.patch` → 删掉不属于自己的 hunk → `git apply --cached mine.patch`
+- **共享文件**（i18n locale、台账 `STATUS.md`、`MEMORY.md` 索引、公共配置）被多任务同时改时，**只暂存自己的 hunk，不整文件 add**：`git add -p <file>` 逐块选择；或 `git diff -- <file> > mine.patch` → 删掉不属于自己的 hunk → `git apply --cached mine.patch`；这类文件合并时冲突按 `progress-tracker`「并行开发的文档冲突约定」处理（追加型双方保留，不删对方的行）
 - 不提交构建产物与本地文件：`dist/`、`target/`、`*.tsbuildinfo`、IDE 配置、`.env*`——它们出现在 `git status` 里时先问开发者是否该进 `.gitignore`，不顺手 add
 - 并行改动多到每次提交都要逐文件甄别时，改用**第八章 Worktree 隔离**，从根上避免工作区污染
 
@@ -373,6 +373,7 @@ worktree **必须放在项目根内** `{project-root}/.worktree/`，**不放项�
 - 编辑任一仓文件时祖先链含：该仓 `.claude/`（前 / 后端规范）+ 根 `.claude/`（流程）+ 根 `.document/` → 规则与技能全识别
 - `.worktree/` 必须进项目根 `.gitignore`（单仓项目尤其注意，否则整棵树会被当成未跟踪文件）
 - 多需求并行各用各的任务目录与分支（同一仓同一分支只能在一个 worktree 检出）
+- **树内一切命令以树内仓目录为 cwd**：构建 / 测试 / 校验命令不用项目根相对路径——项目 CLAUDE.md 里 `cd {backend-repo} && mvn …` 这类命令在 worktree 会话里要按 `{project-root}/.worktree/{business}/{repo}` 解析，否则编译 / 测试的是主工作区那棵树；跨仓引用写 `../{repo}`，镜像结构保证它在根与树内都指向同一需求的另一棵树
 
 ### 8.3 Windows 路径上限（260）——后端仓必做
 
@@ -383,6 +384,8 @@ worktree **必须放在项目根内** `{project-root}/.worktree/`，**不放项�
 - `.document/` 全项目只有项目根这一份：台账 `STATUS.md`、plan / design / 用例文档、memory、能力登记**一律写项目根**，**绝不写进 worktree 内的副本**——单仓项目的 worktree 会自带一份 `.document/` 副本，最容易写错地方 → 进度永不在多棵树间分叉
 - 每完成一个任务**即时**按 `progress-tracker` 回填，并在 worktree 内**分段提交**（每个可独立 review 的语义单元一次），不长期囤大量未提交改动
 - 开树时在台账该条目「最近动态」记一行：worktree 路径 + 分支名 + 所属仓，避免跨会话丢失上下文
+- **个人 memory 不跨树**：`~/.claude/projects/` 下的个人 memory 按 cwd 路径分桶，worktree 会话与主工作区会话读到的不是同一份——需求上下文、纠正、踩坑一律按 `team-memory` 写根 `.document/developer/memory/`，不要靠个人 memory 在树之间传递
+- **多会话同写根 `.document/`**（台账、索引、能力登记）→ 按 `progress-tracker`「并行开发的文档冲突约定」：写前重读、只改自己的行、写完即提交；追加型文件冲突双方保留；结构化文档单一写者
 
 ### 8.5 提交、合并与收尾
 

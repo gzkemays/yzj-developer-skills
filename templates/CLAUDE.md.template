@@ -38,6 +38,8 @@
 - **Frontend dev**: `cd {frontend-repo} && {如 pnpm dev}`（port {xxxx}）
 - **Frontend build**: `cd {frontend-repo} && {如 npx vite build}`
 
+> Worktree 会话里以树内仓目录为 cwd 执行上述命令（`{project-root}/.worktree/{business}/{repo}`），不要从项目根 `cd {backend-repo}`——那会编到主工作区（`git-commit` 8.2）。
+
 ## Session Workflow
 
 所有开发任务遵循 `dev-session` skill 定义的 12 阶段研发生命周期：
