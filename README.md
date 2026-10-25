@@ -3,7 +3,7 @@
 > 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
 > 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
 >
-> **当前基线**：`2026-08-18`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
+> **当前基线**：`2026-10-24`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
 > **适用前提**：Claude Code（按工作目录加载 CLAUDE.md + skills）。流程方法论 skill **与技术栈无关**
 > （dev-session / pre-dev-alignment / progress-tracker / team-memory / capability-registry /
 > similar-issue-sweep / dev-output / iteration-planner / project-onboarding / git-commit），任意项目可直接用；
@@ -20,7 +20,7 @@ skills/
 │   ├── dev-session/         #   研发生命周期编排（12 阶段 + 门禁 + 全程规则）★ 总入口
 │   ├── pre-dev-alignment/   #   开发前对齐（前后端统一版 + 结论落档）
 │   ├── iteration-planner/   #   迭代规划（session 开局对齐上下文）
-│   ├── progress-tracker/    #   进度维护（STATUS.md 需求台账 + 并行开发）
+│   ├── progress-tracker/    #   进度维护（STATUS.md 台账 + 任务清单回填 DoD + backlog 落档）
 │   ├── team-memory/         #   团队记忆体系（纠正即沉淀硬规则）
 │   ├── capability-registry/ #   能力登记册（复用前查册、沉淀后登记、反哺）
 │   ├── similar-issue-sweep/ #   同类问题回溯扫描（修复必回溯）
@@ -28,13 +28,15 @@ skills/
 │   ├── dev-output/          #   开发成果报告
 │   ├── yzj-dev-workflow/    #   YZJ 后端开发流程总入口
 │   ├── project-onboarding/  #   引入/融入向导（新项目初始化 + 既有项目对比合并）★
-│   ├── git-commit/          #   Git 提交与分支规范（分支门禁 + feat/opt/fix + 无 AI 记号）★
+│   ├── git-commit/          #   Git 提交与分支规范（分支门禁 + feat/opt/fix + 无 AI 记号/进度词 + 安全暂存 + Worktree 附录）★
 │   └── skill-creator/       #   技能创建与评测
 ├── backend/                 # 后端能力（后端仓库 .claude/skills/）
-│   ├── reviewer/            #   后端审查（七步硬流程 + 40 条禁止清单 + 漏检史）★
+│   ├── reviewer/            #   后端审查（七步硬流程 + 安全/金融/测试维度 + 55 条禁止清单 + 复查模式 + 漏检史）★
 │   ├── project-structure / model-conventions / service-conventions
 │   ├── controller-conventions / integration-flow / mybatis / cache
 │   ├── security / common / logging / database-design / grpc / framework-usage
+│   ├── financial/           #   金融级规范（BigDecimal / 幂等 / 事务 / 行锁 / 流水 / 脱敏）★
+│   ├── testing/             #   单元测试规范（命名 / 模板 / 必测场景 / 禁止项 / 覆盖率）
 │   ├── tabledef/            #   TableDef 手写维护规范
 │   └── db-migration/        #   SQL 迁移脚本生成（up + down）
 ├── frontend/                 # 前端能力（前端仓库 .claude/skills/）
@@ -43,7 +45,8 @@ skills/
 │   └── i18n-automation/     #   i18n 自动化（补齐/校验/硬编码审计 + 脚本）
 ├── templates/               # 新项目引入模板
 │   ├── CLAUDE.md.template   #   项目根 CLAUDE.md 骨架
-│   └── .document/           #   项目文档目录骨架（plan/STATUS.md、design、memory、capability、adr）
+│   ├── .claude/rules/       #   常驻规则模板（collaboration 协作原则 / api-contract 契约速查，自动加载）
+│   └── .document/           #   项目文档目录骨架（plan/STATUS.md + backlog、design、memory、capability、adr）
 └── scripts/                 # 工具脚本
     └── verify-baseline.sh   #   校验项目 skill 与基线对齐（布局无关，自动识别前/后端）
 ```
@@ -60,12 +63,13 @@ skills/
 
 ```
 1. 拷贝通用能力 →  {project}/.claude/skills/        ← 本仓库 .claude/skills/*
-2. 拷贝后端能力 →  {project}/{backend}/.claude/skills/   ← 本仓库 backend/*
-3. 拷贝前端能力 →  {project}/{frontend}/.claude/skills/  ← 本仓库 frontend/*
-4. 拷贝文档骨架 →  {project}/.document/             ← 本仓库 templates/.document/*
-5. 用 templates/CLAUDE.md.template 建项目根 CLAUDE.md，填好占位符
-   （仓库路径、构建命令、设计系统 token 前缀、契约约定）
-6. 首次会话验证：说"今天做什么" → 应触发 iteration-planner 读取台账与计划
+2. 拷贝常驻规则 →  {project}/.claude/rules/         ← 本仓库 templates/.claude/rules/*（契约占位符按项目填）
+3. 拷贝后端能力 →  {project}/{backend}/.claude/skills/   ← 本仓库 backend/*
+4. 拷贝前端能力 →  {project}/{frontend}/.claude/skills/  ← 本仓库 frontend/*
+5. 拷贝文档骨架 →  {project}/.document/             ← 本仓库 templates/.document/*
+6. 用 templates/CLAUDE.md.template 建项目根 CLAUDE.md，填好占位符
+   （仓库路径、构建命令、设计系统 token 前缀；契约速查表填在 rules/api-contract.md）
+7. 首次会话验证：说"今天做什么" → 应触发 iteration-planner 读取台账与计划
 ```
 
 > **既有项目融入不是无脑覆盖**：流程 skill 按基线对齐；`reviewer` 与项目专有 skill **合并保留**项目沉淀（漏检史、项目注解、设计 token、命名规则）；项目独有 skill 不动。详见 `project-onboarding`「既有项目对比融入」。
@@ -77,10 +81,11 @@ skills/
 
 每个项目引入或同步后逐项确认；**B 组的 diff 是跨项目验证基线对齐的核心手段，已封装为 `scripts/verify-baseline.sh`**。
 
-**A. 三件套就位（结构）**
+**A. 四件套就位（结构）**
 
 ```
 - [ ] 项目根 CLAUDE.md 占位符全部替换，无残留 {xxx}
+- [ ] 根 .claude/rules/ 有 collaboration.md + api-contract.md（契约表与 CLAUDE.md 二选一，不重复维护）
 - [ ] 根 .claude/skills/ 有流程层；后端 / 前端仓库各有 .claude/skills/
 - [ ] .document/ 含 plan/STATUS.md、design/、adr/、developer/memory + capability
 - [ ] 每个 skill 的 name 与目录名一致（无 code-reviewer vs reviewer 类错位）
@@ -92,6 +97,7 @@ skills/
 - [ ] 流程 skill 与本仓库当前版逐字一致：
       diff --strip-trailing-cr {项目}/.claude/skills/{skill}/SKILL.md {framework}/.claude/skills/{skill}/SKILL.md  → 空
 - [ ] reviewer / 规范 skill = 基线 + 项目专有项（diff 差异仅漏检史 / 项目注解 / 设计 token / 命名规则）
+- [ ] 流程 skill 带项目专有硬约束的，差异仅为「📌 项目覆写」标记段，且文件头有差异清单（`project-onboarding`「📌 覆写约定」）
 - [ ] 项目 CLAUDE.md 顶部记录引入时的 framework 基线（commit 短号或日期），落后于「当前基线」即提示 re-sync
 ```
 
@@ -106,7 +112,7 @@ skills/
 
 > 任一项不过 → 回 `project-onboarding` 对应步骤补齐。
 >
-> **一键校验**：`bash scripts/verify-baseline.sh {项目根}`（framework 省略时取本仓库）。它**按标志文件自动识别项目的前/后端仓库布局**（不依赖目录名，支持分仓 / mono-repo / 单栈），逐 skill 输出 `✓ 一致 / Δ 流程漂移 / ℹ 项目专有差异 / ⊘ 项目专有 / ✗ 结构错误`，并查 `name` 与目录名是否一致、root 流程 skill 是否齐全。可在各项目本地 / CI 定期跑，实现多项目持续校验。加 `--show-diff` 看差异、`--strict` 让流程漂移即失败。
+> **一键校验**：`bash scripts/verify-baseline.sh {项目根}`（framework 省略时取本仓库）。它**按标志文件自动识别项目的前/后端仓库布局**（不依赖目录名，支持分仓 / mono-repo / 单栈），逐 skill 输出 `✓ 一致 / Δ 流程漂移 / 📌 项目覆写 / ℹ 项目专有差异 / ⊘ 项目专有 / ✗ 结构错误`，并查 `name` 与目录名是否一致、root 流程 skill 是否齐全、`.claude/rules/` 是否就位（软提示）。可在各项目本地 / CI 定期跑，实现多项目持续校验。加 `--show-diff` 看差异、`--strict` 让流程漂移即失败。
 
 ---
 
@@ -126,6 +132,8 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 - **L2** → 输出**技术设计文档**（`design/`），交**开发者**技术审核 + 二次评估，通过才编码
 - **L3** → 先输出**需求/调整文档**（`plan/`）交**用户**复核对齐，再输出**技术设计文档**（`design/`）交**开发者**技术审核 + 二次评估，通过才编码
 - **视觉交互 DEMO（按需）** → 用户要求视觉方案 / 全新无参照视觉时，产出 `design/{slug}-demo.html` 或复用前端既有组件做 DEMO，定稿后判断是否抽为复用组件并登记 `CAPABILITY.md`
+- **联动需求契约先冻结** → 接口列表设计完先停一次确认，写入技术设计文档「契约」章节（接口列表 / Request-Response / 前端对接映射 / 错误码提示 / 不可改与敏感字段）；契约变更**先改文档再改两端实现**
+- **砍范围必落 backlog** → 对齐中推迟 / 砍掉的功能点当场落 `plan/backlog-{topic}.md`（可独立阅读，下次对齐直接用），台账只放指针
 
 **P11 提交与分支门禁**（按 `git-commit`）：
 
@@ -133,7 +141,9 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
   （如 `feat/2026.08.18-edit-password`）→ 提交 → `push -u origin` → **由开发者自行合并主干**
 - **已在开发分支**（名字合规）→ 原地提交推送，无需额外授权
 - **主干直提**须开发者本次明确说"允许直接从主干提交"，**单次有效、下次必须重问、禁止 AI 自主判断**，且不得沉淀为常驻规则
-- AI 一律不做：合并主干 / 开合 PR·MR / `push --force` / 删分支 / `git add -A` 盲加
+- **暂存只加自己的改动**：逐项 `git add -- <路径>` + `git diff --cached --name-only` 核对；共享文件只暂存自己的 hunk；commit 与注释无 AI 记号、无进度词（FIXED / Step / Phase）
+- **并行会话多时开 Worktree**（`git-commit` 附录）：放项目根 `.worktree/{business}/{repo}`，进度与沉淀只写根 `.document/`，Windows 后端仓先开 `core.longpaths`
+- AI 一律不做：合并主干 / 开合 PR·MR / `push --force` / 删分支 / `git add -A`·`git commit -am` 盲加
 
 **全程规则**（凌驾于单阶段）：
 
@@ -141,7 +151,7 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 |------|------|-----------|
 | 纠正即沉淀 | 开发者纠正 → 修正后**立即**写 feedback memory，不等收尾 | `team-memory` |
 | 修复必回溯 | 修一处 → 全库扫同类，一并修复或列清单 | `similar-issue-sweep` |
-| 进度实时更新 | 状态迁移当下改台账，台账是并行开发唯一可信源 | `progress-tracker` |
+| 进度实时更新 | 状态迁移当下改台账，台账是并行开发唯一可信源；任务清单回填 DoD（完成 `[x]` / 废弃 `[⛔]`），提交前清单与代码一致 | `progress-tracker` |
 | P4 不可跳过 | 任何编码后必过 reviewer 硬流程，"改动小"不是理由 | 前后端 `reviewer` |
 
 **变更分级**（开发者注意力分配）：
@@ -164,6 +174,15 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 | 决策都做了但文档输出差 | `pre-dev-alignment` 对齐结论落档（需求文档→plan + 技术设计文档→design + 台账 + ADR），口头对齐不落档 = 未对齐 |
 | 需求评审与技术评审混在一份、视觉方案靠口头想象 | L2/L3 **文档分层**：需求/调整文档(用户复核) 与 技术设计文档(开发者技术审核 + 二次评估) 分两道门禁；视觉方案按需出 HTML / 复用组件 DEMO |
 | 开发者陷在逐行 review 中 | dev-session 变更分级：ARCH 深评 / NORMAL 知会，开发者专注方向与架构 |
+| 并行会话互相污染工作区、进度在多棵树间分叉 | `git-commit` 安全暂存（逐项 add + 暂存区核对 + hunk 级）+ Worktree 附录（放项目根、进度只写根 `.document/`、树内命令以树内仓为 cwd、个人 memory 不跨树） |
+| 多会话同写台账 / 索引后写覆盖，合并时不知保留谁 | `progress-tracker`「并行开发的文档冲突约定」：写前重读 / 只改自己的行 / 写完即提交；追加型双方保留；结构化文档归台账负责人独写；根非 git 仓时被覆盖就重写自己的行 |
+| 任务清单失真（已做标未做、已回滚标已完成）、砍掉的范围被遗忘 | `progress-tracker` 回填 DoD + `[⛔]` 已废弃 + backlog 文档（推迟即落档） |
+| 全栈契约靠口头，后端先改实现再补文档 | 技术设计文档「契约」章节冻结 + 联动需求接口确认停顿点 + 契约变更先改文档 |
+| 项目专有覆写散落在正文，re-sync 时被基线冲掉 | `project-onboarding`「📌 覆写约定」（文件头差异清单 + 行内标记）+ verify-baseline 识别 📌 |
+| 协作底线只写在 skill 里、按需才加载 | `templates/.claude/rules/` 常驻规则（冲突处理 / 刹车点 / 纠正 vs 妥协 / 契约速查），Claude Code 自动加载 |
+| 后端规范没有金融、安全编码、测试维度，reviewer 十个维度里没有安全 | `backend/financial` + `security` 第八节红线 + `backend/testing`；reviewer 新增安全 / 金融 / 测试维度、HIGH RISK 升级（🟡 视同 🔴 + 双人审批）、ARCH 级复查模式 |
+| 框架日志过滤器默认打全量 body，"业务不打敏感日志"被误当成"敏感数据不入日志" | `logging` 第九节：`LoggerFilter` 忽略清单作为接口 DoD、逐层各配、逐层验证；reviewer 漏检史登记 |
+| 对外接口先改实现后补文档，第三方按旧文档对接 | reviewer #48：对外接口 / SDK / proto 变更的对接文档必须同一次提交更新 |
 
 ---
 
@@ -185,3 +204,4 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 - 修改流程类 skill（dev-session / reviewer / progress-tracker）需团队过目——它们是所有项目的执行协议
 - 新增 skill 用 `skill-creator` 创建并评测；提交与分支遵循 `git-commit` skill（授权后切 `{feat|opt|fix}/{yyyy.MM.dd}-{business}` 开发分支提交并推送、开发者自行合并主干；feat/opt/fix 三分法，scope 可选，禁止 AI 记号）
 - 重大流程变更（dev-session / reviewer / 文档门禁 / 契约规则）→ 更新本 README 顶部「当前基线」日期；各引入项目据此判断是否需 re-sync（用「引入后验证」B 组 diff 确认）
+- 项目副本对流程 skill 的专有覆写按「📌 覆写约定」标记（文件头差异清单 + 行内 📌），不散改正文；主干直提、跳过 P4、P8 确认之类的门禁不得被覆写放宽

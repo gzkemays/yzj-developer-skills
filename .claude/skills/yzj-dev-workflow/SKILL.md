@@ -14,7 +14,7 @@ description: >
 3. 引导用户在恰当的时机使用对应的 backend skill
 4. 编码后的自检与提交规范
 
-> **细节规范请按需读取对应 backend skill**：`project-structure`、`model-conventions`、`service-conventions`、`controller-conventions`、`integration-flow`、`mybatis`、`cache`、`security`、`common`、`logging`、`database-design`、`grpc`、`tabledef`、`db-migration`、`reviewer`。
+> **细节规范请按需读取对应 backend skill**：`project-structure`、`model-conventions`、`service-conventions`、`controller-conventions`、`integration-flow`、`mybatis`、`cache`、`security`、`common`、`logging`、`database-design`、`grpc`、`tabledef`、`db-migration`、`financial`、`testing`、`reviewer`。
 > 完整研发生命周期（含开发者门禁、进度台账、沉淀核对）由通用 skill `dev-session` 编排，本 skill 对应其 P3 后端路径。
 
 ---
@@ -63,7 +63,30 @@ description: >
 - [ ] 涉及敏感字段：已加 @Encryption 注解
 - [ ] 涉及 DDL：TableDef 已按 `tabledef` skill 同步维护，迁移脚本按 `db-migration` 生成
 - [ ] 涉及 proto：字段编号未复用（删除需 reserved）
+- [ ] 涉及资金 / 金额：按 `financial` skill——BigDecimal、业务单号唯一索引 + 先查后写、@DistributedLock(transactional = true)、行锁 / 乐观锁、同事务流水
+- [ ] 涉及安全关键词（auth / token / password / card / pan / permission）：按 `security` skill 第八节红线
+- [ ] 涉及对外接口 / SDK / proto 变更：对接文档在同一次提交内更新
+- [ ] 含敏感 payload 的接口：已加入 yzj.logger.ignore-request-url / ignore-response-url（`logging` skill 第九节）
 ```
+
+### 0.4 编码中的逐文件自检与增量模式（强制）
+
+**每生成 / 修改一个文件，输出前过一遍**（不攒到第 5 节统一自检——那时返工成本已经翻倍）：
+
+```
+- [ ] 文件路径与包归属符合 project-structure（domain / integration / interfaces / support）
+- [ ] 类名 / 方法名 / Operate / 枚举命名符合第 3 节
+- [ ] 无 System.out / printStackTrace / catch 空块 / ${} / RuntimeException 直抛
+- [ ] Entity 继承 CommonEntity / CommonBusinessEntity；新增字段已同步 TableDef（tabledef skill）
+- [ ] 敏感字段 @Encryption；金额 BigDecimal；时间类型与同域一致
+- [ ] HIGH RISK 文件：0.3 对应项已满足
+```
+
+**增量模式**：
+
+- 目标文件不存在 → 新建；**已存在 → 只改必要的行（Edit），禁止整体重写**——整体重写会抹掉他人改动与项目注释
+- 修改**已有方法签名 / 删除方法 / 改字段类型** → 标注为 **Breaking Change**，Grep 全仓列出调用方并等开发者确认后再动；SDK / gRPC 契约变更同步 interfaces 层与对接文档
+- 同一文件本次多处修改时，按"读全文 → 一次性列出改动点 → 逐处 Edit"执行，不边读边改
 
 ---
 
@@ -116,7 +139,9 @@ project/
         ↓ 参考 cache
 10. 如有 gRPC：在 grpc-api 模块定义 proto，实现 GrpcServiceImpl
         ↓ 参考 grpc
-11. 自检 + Code Review
+11. 单元测试（命名 / 模板 / 必测场景；金融与权限场景不可省）
+        ↓ 参考 testing
+12. 自检 + Code Review
         ↓ 参考 reviewer
 ```
 
@@ -338,6 +363,15 @@ public record AdminUserV1Controller(UserService userService) {
 - [ ] GrpcServiceImpl 使用 DataUtils.setIfNotNull（避免 setXxx(null) 异常）
 ```
 
+### 5.7 安全 / 金融 / 测试自检（命中时）
+
+```
+- [ ] 安全：security skill 8.8 清单逐条过（输入与注入、敏感数据两组每次必过）
+- [ ] 金融：financial skill 第七节清单逐条过
+- [ ] 测试：Service / Flow 有 {method}_{scenario}_{expected} 命名的用例；必测场景已覆盖（testing 第四节）
+- [ ] 含敏感 payload 接口已进 LoggerFilter 忽略清单
+```
+
 ---
 
 ## 6. 完整研发流程总览
@@ -365,6 +399,8 @@ public record AdminUserV1Controller(UserService userService) {
 │    ├── security             → 鉴权 + Token 上下文                │
 │    ├── common               → CommonResult / ApiException / 枚举│
 │    ├── logging              → 日志规范 + 敏感字段脱敏            │
+│    ├── financial            → 金额 / 幂等 / 事务 / 流水（资金）   │
+│    ├── testing              → 单元测试命名 / 模板 / 必测场景       │
 │    ├── database-design      → 数据库设计建议（不生成 DDL）       │
 │    └── grpc                 → proto 定义 + GrpcServiceImpl       │
 │                                                                  │
@@ -409,6 +445,11 @@ public record AdminUserV1Controller(UserService userService) {
 | 17 | DTO/VO 直接放在 `model/` 而非 `model/dto/`、`model/vo/` | 🟡 | model-conventions |
 | 18 | 直接 `throw new RuntimeException(...)` 而非 `ApiException` | 🟡 | common |
 | 19 | Operate 命名为 `{业务}{操作}Operate`（动词在后） | 🟡 | model-conventions |
+| 20 | 金额用 double / `new BigDecimal(double)` / `==` 比较 | 🔴 | financial |
+| 21 | 资金写操作无幂等、余额读-减-覆盖、变动不写流水 | 🔴 | financial |
+| 22 | XML `${}` / 硬编码密钥 / MD5 存密码 / `Math.random` 生 token | 🔴 | security |
+| 23 | 已存在文件整体重写；改方法签名不标 Breaking Change | 🟡 | 本 skill 0.4 |
+| 24 | 对外接口 / SDK / proto 变更不同步对接文档 | 🔴 | reviewer #48 |
 
 ---
 
@@ -433,3 +474,7 @@ public record AdminUserV1Controller(UserService userService) {
 | 代码审查 / 规范检查 | `reviewer` |
 | 一开始的需求对齐 | `pre-dev-alignment` |
 | 修复/纠正后的同类问题回溯 | `similar-issue-sweep`（通用） |
+| 金额 / 余额 / 支付 / 转账 / 结算 / 流水 / 幂等 | `financial` |
+| 安全编码红线（持卡人数据 / 密码学 / 注入 / 越权 / SSRF） | `security` 第八节 |
+| 编写 / 补齐单元测试 | `testing` |
+| LoggerFilter 忽略清单 / 含敏感 payload 的接口 | `logging` 第九节 |

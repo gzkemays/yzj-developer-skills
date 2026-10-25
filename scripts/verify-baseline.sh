@@ -9,6 +9,9 @@
 #     framework-skills-root  省略时 = 本脚本所在的 skills 仓库
 #     --show-diff            打印每个差异 skill 的具体 diff
 #     --strict               流程 skill 出现漂移即非零退出（默认仅结构错误才非零）
+#
+# 流程 skill 含「📌」标记视为项目覆写（project-onboarding「📌 项目覆写约定」），报 📌 而非 Δ，--strict 下不算漂移。
+# 扫描时跳过 .worktree/（git-commit 第八章的 worktree 副本）、node_modules、.git、.bak-*，避免同一 skill 被重复计数。
 set -uo pipefail
 
 PROJECT=""; FW=""; SHOW_DIFF=0; STRICT=0
@@ -61,13 +64,13 @@ find_fw () {
   [ -n "$hit" ] && echo "$hit"
 }
 
-OK=0; SPECIFIC=0; DRIFT=0; ERRORS=0
+OK=0; SPECIFIC=0; DRIFT=0; OVERRIDE=0; ERRORS=0
 echo "framework 基线: $FW"
 echo "目标项目:       $PROJECT"
 echo
 
 mapfile -t SKILLDIRS < <(find "$PROJECT" -type d -path '*/.claude/skills' \
-  -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/.bak-*/*' 2>/dev/null | sort)
+  -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/.bak-*/*' -not -path '*/.worktree/*' 2>/dev/null | sort)
 [ "${#SKILLDIRS[@]}" -gt 0 ] || { echo "✗ 未发现任何 .claude/skills —— 项目尚未引入？"; exit 1; }
 
 for SD in "${SKILLDIRS[@]}"; do
@@ -88,7 +91,11 @@ for SD in "${SKILLDIRS[@]}"; do
     else
       n=$(diff --strip-trailing-cr "$ff" "$pf" | grep -c '^[<>]' || true)
       if is_flow "$name"; then
-        echo "   Δ  $name  流程 skill 与基线差 ${n} 行  ⚠需确认是否有意$mism"; DRIFT=$((DRIFT+1))
+        if grep -q '📌' "$pf" 2>/dev/null; then
+          echo "   📌  $name  流程 skill 带项目覆写标记，与基线差 ${n} 行（按文件头差异清单核对）$mism"; OVERRIDE=$((OVERRIDE+1))
+        else
+          echo "   Δ  $name  流程 skill 与基线差 ${n} 行  ⚠需确认是否有意$mism"; DRIFT=$((DRIFT+1))
+        fi
       else
         echo "   ℹ  $name  与基线差 ${n} 行（reviewer/规范类，多为项目专有项）$mism"; SPECIFIC=$((SPECIFIC+1))
       fi
@@ -104,10 +111,18 @@ if [ -d "$RS" ]; then
 else
   echo "✗ 项目根无 .claude/skills/"; ERRORS=$((ERRORS+1))
 fi
+# 常驻规则层为软检查：缺失只提示，不计错误
+if [ -d "$PROJECT/.claude/rules" ]; then
+  for f in collaboration.md api-contract.md; do
+    [ -f "$PROJECT/.claude/rules/$f" ] || echo "ℹ 项目根 .claude/rules/ 缺 $f（可从 templates/.claude/rules 补；契约表留在 CLAUDE.md 亦可）"
+  done
+else
+  echo "ℹ 项目根无 .claude/rules/（常驻规则层）—— 建议从 templates/.claude/rules 补 collaboration.md / api-contract.md"
+fi
 
 echo "──────── 小结 ────────"
-echo "✓ 一致 $OK   ℹ 项目专有差异 $SPECIFIC   Δ 流程漂移(需确认) $DRIFT   ✗ 结构错误 $ERRORS"
-echo "提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读。"
+echo "✓ 一致 $OK   ℹ 项目专有差异 $SPECIFIC   📌 项目覆写 $OVERRIDE   Δ 流程漂移(需确认) $DRIFT   ✗ 结构错误 $ERRORS"
+echo "提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。"
 [ "$ERRORS" -gt 0 ] && exit 1
 { [ "$STRICT" -eq 1 ] && [ "$DRIFT" -gt 0 ]; } && exit 1
 exit 0

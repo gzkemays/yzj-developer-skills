@@ -12,9 +12,10 @@
     .claude/skills/        # ← 后端开发 SKILL（引自 framework/skills/backend）
   {frontend-repo}/         # {前端技术栈，如 Vue 3 + Naive UI + Pinia}
     .claude/skills/        # ← 前端开发 SKILL（引自 framework/skills/frontend）
+  .claude/rules/           # ← 常驻规则（协作原则 + 契约速查，引自 framework/skills/templates/.claude/rules）
   .claude/skills/          # ← 通用流程 SKILL（引自 framework/skills/.claude）
   .document/
-    plan/                  # 迭代计划 + STATUS.md 台账（L3 需求/调整文档）
+    plan/                  # 迭代计划 + STATUS.md 台账（L3 需求/调整文档）+ backlog-*.md 待立项
     design/                # 技术设计文档（L2/L3 编码前评审）+ 视觉交互 DEMO
     adr/                   # 架构决策记录
     developer/memory/      # 团队共享技术沉淀（MEMORY.md 索引）
@@ -26,15 +27,18 @@
 
 | 工作目录 | 加载范围 | 适用场景 |
 |---------|---------|---------|
-| `{project}/`（root） | 本文件 + 通用流程 skills + `.document/` | 需求分析、迭代规划、跨前后端协调 |
+| `{project}/`（root） | 本文件 + `.claude/rules/` + 通用流程 skills + `.document/` | 需求分析、迭代规划、跨前后端协调 |
 | `{project}/{backend-repo}/` | 后端 CLAUDE.md + 后端 skills | 后端业务开发、代码审查 |
 | `{project}/{frontend-repo}/` | 前端 CLAUDE.md + 前端 skills | 前端页面开发、UI/UX 优化 |
 
 ## Build Commands
 
 - **Backend compile**: `cd {backend-repo} && {如 mvn compile -pl xxx -am -q}`
+- **Backend test**: `cd {backend-repo} && {如 mvn test -pl xxx -am -q}`（覆盖率门禁：{如 Service ≥ 80%，金融 ≥ 90%；未定义按 backend/testing 第六节}）
 - **Frontend dev**: `cd {frontend-repo} && {如 pnpm dev}`（port {xxxx}）
 - **Frontend build**: `cd {frontend-repo} && {如 npx vite build}`
+
+> Worktree 会话里以树内仓目录为 cwd 执行上述命令（`{project-root}/.worktree/{business}/{repo}`），不要从项目根 `cd {backend-repo}`——那会编到主工作区（`git-commit` 8.2）。
 
 ## Session Workflow
 
@@ -49,6 +53,7 @@ P1 分析需求(台账+定级) → P2 加载沉淀 → P3 开发(对齐落档) �
 > **P11 提交**遵循 `git-commit` skill：feat/opt/fix 三分法（scope 可选），commit 与分支名中不留任何 AI 记号。
 > 授权提交默认**从当前主干切开发分支** `{feat|opt|fix}/{yyyy.MM.dd}-{business}`（如 `feat/2026.08.18-edit-password`）
 > → 提交 → `push -u origin` → **由开发者自行合并主干**；主干直提须开发者本次明确授权，**单次有效、下次重问、不可自主判断**。
+> 暂存只加自己的改动（逐项 `git add -- <路径>` + `git diff --cached --name-only` 核对）；并行会话多时按 `git-commit` 附录开 Worktree（项目根 `.worktree/`，进度只写根 `.document/`）。
 
 **全程规则（不可妥协）**：
 
@@ -59,33 +64,21 @@ P1 分析需求(台账+定级) → P2 加载沉淀 → P3 开发(对齐落档) �
 
 **变更分级**：ARCH（架构/数据模型/安全/跨域/契约/不可逆）→ 开发者深度评审；NORMAL（常规迭代）→ 知会式确认。拿不准按 ARCH。
 
-## Cross-Cutting Contracts (前后端契约)
+## Rules（常驻规则，自动加载）
 
-### API Return Type Alignment
+`.claude/rules/*.md` 随会话常驻，与本文件同级生效（引自 framework/skills/templates/.claude/rules）：
 
-| 后端操作 | 后端返回 | 前端泛型 | `if (res.data)` |
-|----------|---------|----------|-----------------|
-| 创建 | `CommonResult<Long>` | `number`/`string` | ✅ |
-| 更新/删除 | `CommonResult<Boolean>` | `boolean` | ✅ |
-| 分页 | `CommonResult<CommonPage<T>>` | `PageResponse<T>` | ✅ |
-| 登录等 Void | `CommonResult<Void>` | — | ❌ 用 `code` 判断 |
+| 文件 | 内容 |
+|------|------|
+| `.claude/rules/collaboration.md` | 规则加载顺序与冲突处理、沟通刹车点、纠正 vs 妥协、输出分寸 |
+| `.claude/rules/api-contract.md` | 前后端契约速查（返回类型 / ID 与时间 / 分页 / 幂等 / 校验对齐 / 契约变更流程）+ 已踩过的跨端坑 |
 
-### {多租户 / 权限 / 其他项目专有契约}
-
-{按项目填写：如多租户 Header 约定、权限 key 约定、字段命名强制项；
-权威长文档放 .document/adr/，此处只放速查表}
+> 契约与跨端坑只维护一份：放 `rules/api-contract.md`，本文件不重复；规则文件可加 `paths:` frontmatter 限定只在触碰匹配文件时加载。
 
 ## Shared Developer Memory & Capability
 
 - 团队共享沉淀：`.document/developer/memory/`（`MEMORY.md` 索引，随代码入库）
 - 能力登记册：`.document/developer/capability/CAPABILITY.md`（开发前必查，开发后登记）
-
-## Known Cross-Cutting Gotchas
-
-- **CommonResult\<Void\> 静默失败**：`data` 为 null，前端 `if (res.data)` 永远 falsy → 写操作禁止返回 Void
-- **前端类型必须对齐后端 VO/Operate**：不能有后端不存在的字段
-- **前端表单验证对齐后端 @Size**：min/max 必须一致
-- {项目踩坑随迭代追加；重复出现的进 memory 并在此放一行指针}
 
 ## Design System（前端）
 

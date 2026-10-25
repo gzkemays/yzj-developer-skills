@@ -1,6 +1,6 @@
 ---
 name: logging
-description: YZJ 后端日志规范。当需要打印业务日志、记录异常、调试输出、规范日志级别、避免敏感信息泄露、使用 @Slf4j 时使用此 skill。覆盖日志门面选型、占位符 vs 拼接、日志级别选择、异常打印姿势、敏感字段脱敏。
+description: YZJ 后端日志规范。当需要打印业务日志、记录异常、调试输出、规范日志级别、避免敏感信息泄露、使用 @Slf4j 时使用此 skill。覆盖日志门面选型、占位符 vs 拼接、日志级别选择、异常打印姿势、敏感字段脱敏，以及框架 LoggerFilter 全量 body 日志的忽略配置（含敏感 payload 的接口必配）。
 ---
 
 # YZJ 后端日志规范
@@ -228,6 +228,8 @@ public void createOrder(AddOrderOperate operate) {
 // 业务代码内只打印业务关键节点即可，不要重复打日志
 ```
 
+> 框架的统一入口即 `yzj-security-spring-boot-starter` 的 `LoggerFilter`，它默认打**全量**请求 / 响应体——含敏感 payload 的接口必须配忽略清单，见第九节。
+
 ---
 
 ## 八、禁止事项清单
@@ -248,3 +250,42 @@ public void createOrder(AddOrderOperate operate) {
 | 12 | `[{业务}]` 与正文之间未使用空格分隔 | 🟡 警告 |
 | 13 | 同一方法内业务前缀不一致 | 🟡 警告 |
 | 14 | `error` 级别只传 `e.getMessage()` 不传异常对象 `e`（丢失堆栈） | 🔴 严重 |
+| 15 | 含敏感 payload 的接口未进 `yzj.logger.ignore-request-url` / `ignore-response-url`（LoggerFilter 打全量 body） | 🔴 严重 |
+
+---
+
+## 九、框架级请求 / 响应日志（LoggerFilter）——敏感数据的真正出口
+
+`yzj-security-spring-boot-starter` 自动装配的 `LoggerFilter` 在 `yzj.logger.enabled=true` 时，**把每个非 multipart 请求的完整 body 和完整响应 body 打进 INFO 日志**。这意味着第五节的约束在框架层被绕过：业务代码一行敏感日志都没打，密码、Token、卡号、敏感配置照样整份落盘。
+
+**业务代码不打敏感日志 ≠ 敏感数据不入日志。** 真正的出口是这个过滤器。
+
+### 9.1 配置
+
+```yaml
+yzj:
+  logger:
+    enabled: true
+    ignore-url:                 # 整条请求 / 响应日志都不打（健康检查、高频轮询）
+      - /actuator/**
+    ignore-request-url:         # 只省略请求参数（登录、改密、绑卡、密钥上传 …）
+      - /v1/admin/auth/login
+      - /v1/admin/user/password/**
+      - /v1/merchant/card/bind
+    ignore-response-url:        # 只省略响应体（返回 Token、明文配置、导出敏感数据 …）
+      - /v1/admin/auth/login
+      - /v1/admin/config/plaintext/**
+```
+
+配置后仍保留方法、URI、租户、用户 ID、IP、耗时——排障信息不丢，只是 payload 不打。地址走 `UrlPatternMatcher` 通配。
+
+### 9.2 硬规则
+
+- **接口自查**：新增或修改接口时，只要请求或响应 payload 含第五节任一类数据，或任何「泄漏后能用来绕过管控」的数据（敏感词库、风控规则、平台红线提示词都算），**必须**在该服务的配置里加入对应忽略清单——这是 Controller 变更的 DoD，reviewer 安全维度必查（禁止事项 #15）
+- **逐层各配一次**：同一份敏感数据经过几层服务（网关 / BFF / 业务服务），就要在几层各配一次——**下游配了不代表上游配了**
+- **验证也要逐层**：判定"未泄漏"必须看每一层的实际日志，只查一层等于没验
+- 判断标准不是"这是不是密码"，而是"这份数据泄漏后能否被用于绕过管控"
+
+### 9.3 发现经过（外部项目，2026-08）
+
+某服务 e2e 时发现敏感词库与提示词正文被完整打进日志；回查发现设计文档早已声明「不入日志」，而实现上一直在打——**声明与实现长期不一致且无人察觉**。根因是把「业务代码不打敏感日志」误当成「敏感数据不入日志」。三周后另一层 BFF 复发同一问题：下游早已配置，上游从未配，且上一轮验证只看了下游日志。

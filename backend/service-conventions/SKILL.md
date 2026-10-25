@@ -1,6 +1,6 @@
 ---
 name: service-conventions
-description: Service 层开发规范。当需要编写 Service 方法（命名规约）、确定单表操作与跨业务操作的边界、编写 QueryChain 查询构造链、使用 TableDefCollect、确定 Mapper XML 使用场景时使用此 skill。
+description: Service 层开发规范。当需要编写 Service 方法（命名规约、分层适用边界、存量代码策略）、确定单表操作与跨业务操作的边界、编写 QueryChain 查询构造链、使用 TableDefCollect、确定 Mapper XML 使用场景时使用此 skill。
 ---
 
 # Service 层开发规范
@@ -19,6 +19,27 @@ description: Service 层开发规范。当需要编写 Service 方法（命名�
 | 修改 | `update` 前缀 | `update(UpdateUserOperate operate)` |
 
 > 如果中间是与当前业务域的 service 命名一致，则可以省略。如 `UserService.getDtoListByQuery()` 而非 `getUserDtoListByQuery()`。
+> 域名词与 Service 不同名时**保留**：`OrgService.getDepartmentDtoListByOrgId()`——Org ≠ Department，省掉就看不出返回的是什么。
+
+### 分层适用边界（别一把尺子量到底）
+
+| 层 | 是否套用本规约 | 说明 |
+|----|:---:|------|
+| **Service 接口 / 实现** | ✅ 强制 | 本规约的主战场 |
+| **Mapper 接口** | ❌ 用 MyBatis 惯例 | `get` → `select`，其余结构一致：`selectByQuery` / `selectListByIds`；写操作 `insert` / `update` / `batchInsert` / `markDeletedByIds` |
+| **Controller** | ❌ 镜像端点路径 | `/v1/admin/user/page` → `page()`、`/info` → `info()`——Controller 是路由壳，方法名与 URL 对得上比套规约更有价值 |
+| **SDK / gRPC 客户端接口** | ✅ 套用，但**保留域名词** | 跨服务语境下省略域名词会失去可读性：`userClient.getUserDtoById()` 而非 `getDtoById()` |
+| **ConvertAid / 工具类** | ◯ 尽量对齐 | 取数方法 `get` 前缀；`convertToXxx` / `buildXxx` 等既有转换惯例保留 |
+
+**动作型方法不在规约覆盖范围**：触发同步、撤销令牌、发起授权、刷新缓存这类**非 CRUD 动作**（`pullDepartments()` / `revoke()` / `authorize()` / `refreshExpiringTokens()`）用能说清动作的动词即可，不要硬套 `get` / `add` / `update`。
+
+### 存量代码的处理
+
+**新代码强制遵循；存量不做一次性全仓重命名。**
+
+- 改动某个方法时**顺手改名**可以，但要确认调用方全部跟上（Service 接口不是 HTTP 契约，改名不影响前端 / SDK 消费方，风险可控）
+- **成规模的统一**单独立迭代、按业务域分批，**不混进特性分支**——纯重命名的大 diff 会淹掉真正要 review 的逻辑
+- reviewer 对存量不合规方法名只报 🟢 提示，对新增方法报 🟡 警告
 
 ### Service 接口示例
 
