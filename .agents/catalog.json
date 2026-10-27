@@ -1,0 +1,138 @@
+{
+  "source_baseline": "2026-10-24",
+  "adapted_on": "2026-10-26",
+  "skills": {
+    "api-contract-checker": {
+      "area": "general",
+      "source": ".claude/skills/api-contract-checker/SKILL.md"
+    },
+    "backend-reviewer": {
+      "area": "backend",
+      "source": "backend/reviewer/SKILL.md"
+    },
+    "cache": {
+      "area": "backend",
+      "source": "backend/cache/SKILL.md"
+    },
+    "capability-registry": {
+      "area": "general",
+      "source": ".claude/skills/capability-registry/SKILL.md"
+    },
+    "common": {
+      "area": "backend",
+      "source": "backend/common/SKILL.md"
+    },
+    "controller-conventions": {
+      "area": "backend",
+      "source": "backend/controller-conventions/SKILL.md"
+    },
+    "database-design": {
+      "area": "backend",
+      "source": "backend/database-design/SKILL.md"
+    },
+    "db-migration": {
+      "area": "backend",
+      "source": "backend/db-migration/SKILL.md"
+    },
+    "dev-output": {
+      "area": "general",
+      "source": ".claude/skills/dev-output/SKILL.md"
+    },
+    "dev-session": {
+      "area": "general",
+      "source": ".claude/skills/dev-session/SKILL.md"
+    },
+    "financial": {
+      "area": "backend",
+      "source": "backend/financial/SKILL.md"
+    },
+    "frontend-reviewer": {
+      "area": "frontend",
+      "source": "frontend/reviewer/SKILL.md"
+    },
+    "git-commit": {
+      "area": "general",
+      "source": ".claude/skills/git-commit/SKILL.md"
+    },
+    "grpc": {
+      "area": "backend",
+      "source": "backend/grpc/SKILL.md"
+    },
+    "i18n-automation": {
+      "area": "frontend",
+      "source": "frontend/i18n-automation/SKILL.md"
+    },
+    "integration-flow": {
+      "area": "backend",
+      "source": "backend/integration-flow/SKILL.md"
+    },
+    "iteration-planner": {
+      "area": "general",
+      "source": ".claude/skills/iteration-planner/SKILL.md"
+    },
+    "logging": {
+      "area": "backend",
+      "source": "backend/logging/SKILL.md"
+    },
+    "model-conventions": {
+      "area": "backend",
+      "source": "backend/model-conventions/SKILL.md"
+    },
+    "mybatis": {
+      "area": "backend",
+      "source": "backend/mybatis/SKILL.md"
+    },
+    "pre-dev-alignment": {
+      "area": "general",
+      "source": ".claude/skills/pre-dev-alignment/SKILL.md"
+    },
+    "progress-tracker": {
+      "area": "general",
+      "source": ".claude/skills/progress-tracker/SKILL.md"
+    },
+    "project-onboarding": {
+      "area": "general",
+      "source": ".claude/skills/project-onboarding/SKILL.md"
+    },
+    "project-structure": {
+      "area": "backend",
+      "source": "backend/project-structure/SKILL.md"
+    },
+    "security": {
+      "area": "backend",
+      "source": "backend/security/SKILL.md"
+    },
+    "service-conventions": {
+      "area": "backend",
+      "source": "backend/service-conventions/SKILL.md"
+    },
+    "similar-issue-sweep": {
+      "area": "general",
+      "source": ".claude/skills/similar-issue-sweep/SKILL.md"
+    },
+    "tabledef": {
+      "area": "backend",
+      "source": "backend/tabledef/SKILL.md"
+    },
+    "team-memory": {
+      "area": "general",
+      "source": ".claude/skills/team-memory/SKILL.md"
+    },
+    "testing": {
+      "area": "backend",
+      "source": "backend/testing/SKILL.md"
+    },
+    "view-conventions": {
+      "area": "frontend",
+      "source": "frontend/view-conventions/SKILL.md"
+    },
+    "yzj-dev-workflow": {
+      "area": "general",
+      "source": ".claude/skills/yzj-dev-workflow/SKILL.md"
+    },
+    "yzj-skill-creator": {
+      "area": "general",
+      "source": ".claude/skills/skill-creator/SKILL.md"
+    }
+  }
+}
