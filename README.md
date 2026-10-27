@@ -1,5 +1,78 @@
 # YZJ 团队共享技能库（skills）
 
+## Codex 加载目录（2026-10-26）
+
+本仓库已增加 Codex 适配层，原有 `.claude/`、`backend/`、`frontend/` 和 Claude 模板保持原样。下文原有流程说明仍以 Claude Code 布局为背景；**Codex 接入以本节、`AGENTS.md` 和 Codex 版 `project-onboarding` 为准**。
+
+```text
+skills/
+├── AGENTS.md                         # Codex 常驻入口与维护说明
+├── .agents/
+│   ├── catalog.json                  # 分类与原始规范来源映射
+│   ├── rules/collaboration.md         # 由 AGENTS.md 显式要求读取
+│   └── skills/<name>/
+│       ├── SKILL.md                  # 名称、触发描述与执行入口
+│       ├── references/rules.md        # 长规范按需加载（如有）
+│       └── scripts/                  # 随技能携带的脚本（如有）
+├── templates/
+│   ├── AGENTS.md.template            # 目标项目 Codex 入口模板
+│   ├── .agents/rules/                # 协作规范与 API 契约模板
+│   └── .document/                    # 复用原有文档骨架
+└── scripts/
+    ├── sync-codex-skills.py           # 生成/检查 Codex 适配层
+    └── verify-codex-skills.py         # 跨平台结构、引用与基线校验
+```
+
+### 已整理的能力
+
+共 **33 个 Codex 技能**：13 个通用/编排入口、17 个后端规范、3 个前端规范。分类与源文件关系见 `.agents/catalog.json`。
+
+- 通用技能沿用原名；团队技能创建器改为 `yzj-skill-creator`，避免与宿主内置能力混淆。
+- 前后端审查分别为 `backend-reviewer` 和 `frontend-reviewer`，不再共用 `reviewer` 名称。
+- 已弃用的 `framework-usage` 不安装，直接使用 `common`、`cache`、`mybatis`、`security`。
+- 开发前对齐通过当前会话提交计划与设计，保留所需文档评审；不依赖原宿主的计划模式 API。
+- 预览采用当前会话可用能力；缺少浏览器能力时只报告构建、类型检查结果及未验证交互。
+- 团队记忆仍使用 `.document/`；个人记忆仅在用户已配置并授权时读取。
+- i18n 脚本随目录携带，聚合器使用当前 Python 解释器启动子脚本，不要求 PATH 中另有 `python`。
+- `.agents/rules/` 是普通文档目录，**不会因为目录名自动成为常驻规则**；由 AGENTS.md 明确引用并要求读取。
+
+### 在本仓库使用
+
+从 **`skills/` 仓库目录**启动 Codex 新会话，或将它作为项目打开，检查 AGENTS.md 与技能列表。当前会话的工作目录若是外层 `framework/`，不要假定它会向下发现 `skills/.agents/skills/`。可直接指定相应 SKILL.md 读取；自动发现应在正确的项目根验证。
+
+### 引入目标项目
+
+在能同时访问源库和目标项目的会话中使用 Codex 版 `project-onboarding`，例如“把这套 Codex 规范引入到 D:/projects/example”。也可按下面顺序手工安装：
+
+1. 从 `.agents/skills/` 选取通用技能及同栈规范，复制**完整技能目录与资源**到目标 `.agents/skills/`。`yzj-dev-workflow`、`api-contract-checker` 有技术栈前提；引入器和创建器可选，不将整套规范强加给异栈项目。
+2. 用 `templates/AGENTS.md.template` 创建或合并目标 AGENTS.md；复制 `templates/.agents/rules/`，按实际项目填契约与路径，删除不适用项。
+3. `.document/` 只补缺失骨架，已有台账、设计、memory 和能力册保持并合并。既有 reviewer 的项目专有检查与漏检史需保留。
+4. 多个独立 Git 仓库、子仓和 Worktree 分别确认各自根内的入口；不能依赖共同父目录跨 Git 边界加载。共享文档根写入各入口。
+5. 在源库执行校验，再从目标启动新会话验证技能发现和典型请求路由。文件校验通过不等于已验证自动触发。
+
+```text
+python scripts/verify-codex-skills.py <目标项目根> --strict --show-diff
+python scripts/verify-codex-skills.py <目标项目根> --require-area backend
+```
+
+Python 3.10+ 即可，两个工具均只用标准库。`python` 是示意，未加入 PATH 时使用解释器绝对路径。原 `verify-baseline.sh` 继续校验原布局，Codex 使用新的 Python 校验器。
+
+### 后续维护与同步
+
+普通技能由原有规范生成，宿主差异集中在同步脚本；修改共享规范后执行：
+
+```text
+python scripts/sync-codex-skills.py
+python scripts/sync-codex-skills.py --check
+python scripts/verify-codex-skills.py --strict
+```
+
+同步脚本保留手工维护的 Codex `project-onboarding`、`yzj-skill-creator`、AGENTS.md、规则和模板。不要仅改生成物，否则下次同步会覆盖。源技能删除、改名或从长规范变为短规范后，需检查并清理已确认失效的旧生成文件；同步器不自动删除未知文件。
+
+校验器比较整个技能包（包括 references 与脚本），忽略文本行尾差异。`--strict` 对任何基线差异返回非零，包括带 `📌` 的项目覆写，须检查后处理；不将覆写标记当成已通过审核。项目独有技能只做基础结构与引用检查。
+
+---
+
 > 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
 > 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
 >
