@@ -164,7 +164,7 @@ skills/
 
 > 任一项不过 → 回 `project-onboarding` 对应步骤补齐。
 >
-> **一键校验**：`bash scripts/verify-baseline.sh {项目根}`（framework 省略时取本仓库）。它**按标志文件自动识别项目的前/后端仓库布局**（不依赖目录名，支持分仓 / mono-repo / 单栈），逐 skill 输出 `✓ 一致 / Δ 流程漂移 / 📌 项目覆写 / ℹ 项目专有差异 / ⊘ 项目专有 / ✗ 结构错误`，并查 `name` 与目录名是否一致、root 流程 skill 是否齐全、**各端 reviewer 必备**（已装某端规范而缺 reviewer 即报错）、常驻规则层（`.claude/rules` 或 `common/rules`）是否就位（软提示）。单栈项目（根目录即前/后端仓）按根级**本级标志**（pom.xml / src/views 等）消歧，允许根技能目录混放通用 + 单端规范；含子仓的公共根只认纯 root。可在各项目本地 / CI 定期跑，实现多项目持续校验。加 `--show-diff` 看差异、`--strict` 让流程漂移即失败。
+> **一键校验**：`bash scripts/verify-baseline.sh {项目根}`（framework 省略时取本仓库）。它**按标志文件自动识别项目的前/后端仓库布局**（不依赖目录名，支持分仓 / mono-repo / 单栈），逐 skill 输出 `✓ 一致 / Δ 流程漂移 / 📌 项目覆写 / ℹ 项目专有差异 / ⊘ 项目专有 / ✗ 结构错误`，并查 frontmatter `name`/`description` 必备且 `name` 与目录名一致、root 流程 skill 按**已启用宿主布局逐一**齐全、**各端 reviewer 必备**（已装某端规范而缺 reviewer 即报错）、**前后端规范不得同目录混装**、基线路径有效、常驻规则层（`.claude/rules` 或 `common/rules`）是否就位（软提示）；项目覆写按文件头「本文件 = framework 基线」声明识别。单栈项目（根目录即前/后端仓）按根级**本级标志**（pom.xml / src/views 等）消歧，允许根技能目录混放通用 + 单端规范；含子仓的公共根只认纯 root。可在各项目本地 / CI 定期跑，实现多项目持续校验。加 `--show-diff` 看差异、`--strict` 让流程漂移即失败。
 
 ---
 
@@ -230,7 +230,7 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 | 多会话同写台账 / 索引后写覆盖，合并时不知保留谁 | `progress-tracker`「并行开发的文档冲突约定」：写前重读 / 只改自己的行 / 写完即提交；追加型双方保留；结构化文档归台账负责人独写；根非 git 仓时被覆盖就重写自己的行 |
 | 任务清单失真（已做标未做、已回滚标已完成）、砍掉的范围被遗忘 | `progress-tracker` 回填 DoD + `[⛔]` 已废弃 + backlog 文档（推迟即落档） |
 | 全栈契约靠口头，后端先改实现再补文档 | 技术设计文档「契约」章节冻结 + 联动需求接口确认停顿点 + 契约变更先改文档 |
-| 项目专有覆写散落在正文，re-sync 时被基线冲掉 | `project-onboarding`「📌 覆写约定」（文件头差异清单 + 行内标记）+ verify-baseline 识别 📌 |
+| 项目专有覆写散落在正文，re-sync 时被基线冲掉 | `project-onboarding`「📌 覆写约定」（文件头差异清单 + 行内标记）+ verify-baseline 按文件头声明识别覆写 |
 | 协作底线只写在 skill 里、按需才加载 | `templates/common/rules/` 常驻规则（冲突处理 / 刹车点 / 纠正 vs 妥协 / 执行自证 / 契约速查），Claude Code 自动加载、其他宿主经 AGENTS.md 显式引用 |
 | 后端规范没有金融、安全编码、测试维度，reviewer 十个维度里没有安全 | `backend/financial` + `security` 第八节红线 + `backend/testing`；reviewer 新增安全 / 金融 / 测试维度、HIGH RISK 升级（🟡 视同 🔴 + 双人审批）、ARCH 级复查模式 |
 | 框架日志过滤器默认打全量 body，"业务不打敏感日志"被误当成"敏感数据不入日志" | `logging` 第九节：`LoggerFilter` 忽略清单作为接口 DoD、逐层各配、逐层验证；reviewer 漏检史登记 |

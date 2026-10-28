@@ -1,0 +1,68 @@
+{
+  "referenced_resources": [
+    {
+      "skill": "common/skills/skill-creator/SKILL.md",
+      "reference": "agents/analyzer.md",
+      "exists": true
+    },
+    {
+      "skill": "common/skills/skill-creator/SKILL.md",
+      "reference": "agents/comparator.md",
+      "exists": true
+    },
+    {
+      "skill": "common/skills/skill-creator/SKILL.md",
+      "reference": "agents/grader.md",
+      "exists": true
+    },
+    {
+      "skill": "common/skills/skill-creator/SKILL.md",
+      "reference": "assets/eval_review.html",
+      "exists": true
+    },
+    {
+      "skill": "common/skills/skill-creator/SKILL.md",
+      "reference": "eval-viewer/generate_review.py",
+      "exists": true
+    },
+    {
+      "skill": "common/skills/skill-creator/SKILL.md",
+      "reference": "references/schemas.md",
+      "exists": true
+    },
+    {
+      "skill": "frontend/i18n-automation/SKILL.md",
+      "reference": "scripts/detect_hardcoded_literals.py",
+      "exists": true
+    },
+    {
+      "skill": "frontend/i18n-automation/SKILL.md",
+      "reference": "scripts/extract_schema_keys.py",
+      "exists": true
+    },
+    {
+      "skill": "frontend/i18n-automation/SKILL.md",
+      "reference": "scripts/parse_locale_files.py",
+      "exists": true
+    },
+    {
+      "skill": "frontend/i18n-automation/SKILL.md",
+      "reference": "scripts/run_i18n_audit.py",
+      "exists": true
+    },
+    {
+      "skill": "frontend/i18n-automation/SKILL.md",
+      "reference": "scripts/sort_and_merge_keys.py",
+      "exists": true
+    },
+    {
+      "skill": "frontend/i18n-automation/SKILL.md",
+      "reference": "scripts/validate_i18n_integrity.py",
+      "exists": true
+    }
+  ],
+  "reference_count": 12,
+  "python_syntax_files": 17,
+  "python_syntax_errors": [],
+  "scope": "AST parse only; does not execute scripts or check external dependencies."
+}

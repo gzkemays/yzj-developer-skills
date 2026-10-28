@@ -43,7 +43,7 @@ description: >
 
 - 用 `Glob`/`Grep` 扫描目标项目定位上述标志，得出 **{root} / {backend-repo} / {frontend-repo} 的实际相对路径**（可能分仓、mono-repo `apps/api`+`apps/web`、或单栈）。
 - **命中多个 / 零个 / 拿不准 → 列候选问用户**，不臆测、不照搬别项目（如 YAPD 的 `yadp-server`/`yadp-web`）的命名。
-- 把识别结果写进项目根入口文件的「Project Structure」与「Working Directory Routing」，作为该项目布局的权威记录（后续 re-sync / 校验据此）；路径一律写相对 {root} 的形式。
+- 把识别结果**先记入第二步的 dry-run 报告**；通过确认门禁、正式接入时才写进项目根入口文件的「Project Structure」与「Working Directory Routing」，作为该项目布局的权威记录（后续 re-sync / 校验据此）；路径一律写相对 {root} 的形式。
 - 提取占位符素材：构建命令（pom modules / package.json scripts）、设计系统 token 前缀（前端 `variables.*` / theme 文件）、契约约定（CommonResult / 分页 / 多租户 Header 等）。
 
 > 这套标志被 `scripts/verify-baseline.sh` 复用（自动判定每个技能目录属于前/后/根，再对应 framework 比对）——识别逻辑两边一致。
@@ -129,9 +129,11 @@ description: >
 
 1. **文件头差异清单**：frontmatter 之后紧跟一段引用块，逐条列出与基线的差异与依据：
    > **本文件 = framework 基线 {基线日期} + 项目专有项回注。** 差异仅限以下 N 处，均以「📌 {项目}」标记：① … ② …。其余与基线逐字一致，re-sync 时保留这 N 处。
+
+   首句「**本文件 = framework 基线**」是 `verify-baseline.sh` 识别项目覆写的**机器锚点**：措辞不得改写，且必须位于文件前 20 行；没有此声明的漂移一律按「Δ 流程漂移」处理。
 2. **正文逐处标记**：每一处偏离的行 / 段落以 `📌 {项目}` 开头（或行内标注），说明覆写内容与依据（指向项目入口文件 / rules 的哪条）
 3. **只覆写不删除**：基线原文保留（可改写为"基线：…；本项目：…"），便于对照
-4. **re-sync 动作**：`cp` 基线 → 按文件头清单逐条把 📌 段回注 → `diff` 验证差异仅为 📌 行；`verify-baseline.sh` 对含 📌 的流程 skill 报「📌 项目覆写」而非「Δ 流程漂移」
+4. **re-sync 动作**：`cp` 基线 → 按文件头清单逐条把 📌 段（含文件头差异清单本身）回注 → `diff` 验证差异仅为 📌 行；`verify-baseline.sh` 对带文件头覆写声明的流程 skill 报「📌 项目覆写」而非「Δ 流程漂移」——只有正文 📌 而缺文件头声明的按漂移处理
 5. **不得覆写的**：主干直提单次授权、P4 Review 不可跳过、P8 开发者确认之类"按设计必须每次重问 / 不可跳过"的门禁，不得以 📌 固化为常驻放宽；AGENTS.md「执行门禁」节同理不得删减放宽
 
 ---

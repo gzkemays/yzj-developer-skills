@@ -8,7 +8,8 @@
 # 单栈项目（根目录本身就是后端/前端仓，根级直接有 pom.xml / src/views 等标志）允许根技能目录
 # 混放「通用 + 单端规范」，按本级标志消歧；只认本级标志、不认一层嵌套——含前后端子仓的公共根仍按纯 root 处理。
 # 已识别安装某端规范的技能目录必须含该端 reviewer（P4 硬流程必需），缺失计结构错误。
-# 已知残角：单栈根被人为混入另一端技能并覆盖 reviewer 时，会解析到本端基线、以 ℹ 大差异呈现而非报错——由
+# 同一技能目录同时命中前后端基线技能 → 报混装结构错误。已知残角：单栈根只被混入另一端的
+# reviewer（无其他该端技能同目录）时，会解析到本端基线、以 ℹ 大差异呈现而非报错——由
 # project-onboarding dry-run 门禁的人工判读兜底。
 #
 # 用法（在 Git Bash / WSL 运行；PowerShell 用 `bash scripts/verify-baseline.sh ...`）：
@@ -17,7 +18,8 @@
 #     --show-diff            打印每个差异 skill 的具体 diff
 #     --strict               流程 skill 出现漂移即非零退出（默认仅结构错误才非零）
 #
-# 流程 skill 含「📌」标记视为项目覆写（project-onboarding「📌 项目覆写约定」），报 📌 而非 Δ，--strict 下不算漂移。
+# 流程 skill 在文件前 20 行带「本文件 = framework 基线」覆写声明（project-onboarding「📌 项目覆写约定」
+# 的文件头差异清单）时报 📌 而非 Δ，--strict 下不算漂移；只有正文 📌 而无文件头声明的按普通漂移处理。
 # 扫描时跳过 .worktree/（git-commit 第八章的 worktree 副本）、.claude/worktrees/（宿主托管 worktree）、
 # .scratch/（临时参考副本）、node_modules、.git、.bak-*，避免同一 skill 被重复计数。
 set -uo pipefail
@@ -34,6 +36,10 @@ done
 [ -n "$PROJECT" ] || { echo "用法: bash verify-baseline.sh <project-root> [framework-skills-root] [--show-diff] [--strict]"; exit 2; }
 [ -n "$FW" ] || FW="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$(cd "$PROJECT" 2>/dev/null && pwd)" || { echo "项目路径不存在"; exit 2; }
+# 基线路径必须真实有效，否则所有技能都会被误判为「项目专有」而静默通过
+FW="$(cd "$FW" 2>/dev/null && pwd)" || { echo "✗ 基线路径不存在: $FW"; exit 2; }
+{ [ -d "$FW/common/skills" ] && [ -d "$FW/backend" ] && [ -d "$FW/frontend" ]; } \
+  || { echo "✗ 基线无效：$FW 下缺 common/skills / backend / frontend（不是 skills 仓库？）"; exit 2; }
 
 # 流程方法论 skill：与栈无关，应与基线逐字一致（漂移→需确认是否有意增补）
 FLOW="dev-session pre-dev-alignment progress-tracker iteration-planner team-memory capability-registry similar-issue-sweep dev-output project-onboarding git-commit"
@@ -72,11 +78,12 @@ stack_hints () {
   [ -f "$d/package.json" ] && grep -q '"vue"' "$d/package.json" 2>/dev/null && echo frontend
 }
 
-# framework 中定位某 skill：先按优先区域列表（分类区域 + 单栈根的本级栈区域）查，
-# 否则跨区唯一匹配；多区同名且无法消歧 → 返回歧义标记（前后端 reviewer 同名即此类）
+# framework 中定位某 skill：先按优先区域（$2 起的各参数：分类区域 + 单栈根的本级栈区域）查，
+# 否则跨区唯一匹配；多区同名且无法消歧 → 返回歧义标记（前后端 reviewer 同名即此类）。
+# 优先区域以独立参数传入并带引号展开，基线路径含空格不影响。
 find_fw () {
-  local n="$1" ar; local -a hits=()
-  for ar in $2; do
+  local n="$1" ar; shift; local -a hits=()
+  for ar in "$@"; do
     [ -f "$ar/$n/SKILL.md" ] && { echo "$ar/$n/SKILL.md"; return; }
   done
   for ar in "$FW/common/skills" "$FW/backend" "$FW/frontend"; do
@@ -99,19 +106,20 @@ mapfile -t SKILLDIRS < <(find "$PROJECT" -type d \( -path '*/.claude/skills' -o 
 
 for SD in "${SKILLDIRS[@]}"; do
   HOST="$(cd "$SD/../.." && pwd)"
-  KIND="$(classify "$HOST")"; PREFS="$(area_of "$KIND")"
+  KIND="$(classify "$HOST")"; PREFS=("$(area_of "$KIND")")
   HINTS=""
   if [ "$KIND" = root ]; then
     HINTS="$(stack_hints "$HOST")"
-    for h in $HINTS; do PREFS="$PREFS $FW/$h"; done
+    # 仅恰好单一栈标志时按单栈消歧；根级同时有前后端标志 → 不加优先区域，同名技能照报来源歧义
+    [ "$(echo $HINTS | wc -w)" -eq 1 ] && PREFS+=("$FW/$HINTS") || HINTS=""
   fi
   # 该目录必须具备的 reviewer 端：backend/frontend 目录，或恰好单一栈标志的单栈根
   REQAREA=""
   case "$KIND" in
     backend|frontend) REQAREA="$KIND" ;;
-    root) [ "$(echo $HINTS | wc -w)" -eq 1 ] && REQAREA="$HINTS" ;;
+    root) [ -n "$HINTS" ] && REQAREA="$HINTS" ;;
   esac
-  AREA_HIT=0
+  B_HIT=0; F_HIT=0
   REL="${HOST#$PROJECT}"; REL="${REL#/}"; [ -n "$REL" ] || REL="(root)"
   SUB="${SD#"$HOST"/}"
   echo "── [$KIND${HINTS:+ 单栈:$HINTS}] $REL/$SUB"
@@ -120,20 +128,30 @@ for SD in "${SKILLDIRS[@]}"; do
     name="$(basename "$SKILL")"; pf="${SKILL}SKILL.md"
     [ -f "$pf" ] || { echo "   ?  $name  项目内缺 SKILL.md"; ERRORS=$((ERRORS+1)); continue; }
     nm="$(sed -n 's/^name:[[:space:]]*//p' "$pf" | head -1 | tr -d '\r ')"
-    mism=""; [ -n "$nm" ] && [ "$nm" != "$name" ] && { mism="  ⚠ name='$nm'≠目录名"; ERRORS=$((ERRORS+1)); }
-    ff="$(find_fw "$name" "$PREFS")"
+    mism=""
+    if [ -z "$nm" ]; then
+      mism="  ✗ 缺 frontmatter name"; ERRORS=$((ERRORS+1))
+    elif [ "$nm" != "$name" ]; then
+      mism="  ⚠ name='$nm'≠目录名"; ERRORS=$((ERRORS+1))
+    fi
+    grep -q '^description:' "$pf" 2>/dev/null \
+      || { mism="$mism  ✗ 缺 frontmatter description"; ERRORS=$((ERRORS+1)); }
+    ff="$(find_fw "$name" "${PREFS[@]}")"
     if [ -z "$ff" ]; then echo "   ⊘  $name  framework 无 → 项目专有，跳过$mism"; continue; fi
     case "$ff" in __AMBIGUOUS__*)
       echo "   ✗  $name  来源歧义：基线多处同名（${ff#__AMBIGUOUS__ }），该目录分类为 [$KIND] 无法消歧——前后端规范应装各自目录（单栈项目需根级有 pom.xml / src/views 等本级标志）$mism"
       ERRORS=$((ERRORS+1)); continue;;
     esac
-    [ -n "$REQAREA" ] && case "$ff" in "$FW/$REQAREA/"*) AREA_HIT=1;; esac
+    case "$ff" in "$FW/backend/"*) B_HIT=1;; "$FW/frontend/"*) F_HIT=1;; esac
     if diff --strip-trailing-cr -q "$ff" "$pf" >/dev/null 2>&1; then
       echo "   ✓  $name  一致$mism"; OK=$((OK+1))
     else
       n=$(diff --strip-trailing-cr "$ff" "$pf" | grep -c '^[<>]' || true)
       if is_flow "$name"; then
-        if grep -q '📌' "$pf" 2>/dev/null; then
+        # 项目覆写只认「文件头差异清单」声明（前 20 行、固定首句），不扫全文符号：
+        # 避免基线正文自带 📌 的文件（如 project-onboarding）任何改动都被误判为覆写；
+        # LC_ALL=C 按字节匹配，规避多字节文本在不同语言环境下的 grep 行为差异
+        if head -n 20 "$pf" 2>/dev/null | LC_ALL=C grep -q '本文件 = framework 基线'; then
           echo "   📌  $name  流程 skill 带项目覆写标记，与基线差 ${n} 行（按文件头差异清单核对）$mism"; OVERRIDE=$((OVERRIDE+1))
         else
           echo "   Δ  $name  流程 skill 与基线差 ${n} 行  ⚠需确认是否有意$mism"; DRIFT=$((DRIFT+1))
@@ -144,8 +162,15 @@ for SD in "${SKILLDIRS[@]}"; do
       [ "$SHOW_DIFF" -eq 1 ] && diff --strip-trailing-cr "$ff" "$pf" | sed 's/^/        /'
     fi
   done
+  # 同一技能目录同时命中前后端基线技能 → 混装（两端 reviewer 同名互相覆盖的前兆），计结构错误
+  if [ "$B_HIT" -eq 1 ] && [ "$F_HIT" -eq 1 ]; then
+    echo "   ✗  混装：$REL/$SUB 同时含前后端规范技能——不得装入同一目录（见 project-onboarding）"
+    ERRORS=$((ERRORS+1))
+  fi
   # 已安装某端规范（命中该端基线技能 ≥1）的目录必须有该端 reviewer——P4 硬流程必需；
   # 只放项目专有技能的目录不触发此检查
+  AREA_HIT=0
+  case "$REQAREA" in backend) AREA_HIT=$B_HIT;; frontend) AREA_HIT=$F_HIT;; esac
   if [ -n "$REQAREA" ] && [ "$AREA_HIT" -eq 1 ] && [ ! -f "$SD/reviewer/SKILL.md" ]; then
     echo "   ✗  缺必备审查技能：$REL/$SUB/reviewer —— 已安装 $REQAREA 规范但缺 reviewer（P4 硬流程必需）"
     ERRORS=$((ERRORS+1))
@@ -153,15 +178,17 @@ for SD in "${SKILLDIRS[@]}"; do
   echo
 done
 
-# root 必备流程 skill：两种布局（.claude/skills / common/skills）任一存在即可
-if [ -d "$PROJECT/.claude/skills" ] || [ -d "$PROJECT/common/skills" ]; then
+# root 必备流程 skill：按「已启用的宿主布局」逐一检查——双宿主项目两套目录各自都要齐，
+# 不得以一侧副本掩盖另一侧缺失（各宿主只读各自的目录）
+ROOT_LAYOUTS=0
+for RS in "$PROJECT/.claude/skills" "$PROJECT/common/skills"; do
+  [ -d "$RS" ] || continue
+  ROOT_LAYOUTS=$((ROOT_LAYOUTS+1))
   for f in $REQUIRED; do
-    [ -d "$PROJECT/.claude/skills/$f" ] || [ -d "$PROJECT/common/skills/$f" ] \
-      || { echo "✗ root 缺流程 skill: $f"; ERRORS=$((ERRORS+1)); }
+    [ -d "$RS/$f" ] || { echo "✗ root 缺流程 skill: ${RS#$PROJECT/}/$f"; ERRORS=$((ERRORS+1)); }
   done
-else
-  echo "✗ 项目根无技能目录（.claude/skills 或 common/skills）"; ERRORS=$((ERRORS+1))
-fi
+done
+[ "$ROOT_LAYOUTS" -gt 0 ] || { echo "✗ 项目根无技能目录（.claude/skills 或 common/skills）"; ERRORS=$((ERRORS+1)); }
 # 常驻规则层为软检查：缺失只提示，不计错误（两种布局任一即可）
 RULES=""
 [ -d "$PROJECT/.claude/rules" ] && RULES="$PROJECT/.claude/rules"

@@ -63,7 +63,7 @@ description: >
 - [ ] 涉及分布式锁：@DistributedLock 的 prefix + key 已规划
 - [ ] 涉及鉴权：使用 SessionContext / SecurityToken 上下文
 - [ ] 涉及敏感字段：已加 @Encryption 注解
-- [ ] 涉及 DDL：TableDef 已按 `tabledef` skill 同步维护，迁移脚本按 `db-migration` 生成
+- [ ] 涉及 DDL：TableDef 已按 `tabledef` skill 同步维护；迁移脚本在**用户显式要求时**按 `db-migration` 生成，未获要求则记录待办或走项目既有迁移机制（与 db-migration 触发约束一致）
 - [ ] 涉及 proto：字段编号未复用（删除需 reserved）
 - [ ] 涉及资金 / 金额：按 `financial` skill——BigDecimal、业务单号唯一索引 + 先查后写、@DistributedLock(transactional = true)、行锁 / 乐观锁、同事务流水
 - [ ] 涉及安全关键词（auth / token / password / card / pan / permission）：按 `security` skill 第八节红线
