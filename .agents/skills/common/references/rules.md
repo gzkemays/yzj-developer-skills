@@ -26,6 +26,13 @@ CommonResult.unauthorized();
 
 所有业务枚举实现 `CommonEnum`，错误枚举实现 `ErrorMsgEnum`。使用 `@Getter` + `@AllArgsConstructor` 代替手写 getter。
 
+### 使用已有枚举和常量
+
+- 判断或赋值 `provider`、`status`、`type` 等业务编码前，先查字段的 `@see`、枚举定义和同域调用，复用已有枚举/常量；不要凭记忆写数字、字符串或另建重复常量。
+- 实现 `CommonEnum` 且支持 `isCode` 时，优先 `StatusEnum.ENABLE.isCode(entity.getStatus())`；赋值和查询条件用 `StatusEnum.ENABLE.getCode()`。具体方法签名和 null 语义先核对项目所用版本，不假设每个第三方枚举都有 `isCode`。
+- `Objects.equals(code, 1)` 即使空值安全，仍不能表达业务含义；改成 `Objects.equals(code, StatusEnum.ENABLE.getCode())` 只适用于没有匹配的枚举比较 API 等场景。对象本身可能为 null 时仍保留对象空值判断。
+- 同时检查条件、switch、查询、构造器、默认值、setter 和测试数据。第三方协议固定值先查 SDK 常量；无定义时按协议命名并注明出处，不把普通计数、索引或数学常量机械改为枚举。
+
 ```java
 // 普通枚举 — CommonEnum 父接口已标注 @EnumValue，子类无需重复标注
 @Getter

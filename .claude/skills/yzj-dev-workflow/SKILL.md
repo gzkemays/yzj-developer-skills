@@ -42,6 +42,8 @@ description: >
 
 ### 0.2 编码前结构确认
 
+按本次改动建立实际的规范对应关系，而不是只列技能名：转换与模型读取 `model-conventions` 第四节和同域转换类；业务码判断/赋值读取 `common` 第二节及目标枚举/常量；Java 注释读取 `reviewer` 第五节。技能入口链接到 references 时继续读相关正文。适用规则未读取，不算完成编码前确认。
+
 ```
 - [ ] domain/{业务域}/ 包结构已确认（entity / mapper / service / model / enums / aid）
 - [ ] 是否需要新建业务域（domain/{业务}/）
@@ -76,6 +78,9 @@ description: >
 ```
 - [ ] 文件路径与包归属符合 project-structure（domain / integration / interfaces / support）
 - [ ] 类名 / 方法名 / Operate / 枚举命名符合第 3 节
+- [ ] 转换已核对源/目标字段，优先显式 builder/setter；保留反射复制时有具体适用依据
+- [ ] 类 Javadoc 有职责、真实 author/since；方法的参数、返回、边界契约完整，覆写例外已核对上游文档
+- [ ] 业务编码复用已定义的枚举/常量；比较优先匹配的 isCode，赋值用 getCode，不写魔法值
 - [ ] 无 System.out / printStackTrace / catch 空块 / ${} / RuntimeException 直抛
 - [ ] Entity 继承 CommonEntity / CommonBusinessEntity；新增字段已同步 TableDef（tabledef skill）
 - [ ] 敏感字段 @Encryption；金额 BigDecimal；时间类型与同域一致
@@ -333,7 +338,12 @@ public record AdminUserV1Controller(UserService userService) {
 - [ ] @EqualsAndHashCode(callSuper = true) 已添加（有继承时）
 - [ ] POJO 不存在无对应变量的 getXxx/setXxx 方法
 - [ ] 枚举字段使用 @see 引用枚举类
+- [ ] 转换字段白名单、null/默认值/继承字段已核对，未默认使用 BeanUtils.copyProperties
 ```
+
+### 5.3.1 通用 Java 契约自检
+
+逐文件核对类的 `@author` / `@since`、各参数对应的 `@param`、非 void 方法的 `@return`，保留已存在的真实作者和创建时间；覆写方法只在上游契约完整时免重复。业务枚举/常量检查覆盖判断、查询、赋值与测试，不能只检查枚举声明。审查结论给出命中文件、依据和保留例外，不能用 grep 零命中或“已读规范”代替检查。
 
 ### 5.4 查询与数据库自检
 

@@ -18,6 +18,12 @@ DESCRIPTIONS = {
     "backend-reviewer": "审查 YZJ 后端 Java 和 proto 变更，执行完整七步流程、逐文件维度检查、漏检史与安全金融测试专项；适用于后端自审或用户要求审查。",
     "frontend-reviewer": "审查 Vue 3、Naive UI 前端变更，执行七步流程以及接口契约、国际化、设计 token、交互检查；适用于前端自审或用户要求审查。",
 }
+ENTRY_CHECKS = {
+    "yzj-dev-workflow": "编码前按改动读取实际细则：转换读 model-conventions 第四节和同域 ConvertAid；业务编码读 common 第二节和已有枚举/常量；注释读 backend-reviewer 第五节。逐文件确认显式字段映射、类 author/since、方法参数/返回契约、枚举 API；不能等到最后才补规则。",
+    "backend-reviewer": "每次审查单列三项并给出文件依据或合理例外：转换的字段/null/敏感边界；类 author/since 与方法 param/return（覆写需核对上游契约）；业务枚举/常量在比较、查询、赋值和测试中的复用。覆盖本次所有 Java 文件；grep 仅找候选，零命中不是语义检查通过。",
+    "common": "使用业务编码前先查字段注释及已有枚举/常量。支持时用 Enum.VALUE.isCode(code) 比较、getCode() 赋值/查询，不写裸业务码，也不重复定义已有常量；先核对当前 API 和 null 语义。",
+    "model-conventions": "转换优先复用同域 ConvertAid，以 builder/setter 显式映射目标字段；核对 null、继承字段、默认值和敏感字段裁剪。尽量减少 BeanUtils.copyProperties，保留时说明具体依据，不做无关全库替换。",
+}
 WORKTREE = """### 8.2 Worktree 的目录与加载入口
 
 优先使用当前宿主提供的托管 Worktree 能力，并遵守其创建和回收规则。手动管理时可采用 `{project-root}/.worktree/{business}/{repo}`，前后端分仓保持同名任务分支。
@@ -106,6 +112,8 @@ def generated_files() -> dict[Path, bytes]:
             if len(body) > 6500:
                 files[folder / "references/rules.md"] = (body + "\n").encode("utf-8")
                 body = f"# {name}\n\n执行时先完整读取 [规范与流程](references/rules.md)，再按任务读取其中引用的技能和项目文档。审查技能须读取全文及漏检史，不只依据入口给出结论。\n\n项目路径、构建命令、契约及授权以当前项目 `AGENTS.md` 和用户指令为准。"
+                if name in ENTRY_CHECKS:
+                    body += "\n\n" + ENTRY_CHECKS[name]
             files[folder / "SKILL.md"] = (header + body + "\n").encode("utf-8")
             for resource in sorted(source.rglob("*")):
                 relative = resource.relative_to(source)

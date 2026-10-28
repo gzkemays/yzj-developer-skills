@@ -27,6 +27,7 @@
 
 - 功能开发与迭代：`dev-session`，先按 `pre-dev-alignment` 完成需求分级和必要文档评审，再实现、自审、自测、验收、更新进度与沉淀。
 - YZJ 后端：`yzj-dev-workflow` 及其引用规范；后端审查：`backend-reviewer`。
+- 后端编码前按任务读取实际细则：转换 → `model-conventions` 第四节及同域 ConvertAid；业务编码 → `common` 第二节及已有枚举/常量；注释 → `backend-reviewer` 第五节。检查输出字段、null、author/since、参数/返回契约和枚举 API；P4 给出文件依据及保留例外，不能只读技能入口或以 grep 零命中宣告通过。
 - Vue 3 / Naive UI 前端：`view-conventions`、`i18n-automation`；前端审查：`frontend-reviewer`。
 - 跨端契约：`api-contract-checker`，先冻结设计文档中的契约，改文档后改两端实现。
 - 进度：`progress-tracker`；记忆：`team-memory`；复用：`capability-registry`；修复回溯：`similar-issue-sweep`；成果：`dev-output`。

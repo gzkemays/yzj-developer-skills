@@ -25,6 +25,9 @@ description: 后端代码审查 skill。当用户要求 review 代码、审查�
 | `this.` 缺失 | `^\s+[a-z][a-zA-Z]+\(` 逐行确认调用类型 | #35 |
 | 布尔 is 前缀 | `private Boolean is[A-Z]` / `private boolean is[A-Z]` | #4 🔴 |
 | 私有方法缺 Javadoc | `private\s+(static\s+)?[\w<>\[\]]+\s+\w+\s*\(` 前无 `/**` | #37 |
+| 反射字段复制 | `copyProperties\s*\(`（含静态导入/全限定名）；逐个核对源/目标字段、null、裁剪及保留依据 | #56 / model-conventions 第四节 |
+| 业务编码字面量 | 对本次涉及的 provider/status/type 等字段检索全部读写及关联枚举：条件、switch、查询、构造器、默认值、setter、测试；核对裸数字/字符串与既有定义 | #57 / common 第二节 |
+| 类与方法文档契约 | 逐个检查新类及本次修改的类/方法声明与相邻 Javadoc：author/since、每个 param、非 void return、覆写上游契约 | #58 / 第五节 |
 | RuntimeException 直抛 | `throw new RuntimeException` | #22 |
 | Controller 手动 stream 转换 | `\.stream\(\)\.map\(` （Controller 内） | #34 |
 | XML `${}` 拼接 | `\$\{` （mapper XML 内） | #41 🔴 |
@@ -35,6 +38,8 @@ description: 后端代码审查 skill。当用户要求 review 代码、审查�
 | 硬编码密钥 | `secret\s*=\s*"` / `password\s*=\s*"` / `@Encryption\(key = "` 字面量 | #47 🔴 |
 
 `this.` 扫描的逐行判定：当前类**实例方法** → 必须 `this.`；**静态方法** → 不需要（建议类名前缀）；lambda/局部函数 → 不需要。**此扫描禁止跳过。**
+
+扫描仅提供候选：必须结合字段定义、调用语义和完整方法签名判定。多行注解/泛型方法、静态导入和参数中的字面量不得因正则未匹配而漏查；“grep 零命中”或“已读全文”都不能代替逐文件结论。转换、文档、枚举三项覆盖本次所有 Java 文件（含 Model、接口、工具类、测试），不局限于 ServiceImpl/Flow/Controller。
 
 **Step 3 — Entity / TableDef 检查**（每个新建/修改的 Entity）：
 - 继承正确（业务表 `CommonBusinessEntity` / 全局表 `CommonEntity`，按项目多租户约定）
@@ -53,6 +58,7 @@ description: 后端代码审查 skill。当用户要求 review 代码、审查�
 
 **Step 5+ — 安全 / 金融专项**（每次 Review 至少过安全清单的「输入与注入」「敏感数据」两组；命中关键词的变更全组必做）：
 - 关键词扫描：Grep 本次文件是否含 `amount|balance|pay|transfer|refund|settle|ledger|card|pan|cvv|pin|password|token|secret|encrypt|permission|role`（中英文均扫：金额 / 余额 / 支付 / 退款 / 卡号 / 密码 / 密钥 / 权限）
+- 关键词只定位候选，须结合业务语义确认实际涉及的链路；注释中的 `@author` 等词内误匹配不构成安全命中，不能据此升级风险。缺少调用方或依赖定义时写明未验证，不推断已存在漏洞。
 - 命中金融 → 按第十三节逐条核对（`financial` skill 第七节清单）；命中安全 → 按第十二节逐条核对（`security` skill 8.8 清单）
 - **HIGH RISK 升级**：命中金融 / 安全关键词时，本次 Review 所有 🟡 警告视同 🔴 严重处理，报告末尾追加「需双人审批」
 - 测试维度按第十四节核对（本次变更的 Service / Flow 是否有对应用例、必测场景是否覆盖）
@@ -197,6 +203,8 @@ public class XxxServiceImpl implements XxxService {
 
 ### 类注释
 
+新增类须说明职责并填写 `@author`、`@since`；本次修改的类同时检查。作者遵循项目明确约定或可核实的文件归属，不把示例作者直接复制成所有人的作者；保留已有作者和创建日期，不因修改重置 `@since`，新建文件按项目日期格式填写真实创建时间。不能从现有约定确定作者时明确记录待确认项，不编造。
+
 ```java
 /**
  * 加载权限初始化
@@ -209,10 +217,10 @@ public class XxxServiceImpl implements XxxService {
 ### 方法注释
 
 - **所有方法**（public / protected / private）均须 Javadoc 注释，不限于 Service 接口
-- 每个方法必须说明功能和参数作用
-- 有返回值需描述返回内容
+- 每个方法必须说明功能；每个形参（包括类型参数）使用对应的 `@param` 说明业务含义和必要的 null/范围约束，不只复述参数类型
+- 非 void 方法使用 `@return` 描述返回含义及适用的空值/空集合语义；void 方法和构造器不写虚假返回说明
 - 复杂流程需简要说明核心影响
-- 覆写接口实现方法不需要重复描述
+- 覆写方法仅在父类/接口已有完整且仍适用的契约时免重复描述（可用 `{@inheritDoc}`）；需读上游确认，新增边界/副作用另行说明，不能仅凭 `@Override` 跳过缺失文档
 
 ### 代码逻辑注释
 
@@ -239,7 +247,7 @@ DOC 不是 README 也不是 ADR。只回答三件事：
   - `@throws` — 异常条件
   - 线程安全性（如有特殊语义）
 - **实现细节** → 写在代码行内注释（双斜线），不进 Javadoc
-- **覆写接口实现方法不需要重复描述**
+- **覆写方法按上面的上游契约条件免重复，不免检查**
 
 #### 反直觉决策必写
 
@@ -290,6 +298,8 @@ DOC 不是 README 也不是 ADR。只回答三件事：
 - 布尔字段是否以 is 开头（旧项目兼容除外）
 - POJO 中是否存在无对应变量的 get/set 方法
 - ConvertAid 是否在被多处引用时才抽取
+- 转换是否优先显式 builder/setter，是否核对 null、继承字段、别名和敏感字段裁剪；`copyProperties` 保留有无实际依据（model-conventions 第四节）
+- 枚举字段的比较、赋值、查询和测试是否复用已有枚举 API/常量，而非仅给字段补 `@see`（common 第二节）
 
 ---
 
@@ -443,6 +453,9 @@ DOC 不是 README 也不是 ADR。只回答三件事：
 | 53 | 单元测试连真实 DB / Redis，或 `@SpringBootTest` 跑单测 | 🟡 警告 |
 | 54 | 测试无断言 / 方法名无法表达意图 / 为测试改生产可见性 | 🟡 警告 |
 | 55 | 新增 Service 方法名不符命名规约（存量不合规只 🟢 提示） | 🟡 警告 |
+| 56 | 转换默认反射复制属性，未核对输出字段/null/敏感边界且无保留依据 | 🟡 警告；发生敏感字段泄露按安全项升级 |
+| 57 | 已有业务枚举/常量仍硬编码比较、查询或赋值，或重复定义同义常量 | 🟡 警告 |
+| 58 | 类缺真实 author/since，方法缺参数/返回契约，或无上游依据豁免覆写方法文档 | 🟡 警告 |
 
 ---
 
@@ -465,7 +478,9 @@ DOC 不是 README 也不是 ADR。只回答三件事：
 | 命名规范 | ✅ |
 | 代码格式 | ✅ |
 | OOP（含 this. 扫描 / 成员排序） | ✅ |
-| 注释（含私有方法 Javadoc） | ✅ |
+| 注释（author/since、逐参数/返回契约、覆写依据） | 结论 + 文件:行号 / 合理例外 |
+| 转换映射（输出字段、null、反射复制保留依据） | 结论 + 文件:行号 / N/A 原因 |
+| 枚举/常量复用（比较、查询、赋值、测试） | 结论 + 定义与使用位置 / N/A 原因 |
 | 结构 / TableDef 同步 | ✅ |
 | Model / Service / Controller / Integration | ✅ |
 | 安全编码（输入与注入 / 敏感数据每次必查；命中关键词全组） | ✅ |
@@ -524,6 +539,9 @@ ARCH 级变更的 Review 报告落档 `design/{yyyy-MM-dd}_{slug}-review.md`（�
 
 | Rule | 出处 | 教训来源 |
 |------|------|----------|
+| 转换默认使用 BeanUtils.copyProperties | #56 / model-conventions 第四节 | 2026-10-28 开发者 review：同域已有显式映射示例仍未复用；不能靠转换类命名判断合规 |
+| 类 author/since 与方法参数说明缺失 | #58 / 第五节 | 2026-10-28 开发者 review：规则已存在但未逐声明核对，文档精简不等于省略契约 |
+| 业务 provider 码硬编码 | #57 / common 第二节 | 2026-10-28 开发者 review：已有枚举仍用 Objects.equals(code, 数字)，应优先使用枚举比较 API |
 | `this.` 前缀缺失 | #35 / OOP 第四节 | 多次漏检，包括代码已提交后才被发现——必须 Grep 扫描而非目测 |
 | 私有方法 Javadoc 缺失 | #37 / 注释第五节 | 多次漏检 |
 | Javadoc `@param + @return` 不完整 | 第五节 | 曾漏检 |
