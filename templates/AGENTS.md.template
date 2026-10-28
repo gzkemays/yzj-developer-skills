@@ -37,7 +37,7 @@
 - 后端业务：`yzj-dev-workflow` 及其引用规范；后端审查：`reviewer`（后端仓技能目录内）。
 - 前端：`view-conventions`、`i18n-automation`；前端审查：`reviewer`（前端仓技能目录内）。
 - 跨端契约：`api-contract-checker`，先冻结设计文档中的契约，改文档后改两端实现。
-- 进度：`progress-tracker`；记忆：`team-memory`；复用：`capability-registry`；修复回溯：`similar-issue-sweep`；成果：`dev-output`。
+- 进度：`progress-tracker`；记忆：`team-memory`；复用：`capability-registry`；修复回溯：`similar-issue-sweep`；成果：`dev-output`；知识收尾：`neat-freak`（dev-session P12 在成果报告后自动引用）。
 - Git：`git-commit`。授权后按分支约定逐路径暂存，只提交自己的改动；未获相应授权不执行 commit/push。
 
 只安装适用技能，删除未采用路由。明显的小修改按实际风险处理，只读咨询不启动完整开发流程。

@@ -48,7 +48,7 @@
 ```
 P1 分析需求(台账+定级) → P2 加载沉淀 → P3 开发(对齐落档) → P4 AI Review → P5 自测
   → P6 开发者 Review（ARCH 深评 / NORMAL 知会） → P7 开发者测试 → P8 确认
-  → P9 更新进度(台账硬门禁) → P10 沉淀核对 → P11 提交 → P12 成果报告
+  → P9 更新进度(台账硬门禁) → P10 沉淀核对 → P11 提交 → P12 成果报告+知识收尾(neat-freak 对账)
 ```
 
 > **P11 提交**遵循 `git-commit` skill：feat/opt/fix 三分法（scope 可选），commit 与分支名中不留任何 AI 记号。
