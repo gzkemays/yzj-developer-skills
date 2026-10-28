@@ -9,7 +9,7 @@
 
 | 后端操作 | 后端返回 | 前端泛型 | `if (res.data)` |
 |----------|---------|----------|-----------------|
-| 创建 | `CommonResult<Long>` | `number`/`string` | ✅ |
+| 创建 | `CommonResult<Long>`（主键 ID） | `string`（ID 一律 string，见下「ID 与时间」） | ✅ |
 | 更新/删除 | `CommonResult<Boolean>` | `boolean` | ✅ |
 | 分页 | `CommonResult<CommonPage<T>>` | `PageResponse<T>` | ✅ |
 | 登录等 Void | `CommonResult<Void>` | — | ❌ 用 `code` 判断 |

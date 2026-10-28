@@ -1,0 +1,70 @@
+{
+  "cases": [
+    {
+      "mode": "declared-override",
+      "locale": "C",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matches_expectation": true,
+      "pin_count_in_file": 2,
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\skills\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-locale-validation-b821b45c3b814bba8727f1db83979e15\\declared-override",
+        "D:\\.project\\framework\\skills",
+        "--strict"
+      ],
+      "output": "framework 基线: D:\\.project\\framework\\skills\n目标项目:       /d/.project/framework/.skill-locale-validation-b821b45c3b814bba8727f1db83979e15/declared-override\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   📌  iteration-planner  流程 skill 带项目覆写标记，与基线差 4 行（按文件头差异清单核对）\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   ✓  project-onboarding  一致\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 12   ℹ 项目专有差异 0   📌 项目覆写 1   Δ 流程漂移(需确认) 0   ✗ 结构错误 0\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    },
+    {
+      "mode": "declared-override",
+      "locale": "C.UTF-8",
+      "expected_exit": 0,
+      "actual_exit": 1,
+      "matches_expectation": false,
+      "pin_count_in_file": 2,
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\skills\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-locale-validation-b821b45c3b814bba8727f1db83979e15\\declared-override",
+        "D:\\.project\\framework\\skills",
+        "--strict"
+      ],
+      "output": "framework 基线: D:\\.project\\framework\\skills\n目标项目:       /d/.project/framework/.skill-locale-validation-b821b45c3b814bba8727f1db83979e15/declared-override\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   Δ  iteration-planner  流程 skill 与基线差 4 行  ⚠需确认是否有意\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   ✓  project-onboarding  一致\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 12   ℹ 项目专有差异 0   📌 项目覆写 0   Δ 流程漂移(需确认) 1   ✗ 结构错误 0\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    },
+    {
+      "mode": "unmarked-drift",
+      "locale": "C",
+      "expected_exit": 1,
+      "actual_exit": 0,
+      "matches_expectation": false,
+      "pin_count_in_file": 12,
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\skills\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-locale-validation-b821b45c3b814bba8727f1db83979e15\\unmarked-drift",
+        "D:\\.project\\framework\\skills",
+        "--strict"
+      ],
+      "output": "framework 基线: D:\\.project\\framework\\skills\n目标项目:       /d/.project/framework/.skill-locale-validation-b821b45c3b814bba8727f1db83979e15/unmarked-drift\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   ✓  iteration-planner  一致\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   📌  project-onboarding  流程 skill 带项目覆写标记，与基线差 2 行（按文件头差异清单核对）\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 12   ℹ 项目专有差异 0   📌 项目覆写 1   Δ 流程漂移(需确认) 0   ✗ 结构错误 0\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    },
+    {
+      "mode": "unmarked-drift",
+      "locale": "C.UTF-8",
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "matches_expectation": true,
+      "pin_count_in_file": 12,
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\skills\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-locale-validation-b821b45c3b814bba8727f1db83979e15\\unmarked-drift",
+        "D:\\.project\\framework\\skills",
+        "--strict"
+      ],
+      "output": "framework 基线: D:\\.project\\framework\\skills\n目标项目:       /d/.project/framework/.skill-locale-validation-b821b45c3b814bba8727f1db83979e15/unmarked-drift\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   ✓  iteration-planner  一致\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   Δ  project-onboarding  流程 skill 与基线差 2 行  ⚠需确认是否有意\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 12   ℹ 项目专有差异 0   📌 项目覆写 0   Δ 流程漂移(需确认) 1   ✗ 结构错误 0\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    }
+  ],
+  "total": 4,
+  "matched": 2
+}

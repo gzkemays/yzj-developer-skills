@@ -98,7 +98,7 @@ grep -n "interface XxxVO" {frontend}/src/typings/**/*.d.ts
 ### 检查清单
 - [ ] 前端 `XxxVO` 接口字段是后端 `XxxVO.java` 字段的**子集**（不能多出字段）
 - [ ] 前端 `XxxOperate` / `XxxQuery` 接口字段是后端对应类的**子集**
-- [ ] 字段类型对齐：`Long` ↔ `number`（雪花 ID 走 `string` 防精度丢失，按项目约定），`Boolean` ↔ `boolean`，`LocalDateTime` ↔ `string`/`number`
+- [ ] 字段类型对齐：ID 类 `Long` ↔ **`string`**（超 2^53 丢精度，与 api-contract 规则「ID 一律 string」一致）；非 ID 的 `Long` 数值 ↔ `number`；`Boolean` ↔ `boolean`；`LocalDateTime` ↔ `string`/`number`
 
 ---
 
