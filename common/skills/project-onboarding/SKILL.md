@@ -7,6 +7,7 @@ description: >
   流程 skill 的项目专有硬约束按「📌 项目覆写约定」回注），并按宿主产出入口四件套——Claude Code：
   CLAUDE.md + .claude/rules + .claude/skills + .document；其他模型宿主：AGENTS.md + common/skills +
   rules 引用 + .document——让任意 AI 宿主一进项目即可识别这套规范，无需逐宿主定制。
+  正式接入前必须先执行只读 dry-run 预演（基线对比 + 动作清单 + 报告），开发者确认无误后才写入目标项目。
 ---
 
 # 项目引入 / 融入向导（project-onboarding）
@@ -49,6 +50,22 @@ description: >
 
 ---
 
+## 第二步 · Dry-run 预演（正式接入前的硬门禁）
+
+**先预演、后落盘**：第〇、一步完成后，先做一次**全程只读**的 dry-run——不写目标项目任何文件——把"接入会发生什么"摆给开发者确认，确认通过才执行 A / B。
+
+1. **基线对比**（既有项目）：`bash scripts/verify-baseline.sh {目标根} --show-diff`，逐项判读 `✓ / ℹ / 📌 / Δ / ⊘ / ✗`；**Δ 流程漂移必须抽样 diff 确认构成**（基线更新滞后 还是 项目私改），不得仅凭差异行数下结论。新项目无对比，改为核对目标根确实无既有安装（防把"初始化"覆盖到已接入项目上）。
+2. **产出 dry-run 报告**，固定五部分：
+   - 结构与宿主识别结果（root / backend / frontend 的相对路径；Claude Code / 其他宿主 / 多宿主）
+   - 接入后的预期加载顺序（按宿主分别描述：Claude Code 按 cwd 自动加载链；其他宿主 AGENTS.md 显式路由链）
+   - 基线对比小结与漂移构成判读（新项目改为完整安装清单）
+   - **动作清单**：逐项列出将 覆盖 / 合并回注 / 新增 / 删除 / 不动 的文件范围与依据（既有项目对照 B 第 3 步分类表）
+   - 风险与需开发者拍板项（📌 回注内容、弃用技能处置、入口绝对路径修正、推断不出的占位符）
+3. **落档与确认**：报告落 framework 仓 `reports/{yyyy-MM-dd}-{项目}-onboarding-dryrun.md`（framework 仓不可写时在会话内完整展示）；交**开发者确认动作清单**——明确同意才继续，提出调整则改清单后重新确认；沉默不算通过（执行门禁第 5 条）。
+4. **正式接入后复验**：按报告预期重跑 `verify-baseline.sh`（流程 skill 应全 ✓，ℹ 仅剩项目专有差异）+ 检查入口无绝对路径；实际结果与 dry-run 预期不符 → **停下**向开发者报告差异，不自行圆场。
+
+---
+
 ## A · 新项目全量初始化
 
 ### A-1 Claude Code 项目（四件套）
@@ -67,7 +84,7 @@ description: >
 1. **拷贝技能与规则**（内容与 Claude 侧完全同源，无需任何适配）：
    - `common/skills/*` → `{root}/common/skills/`
    - `templates/common/rules/*` → `{root}/common/rules/`（契约占位符按项目填）
-   - `backend/*` → `{backend-repo}/common/skills/`、`frontend/*` → `{frontend-repo}/common/skills/`（单仓 / mono-repo 可统一放根 `common/skills/`，但同栈才装）
+   - `backend/*` → `{backend-repo}/common/skills/`、`frontend/*` → `{frontend-repo}/common/skills/`（同栈才装）。**前后端两套规范不得装入同一技能目录**——两端 `reviewer` 同名，合并即互相覆盖；单仓 / mono-repo 也按端分目录（如 `apps/api/common/skills/`、`apps/web/common/skills/`），并在 AGENTS.md 写明两份 reviewer 的各自路径
 2. **实例化 AGENTS.md**：以 `templates/AGENTS.md.template` 为骨架——技能位置、规则引用全部写相对路径；「执行门禁」节原样保留；「技能来源」填 framework 来源注记（仅记录，不作加载路径）。会被单独打开的子仓各放一份 AGENTS.md（引用各自根内的技能目录）。
 3. **文档骨架**：同 A-1 第 3 步。
 4. **校验**：跑 `bash scripts/verify-baseline.sh {项目根}`（已兼容 `common/skills` 布局）；从目标项目启动该宿主新会话，验证入口可读、典型请求能路由到对应 SKILL.md 并**读全文执行**。只做了文件校验时如实说明"自动触发未实测"。

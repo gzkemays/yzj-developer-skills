@@ -6,7 +6,7 @@ description: 前端代码审查 skill（Vue 3 + TypeScript 技术栈）。当用
 # 前端代码审查规范
 
 本 skill 与 backend `reviewer` 等价对位：后端有硬性审查流程，前端同样有。
-规范权威来源：`view-conventions` skill + 项目前端 `CLAUDE.md`（设计系统、契约约定）+ 项目 memory 中的前端踩坑记录。
+规范权威来源：`view-conventions` skill + 项目前端**入口规则**（入口文件及其显式引用的规则——Claude Code：前端 `CLAUDE.md`；其他宿主：AGENTS.md + 其引用的 `common/rules/`；承载设计系统、契约约定）+ 项目 memory 中的前端踩坑记录。
 
 > **为什么前端也要硬流程**：历史教训表明，前端漏检集中在"机器可查但目测会漏"的项——硬编码颜色、
 > i18n key 路径写错、类型多出后端不存在的字段、表单校验与后端 @Size 不一致。这些必须靠 Grep 扫描兜底。
@@ -15,8 +15,8 @@ description: 前端代码审查 skill（Vue 3 + TypeScript 技术栈）。当用
 
 ## 〇、七步硬流程（任何前端 Review 必须按此执行）
 
-**Step 0 — 装载规则**：Read 前端仓库 `CLAUDE.md` 全文（不许凭记忆）+ Read 项目 memory 中前端相关 tech/feedback 条目（如组件库踩坑、受控组件陷阱）。
-进入审查前必须在输出中明确写一句：**"已 Read 前端 CLAUDE.md + 相关 memory（{日期}），按 {N} 文件 × 全维度矩阵审查。"** 未写此句即开始 review = 违反协议 = 必返工。
+**Step 0 — 装载规则**：Read 前端仓库**入口规则全文**（入口文件及其显式引用的规则文件，见上「规范权威来源」；不许凭记忆）+ Read 项目 memory 中前端相关 tech/feedback 条目（如组件库踩坑、受控组件陷阱）。
+进入审查前必须在输出中明确写一句：**"已 Read 前端入口规则（{实际读取的文件路径}）+ 相关 memory（{日期}），按 {N} 文件 × 全维度矩阵审查。"** 未写此句即开始 review = 违反协议 = 必返工。
 
 **Step 1 — 圈定范围**：列出本次 `git status` / `git diff` 中所有新建 + 修改的 `.vue` / `.ts` / `.d.ts` 文件，输出清单。全部进入审查范围。
 
@@ -67,8 +67,8 @@ description: 前端代码审查 skill（Vue 3 + TypeScript 技术栈）。当用
 │  1. 类型契约对齐    → Step 3 + api-contract-checker 规则 3   │
 │  2. API 调用约定    → Step 4 + view-conventions 第五节       │
 │  3. i18n 完整性     → Step 2 + i18n-automation               │
-│  4. 设计系统 token  → Step 2 + 项目 CLAUDE.md                │
-│  5. 数据展示工具    → Step 5 + 项目 CLAUDE.md                │
+│  4. 设计系统 token  → Step 2 + 项目入口规则                  │
+│  5. 数据展示工具    → Step 5 + 项目入口规则                  │
 │  6. 表单校验对齐    → Step 5 + api-contract-checker 规则 4   │
 │  7. 页面/组件结构   → view-conventions（结构、BEM、hooks）    │
 │  8. 组件库陷阱      → 项目 memory（tech-* 条目）              │
@@ -104,7 +104,7 @@ description: 前端代码审查 skill（Vue 3 + TypeScript 技术栈）。当用
 
 Review 通过 ≠ 自测通过。进入 dev-session P5：
 
-- 构建验证：`npx vite build`（含类型检查；项目如有 `vue-tsc` 问题以 CLAUDE.md 说明为准）
+- 构建验证：`npx vite build`（含类型检查；项目如有 `vue-tsc` 问题以项目入口文件说明为准）
 - 用宿主可用的浏览器 / 预览能力做渲染/交互/网络验证（dev-session P5 两轮机制）；无可用工具时退化为 build + 类型检查，并列出未验证项
 
 ---
@@ -115,7 +115,7 @@ Review 通过 ≠ 自测通过。进入 dev-session P5：
 ## 前端代码审查报告
 
 ### 协议确认
-已 Read 前端 CLAUDE.md + 相关 memory（{日期}），按 {N} 文件 × 全维度矩阵审查。
+已 Read 前端入口规则（{实际读取的文件路径}）+ 相关 memory（{日期}），按 {N} 文件 × 全维度矩阵审查。
 
 ### 审查范围
 [文件清单]

@@ -11,7 +11,7 @@ user-invocable: false
 
 > 触发时机：所有涉及 Controller、Service、Operate、DTO、VO、ConvertAid、前端 `src/service/`、`src/typings/` 的写操作都应主动调用本 skill 自检一遍（dev-session P4 跨端检查）。
 > 本 skill **只检查不修改**，发现问题后报告，由 dev-session P4 决定自修或上报。
-> 项目如有额外契约约定（如多租户 Header），以项目根 CLAUDE.md 的 Cross-Cutting Contracts 为准、叠加检查。
+> 项目如有额外契约约定（如多租户 Header），以项目根入口文件引用的契约规则为准（`rules/api-contract.md`，或入口文件的 Cross-Cutting Contracts 章节）、叠加检查。
 
 ---
 
@@ -161,6 +161,6 @@ public Boolean modify(ModifyXxxOperate operate) {
 
 ## 关联
 
-- 项目根 `CLAUDE.md` — Cross-Cutting Contracts（项目专属契约叠加于本 skill 之上）
+- 项目根入口文件引用的契约规则（`rules/api-contract.md` 或入口的 Cross-Cutting Contracts 章节）— 项目专属契约叠加于本 skill 之上
 - `yzj-dev-workflow` skill — 后端开发流程
 - `frontend/reviewer` 与 `backend/reviewer` — P4 审查时本 skill 作为跨端维度

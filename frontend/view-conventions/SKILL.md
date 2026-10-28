@@ -6,7 +6,7 @@ description: 前端页面开发规范（Vue 3 + Naive UI + TypeScript 技术栈�
 # 前端页面（View）开发规范
 
 > 本 skill 是团队 Vue 3 技术栈的通用页面规范。项目专有部分（设计系统 token 前缀、统一通知工具名、
-> 全局类型定义位置）以项目前端 `CLAUDE.md` 为准；本文示例中以 `notifySuccess`、`var(--{prefix}-*)` 代指。
+> 全局类型定义位置）以项目前端入口规则为准（Claude Code：前端 `CLAUDE.md`；其他宿主：AGENTS.md 及其引用规则）；本文示例中以 `notifySuccess`、`var(--{prefix}-*)` 代指。
 
 ---
 
