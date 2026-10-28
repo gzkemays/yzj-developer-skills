@@ -18,8 +18,10 @@
 #     --show-diff            打印每个差异 skill 的具体 diff
 #     --strict               流程 skill 出现漂移即非零退出（默认仅结构错误才非零）
 #
-# 流程 skill 在文件前 20 行带「本文件 = framework 基线」覆写声明（project-onboarding「📌 项目覆写约定」
-# 的文件头差异清单）时报 📌 而非 Δ，--strict 下不算漂移；只有正文 📌 而无文件头声明的按普通漂移处理。
+# 流程 skill 在 frontmatter 结束后 20 行内带「本文件 = framework 基线」引用块声明（project-onboarding
+# 「📌 项目覆写约定」的文件头差异清单）时报 📌 而非 Δ，--strict 下不算漂移；只有正文 📌、声明在
+# frontmatter 内或无声明的，一律按普通漂移处理。frontmatter 做轻量检查（块内 name/description 非空），
+# 刻意不做完整 YAML 校验。
 # 扫描时跳过 .worktree/（git-commit 第八章的 worktree 副本）、.claude/worktrees/（宿主托管 worktree）、
 # .scratch/（临时参考副本）、node_modules、.git、.bak-*，避免同一 skill 被重复计数。
 set -uo pipefail
@@ -40,6 +42,10 @@ PROJECT="$(cd "$PROJECT" 2>/dev/null && pwd)" || { echo "项目路径不存在";
 FW="$(cd "$FW" 2>/dev/null && pwd)" || { echo "✗ 基线路径不存在: $FW"; exit 2; }
 { [ -d "$FW/common/skills" ] && [ -d "$FW/backend" ] && [ -d "$FW/frontend" ]; } \
   || { echo "✗ 基线无效：$FW 下缺 common/skills / backend / frontend（不是 skills 仓库？）"; exit 2; }
+# 哨兵文件：目录存在但为空（不完整检出）同样不能作为比较基线
+for s in common/skills/dev-session backend/reviewer frontend/reviewer; do
+  [ -f "$FW/$s/SKILL.md" ] || { echo "✗ 基线无效：缺 $FW/$s/SKILL.md（空目录 / 不完整检出不能作为比较基线）"; exit 2; }
+done
 
 # 流程方法论 skill：与栈无关，应与基线逐字一致（漂移→需确认是否有意增补）
 FLOW="dev-session pre-dev-alignment progress-tracker iteration-planner team-memory capability-registry similar-issue-sweep dev-output project-onboarding git-commit"
@@ -49,6 +55,34 @@ is_flow () { case " $FLOW " in *" $1 "*) return 0;; *) return 1;; esac; }
 
 # glob 是否匹配到东西（compgen -G 逐模式判断，避开 `ls a b c` 任一不存在即非零的坑）
 has_glob () { compgen -G "$1" >/dev/null 2>&1; }
+
+# 轻量 frontmatter 读取（刻意不做完整 YAML 校验）：只认文件开头 '---' 包围且**已闭合**的块内字段，
+# 正文里的 name:/description:（如代码示例）不作数；未闭合的 frontmatter 整体无效。
+# 值统一规范化：先去首尾空白 → 剥成对双引号 → 再去首尾空白（兼容 `name: "cache"  ` 这类写法）。
+# 输出 "name<TAB>descok<TAB>fm_end"：descok=1 表示 description 值非空（内联值或块标量的后续缩进行）；
+# fm_end 为闭合分隔符行号（0 = 无有效 frontmatter），覆写声明窗口据此计算，BOM 处理只做这一次。
+read_fm () {
+  awk '
+    function norm(v) {
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+      if (v ~ /^".*"$/) { sub(/^"/, "", v); sub(/"$/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v) }
+      return v
+    }
+    NR==1 { sub(/^\xef\xbb\xbf/,""); if ($0 !~ /^---\r?$/) exit; open=1; next }
+    open && /^---\r?$/ { closed=NR; exit }
+    open {
+      line=$0; sub(/\r$/,"",line)
+      if (line ~ /^name:/) { v=line; sub(/^name:[[:space:]]*/,"",v); name=norm(v); waiting=0 }
+      else if (line ~ /^description:/) {
+        v=line; sub(/^description:[[:space:]]*/,"",v); v=norm(v)
+        if (v != "" && v != ">" && v != "|" && v != ">-" && v != "|-") desc=1; else waiting=1
+      }
+      else if (line ~ /^[[:space:]]+[^[:space:]]/) { if (waiting) { desc=1; waiting=0 } }
+      else { waiting=0 }
+    }
+    END { if (!closed) { name=""; desc=0; closed=0 } printf "%s\t%d\t%d", name, desc+0, closed+0 }
+  ' "$1"
+}
 
 # 按标志文件分类「含技能目录的宿主目录」为 backend / frontend / root（布局无关，支持嵌套 Maven / 子目录前端）
 classify () {
@@ -127,15 +161,18 @@ for SD in "${SKILLDIRS[@]}"; do
     [ -d "$SKILL" ] || continue
     name="$(basename "$SKILL")"; pf="${SKILL}SKILL.md"
     [ -f "$pf" ] || { echo "   ?  $name  项目内缺 SKILL.md"; ERRORS=$((ERRORS+1)); continue; }
-    nm="$(sed -n 's/^name:[[:space:]]*//p' "$pf" | head -1 | tr -d '\r ')"
+    # 用参数展开拆分（IFS read 会吞掉空的首字段，导致空 name 被误读为后续标志）
+    fm_out="$(read_fm "$pf")"
+    nm="${fm_out%%$'\t'*}"; fm_rest="${fm_out#*$'\t'}"
+    descok="${fm_rest%%$'\t'*}"; fm_end="${fm_rest##*$'\t'}"
     mism=""
     if [ -z "$nm" ]; then
-      mism="  ✗ 缺 frontmatter name"; ERRORS=$((ERRORS+1))
+      mism="  ✗ 缺 frontmatter name（或 frontmatter 块缺失 / 未闭合）"; ERRORS=$((ERRORS+1))
     elif [ "$nm" != "$name" ]; then
       mism="  ⚠ name='$nm'≠目录名"; ERRORS=$((ERRORS+1))
     fi
-    grep -q '^description:' "$pf" 2>/dev/null \
-      || { mism="$mism  ✗ 缺 frontmatter description"; ERRORS=$((ERRORS+1)); }
+    [ "${descok:-0}" = 1 ] \
+      || { mism="$mism  ✗ 缺 frontmatter description 或值为空"; ERRORS=$((ERRORS+1)); }
     ff="$(find_fw "$name" "${PREFS[@]}")"
     if [ -z "$ff" ]; then echo "   ⊘  $name  framework 无 → 项目专有，跳过$mism"; continue; fi
     case "$ff" in __AMBIGUOUS__*)
@@ -148,10 +185,12 @@ for SD in "${SKILLDIRS[@]}"; do
     else
       n=$(diff --strip-trailing-cr "$ff" "$pf" | grep -c '^[<>]' || true)
       if is_flow "$name"; then
-        # 项目覆写只认「文件头差异清单」声明（前 20 行、固定首句），不扫全文符号：
-        # 避免基线正文自带 📌 的文件（如 project-onboarding）任何改动都被误判为覆写；
+        # 项目覆写只认「文件头差异清单」声明：frontmatter 结束后 20 行内、`>` 引用块行、固定首句。
+        # 不扫全文符号（避免基线正文自带 📌 的文件任何改动都被误判），也不认 frontmatter 内的
+        # 描述性文字；fm_end 来自 read_fm 的同一次读取（BOM / 闭合处理一致）；
         # LC_ALL=C 按字节匹配，规避多字节文本在不同语言环境下的 grep 行为差异
-        if head -n 20 "$pf" 2>/dev/null | LC_ALL=C grep -q '本文件 = framework 基线'; then
+        if [ "${fm_end:-0}" -gt 0 ] && sed -n "$((fm_end+1)),$((fm_end+20))p" "$pf" 2>/dev/null \
+             | LC_ALL=C grep -q '^>.*本文件 = framework 基线'; then
           echo "   📌  $name  流程 skill 带项目覆写标记，与基线差 ${n} 行（按文件头差异清单核对）$mism"; OVERRIDE=$((OVERRIDE+1))
         else
           echo "   Δ  $name  流程 skill 与基线差 ${n} 行  ⚠需确认是否有意$mism"; DRIFT=$((DRIFT+1))
