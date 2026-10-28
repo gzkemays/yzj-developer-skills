@@ -50,7 +50,7 @@ skills/
 > 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
 > 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
 >
-> **当前基线**：`2026-10-28`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
+> **当前基线**：`2026-10-29`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
 > **适用宿主**：任意 AI 编码宿主——Claude Code 按 `.claude/` 自动加载，其他宿主经 AGENTS.md 显式加载 `common/`。流程方法论 skill **与技术栈无关**
 > （dev-session / pre-dev-alignment / progress-tracker / team-memory / capability-registry /
 > similar-issue-sweep / dev-output / iteration-planner / project-onboarding / git-commit），任意项目可直接用；
@@ -76,6 +76,7 @@ skills/
 │   ├── yzj-dev-workflow/    #   YZJ 后端开发流程总入口
 │   ├── project-onboarding/  #   引入/融入向导（新项目初始化 + 既有项目对比合并）★
 │   ├── git-commit/          #   Git 提交与分支规范（分支门禁 + feat/opt/fix + 无 AI 记号/进度词 + 安全暂存 + Worktree 附录）★
+│   ├── neat-freak/          #   知识与规范收尾（文档/规则/记忆对齐现状，跨宿主，含审计脚本）
 │   └── skill-creator/       #   技能创建与评测
 ├── backend/                 # 后端能力（装到后端仓库的技能目录）
 │   ├── reviewer/            #   后端审查（七步硬流程 + 安全/金融/测试维度 + 55 条禁止清单 + 复查模式 + 漏检史）★
@@ -176,7 +177,7 @@ skills/
 P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 开发(文档产出+评审门禁→编码)
 → P4 AI Review(前后端 reviewer 硬流程+回溯扫描) → P5 自测
 → P6 开发者 Review(ARCH 深评/NORMAL 知会) → P7 开发者测试 → P8 确认
-→ P9 更新进度(台账硬门禁) → P10 沉淀核对 → P11 提交 → P12 成果报告
+→ P9 更新进度(台账硬门禁) → P10 沉淀核对 → P11 提交 → P12 成果报告+知识收尾(neat-freak 对账)
 ```
 
 **P3 编码前文档分层与门禁**（按 `pre-dev-alignment` 任务分级）：
