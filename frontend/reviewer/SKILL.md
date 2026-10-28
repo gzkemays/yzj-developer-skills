@@ -105,7 +105,7 @@ description: 前端代码审查 skill（Vue 3 + TypeScript 技术栈）。当用
 Review 通过 ≠ 自测通过。进入 dev-session P5：
 
 - 构建验证：`npx vite build`（含类型检查；项目如有 `vue-tsc` 问题以 CLAUDE.md 说明为准）
-- 推荐用 Claude Preview MCP 做渲染/交互/网络验证（dev-session P5 两轮机制）
+- 用宿主可用的浏览器 / 预览能力做渲染/交互/网络验证（dev-session P5 两轮机制）；无可用工具时退化为 build + 类型检查，并列出未验证项
 
 ---
 
