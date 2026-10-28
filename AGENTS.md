@@ -21,6 +21,7 @@
 - 跨端契约：`api-contract-checker`——两端接口变更时按技术设计文档「契约」章节逐条校验（dev-session P4 引用）。
 - 接入目标项目：`common/skills/project-onboarding`——先只读 dry-run 预演，开发者确认动作清单后才写入目标项目；创建 / 修改团队技能：`common/skills/skill-creator`（其评测脚本依赖 Claude Code CLI，其他宿主仅参考方法论）。
 - Git 提交：`common/skills/git-commit`——未获授权不执行 commit / push。
+- 知识与规范收尾：`common/skills/neat-freak`——用户点名"洁癖 / neat"，或表达明确的知识收尾意图（"把文档和记忆整理一下"、"收尾把文档同步掉"、"docs 和代码对不上了"）时触发，把文档 / 规则 / 获准维护的记忆 / 工作区残留对齐到代码与运行态；纯编码调试任务和无项目知识上下文的"整理"不触发。
 - 维护本技能库、只读咨询和小型文档调整无需套用业务项目的完整 12 阶段流程；本仓库不是业务项目，`templates/.document/` 是骨架，不当成真实台账。
 
 ## 宿主映射（技能正文的中性表述 ↔ 各宿主实现）

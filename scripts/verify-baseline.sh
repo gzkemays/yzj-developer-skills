@@ -48,7 +48,7 @@ for s in common/skills/dev-session backend/reviewer frontend/reviewer; do
 done
 
 # 流程方法论 skill：与栈无关，应与基线逐字一致（漂移→需确认是否有意增补）
-FLOW="dev-session pre-dev-alignment progress-tracker iteration-planner team-memory capability-registry similar-issue-sweep dev-output project-onboarding git-commit"
+FLOW="dev-session pre-dev-alignment progress-tracker iteration-planner team-memory capability-registry similar-issue-sweep dev-output project-onboarding git-commit neat-freak"
 # 其中应在项目根「存在」的（project-onboarding 是引入器，项目不强制具备）
 REQUIRED="dev-session pre-dev-alignment progress-tracker iteration-planner team-memory capability-registry similar-issue-sweep dev-output git-commit"
 is_flow () { case " $FLOW " in *" $1 "*) return 0;; *) return 1;; esac; }
