@@ -12,7 +12,8 @@
 #     --strict               流程 skill 出现漂移即非零退出（默认仅结构错误才非零）
 #
 # 流程 skill 含「📌」标记视为项目覆写（project-onboarding「📌 项目覆写约定」），报 📌 而非 Δ，--strict 下不算漂移。
-# 扫描时跳过 .worktree/（git-commit 第八章的 worktree 副本）、node_modules、.git、.bak-*，避免同一 skill 被重复计数。
+# 扫描时跳过 .worktree/（git-commit 第八章的 worktree 副本）、.claude/worktrees/（宿主托管 worktree）、
+# .scratch/（临时参考副本）、node_modules、.git、.bak-*，避免同一 skill 被重复计数。
 set -uo pipefail
 
 PROJECT=""; FW=""; SHOW_DIFF=0; STRICT=0
@@ -55,14 +56,17 @@ classify () {
 }
 area_of () { case "$1" in backend) echo "$FW/backend";; frontend) echo "$FW/frontend";; *) echo "$FW/common/skills";; esac; }
 
-# framework 中定位某 skill：先查分类区域，否则跨区唯一匹配（reviewer 这类多区同名时只认分类区域）
+# framework 中定位某 skill：先查分类区域，否则跨区唯一匹配；多区同名且无法按分类消歧 → 返回歧义标记
+# （前后端 reviewer 同名：装在可分类为 backend/frontend 的目录里能消歧，混装进 root 目录则报来源歧义）
 find_fw () {
-  local n="$1" pref="$2" hit="" ar
+  local n="$1" pref="$2" ar; local -a hits=()
   [ -f "$pref/$n/SKILL.md" ] && { echo "$pref/$n/SKILL.md"; return; }
   for ar in "$FW/common/skills" "$FW/backend" "$FW/frontend"; do
-    [ -f "$ar/$n/SKILL.md" ] && { [ -n "$hit" ] && return 0; hit="$ar/$n/SKILL.md"; }
+    [ -f "$ar/$n/SKILL.md" ] && hits+=("$ar/$n/SKILL.md")
   done
-  [ -n "$hit" ] && echo "$hit"
+  if [ "${#hits[@]}" -eq 1 ]; then echo "${hits[0]}"
+  elif [ "${#hits[@]}" -gt 1 ]; then echo "__AMBIGUOUS__ ${hits[*]}"
+  fi
 }
 
 OK=0; SPECIFIC=0; DRIFT=0; OVERRIDE=0; ERRORS=0
@@ -71,7 +75,8 @@ echo "目标项目:       $PROJECT"
 echo
 
 mapfile -t SKILLDIRS < <(find "$PROJECT" -type d \( -path '*/.claude/skills' -o -path '*/common/skills' \) \
-  -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/.bak-*/*' -not -path '*/.worktree/*' 2>/dev/null | sort)
+  -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/.bak-*/*' -not -path '*/.worktree/*' \
+  -not -path '*/.claude/worktrees/*' -not -path '*/.scratch/*' 2>/dev/null | sort)
 [ "${#SKILLDIRS[@]}" -gt 0 ] || { echo "✗ 未发现任何技能目录（.claude/skills 或 common/skills）—— 项目尚未引入？"; exit 1; }
 
 for SD in "${SKILLDIRS[@]}"; do
@@ -88,6 +93,10 @@ for SD in "${SKILLDIRS[@]}"; do
     mism=""; [ -n "$nm" ] && [ "$nm" != "$name" ] && { mism="  ⚠ name='$nm'≠目录名"; ERRORS=$((ERRORS+1)); }
     ff="$(find_fw "$name" "$PREF")"
     if [ -z "$ff" ]; then echo "   ⊘  $name  framework 无 → 项目专有，跳过$mism"; continue; fi
+    case "$ff" in __AMBIGUOUS__*)
+      echo "   ✗  $name  来源歧义：基线多处同名（${ff#__AMBIGUOUS__ }），该目录分类为 [$KIND] 无法消歧——前后端规范应装各自目录$mism"
+      ERRORS=$((ERRORS+1)); continue;;
+    esac
     if diff --strip-trailing-cr -q "$ff" "$pf" >/dev/null 2>&1; then
       echo "   ✓  $name  一致$mism"; OK=$((OK+1))
     else

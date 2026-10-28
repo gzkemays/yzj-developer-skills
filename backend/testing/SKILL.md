@@ -18,7 +18,7 @@ description: YZJ 后端单元测试规范。当需要为 Service / Flow / Contro
 | Mock | Mockito（`@ExtendWith(MockitoExtension.class)`） |
 | 断言 | JUnit `Assertions`；项目已引入 AssertJ 则优先 AssertJ |
 | 集成测试（可选） | TestContainers（真实 MySQL / Redis），**只用于集成测试类**，单元测试禁用 |
-| 覆盖率 | JaCoCo（门禁按项目 CLAUDE.md；未定义按第六节建议） |
+| 覆盖率 | JaCoCo（门禁按项目入口文件；未定义按第六节建议） |
 
 测试目录与源码镜像：`src/test/java/com/yeziji/{project}/domain/{业务}/service/impl/{Entity}ServiceImplTest.java`。
 
@@ -206,7 +206,7 @@ class AdminOrderV1ControllerTest {
 
 ## 六、覆盖率建议
 
-项目 CLAUDE.md 未定义门禁时按此执行；定义了以项目为准：
+项目入口文件未定义门禁时按此执行；定义了以项目为准：
 
 | 范围 | 建议 |
 |------|------|
@@ -221,6 +221,6 @@ class AdminOrderV1ControllerTest {
 
 ## 七、与 dev-session 的衔接
 
-- **P5**：用例文档里「AI 可测」的后端用例 → 优先落单元测试，并在「执行记录」填测试类与方法名；编译 + 测试命令按项目 CLAUDE.md
+- **P5**：用例文档里「AI 可测」的后端用例 → 优先落单元测试，并在「执行记录」填测试类与方法名；编译 + 测试命令按项目入口文件
 - **P7 不通过**：失败场景先补成测试再修复
 - **reviewer**：测试维度核对命名、必测场景、禁止项（见 reviewer 第十四节）

@@ -59,7 +59,7 @@ metadata:
 | 3 | **同一问题第二次出现**（无论谁发现）——说明第一次没沉淀或沉淀无效 | feedback（升级） |
 | 4 | 排查超过 30 分钟的**非显而易见踩坑**（框架行为、隐式约定、环境陷阱） | tech |
 | 5 | 影响后续开发的**架构/方案决策**拍板（含"暂不做"的决定） | project（重大的另写 ADR） |
-| 6 | 前后端**契约新增或变更** | tech / 项目 CLAUDE.md |
+| 6 | 前后端**契约新增或变更** | tech / 项目契约规则（`rules/api-contract.md` 或入口文件） |
 
 ### 执行顺序（固定）
 
@@ -126,7 +126,7 @@ metadata:
 - **并行写索引**：MEMORY.md 是追加型文件，多会话 / 多 worktree 同时加行时写前重读、只加自己的行、写完即提交；合并冲突双方都保留（见 `progress-tracker`「并行开发的文档冲突约定」）；个人 memory 按 cwd 分桶、不跨 worktree，团队要共享的只认本体系
 - **过时即清**：开发使既有记忆失效时（接口废弃、约束解除），更新或删除该记忆及索引行；项目状态类记忆完成后标记 ✅ 或移除"进行中"加粗
 - **拆分过长**：单文件超过一屏且含多个独立主题时拆分，索引分别登记
-- **不存代码已说明的事**：代码结构、git 历史、CLAUDE.md 已有内容不重复入 memory
+- **不存代码已说明的事**：代码结构、git 历史、项目入口文件已有内容不重复入 memory
 
 ---
 
@@ -139,6 +139,6 @@ metadata:
 | 重大架构决策（含权衡过程） | `.document/adr/`（memory 中放一行指针） |
 | 需求进度 | `.document/plan/STATUS.md`（`progress-tracker`） |
 | 单次开发的完整记录 | `.document/developer/output/`（`dev-output`） |
-| 全项目生效的硬约定 | 项目根 / 子项目 `CLAUDE.md`（memory 升级而来） |
+| 全项目生效的硬约定 | 项目根 / 子项目入口文件（CLAUDE.md / AGENTS.md，memory 升级而来） |
 
-> memory 中被反复引用的强约束，应择机"毕业"进 CLAUDE.md 或 reviewer skill——那里的执行力更强。
+> memory 中被反复引用的强约束，应择机"毕业"进项目入口文件 / 常驻规则或 reviewer skill——那里的执行力更强。

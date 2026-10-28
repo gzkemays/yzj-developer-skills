@@ -54,7 +54,7 @@ description: 后端代码审查 skill。当用户要求 review 代码、审查�
 - record vs class 判定正确（需类级 AOP 注解时必须 class + `@Resource`，record 不兼容 CGLIB）
 - 无内联业务逻辑（鉴权用 AOP 注解；DTO→VO 用 `CommonResult.success(data, fn)` 系列）
 - Flow 类有 `@Validated`（方法级参数校验生效的前提）
-- **对外接口 / SDK / gRPC 契约变更**（`interfaces/` 下开放平台 Controller、sdk、proto）：对接文档（项目 CLAUDE.md 指定路径，如 `docs/open-api-integration-guide.md`）已在**同一次提交**内更新——端点 / 入参出参 / 错误码 / 鉴权方式 / 开放范围任一变更都算（#48）
+- **对外接口 / SDK / gRPC 契约变更**（`interfaces/` 下开放平台 Controller、sdk、proto）：对接文档（项目入口文件指定路径，如 `docs/open-api-integration-guide.md`）已在**同一次提交**内更新——端点 / 入参出参 / 错误码 / 鉴权方式 / 开放范围任一变更都算（#48）
 
 **Step 5+ — 安全 / 金融专项**（每次 Review 至少过安全清单的「输入与注入」「敏感数据」两组；命中关键词的变更全组必做）：
 - 关键词扫描：Grep 本次文件是否含 `amount|balance|pay|transfer|refund|settle|ledger|card|pan|cvv|pin|password|token|secret|encrypt|permission|role`（中英文均扫：金额 / 余额 / 支付 / 退款 / 卡号 / 密码 / 密钥 / 权限）
@@ -390,7 +390,7 @@ DOC 不是 README 也不是 ADR。只回答三件事：
 - 命名：类 `{被测类}Test`、Mock `mock{Class}`、被测 `{x}UnderTest`、方法 `{method}_{scenario}_{expected}`
 - 必测场景：正常路径 + 校验失败（异常枚举正确、副作用 `never()`）+ 边界；金融 / 权限按 testing 4.2 / 4.3；P7 失败场景已固化
 - 禁止项：单元测试连真实 DB / Redis；`@SpringBootTest` 跑单测；无断言或只 `assertNotNull`；为测试改可见性；`Thread.sleep` 等异步
-- 覆盖率：按项目 CLAUDE.md 门禁，未定义按 testing 第六节建议；覆盖到但无关键断言不算
+- 覆盖率：按项目入口文件门禁，未定义按 testing 第六节建议；覆盖到但无关键断言不算
 
 ---
 

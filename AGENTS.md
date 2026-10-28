@@ -19,7 +19,7 @@
 - 开发流程：`dev-session`（12 阶段总入口）→ `pre-dev-alignment`（编码前对齐与文档门禁）；session 开局（"今天做什么 / 接着做"）用 `iteration-planner`；按需加载 `progress-tracker` / `team-memory` / `capability-registry` / `similar-issue-sweep` / `dev-output`。
 - 后端业务：`yzj-dev-workflow` 及其引用的 backend 子技能；审查：`backend/reviewer`。前端：`frontend/view-conventions`、`frontend/i18n-automation`；审查：`frontend/reviewer`。同栈才适用，以技能描述为准。
 - 跨端契约：`api-contract-checker`——两端接口变更时按技术设计文档「契约」章节逐条校验（dev-session P4 引用）。
-- 接入目标项目：`common/skills/project-onboarding`；创建 / 修改团队技能：`common/skills/skill-creator`（其评测脚本依赖 Claude Code CLI，其他宿主仅参考方法论）。
+- 接入目标项目：`common/skills/project-onboarding`——先只读 dry-run 预演，开发者确认动作清单后才写入目标项目；创建 / 修改团队技能：`common/skills/skill-creator`（其评测脚本依赖 Claude Code CLI，其他宿主仅参考方法论）。
 - Git 提交：`common/skills/git-commit`——未获授权不执行 commit / push。
 - 维护本技能库、只读咨询和小型文档调整无需套用业务项目的完整 12 阶段流程；本仓库不是业务项目，`templates/.document/` 是骨架，不当成真实台账。
 
