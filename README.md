@@ -40,7 +40,8 @@ skills/
 ### 维护与同步
 
 - **单一源、无同步脚本**：修改规范直接改 `common/skills/`、`backend/`、`frontend/` 下的源文件；宿主差异用行内映射表述，不生成宿主专属副本。
-- 技能 `name` 与目录名一致；frontmatter 只用 Agent Skills 开放标准字段。
+- 技能 `name` 与目录名一致；frontmatter 以 Agent Skills 开放标准字段为主，宿主扩展字段须在 description / 正文写明等效文字约束（见 AGENTS.md「维护约定」）。
+- 组织侧同步副本（如 claude.ai 组织技能库上传过本仓库技能）**不随 git 更新**：基线变更后需重新上传或移除旧副本，否则与仓库形成双源漂移，且会在所有项目的会话里与项目安装副本并存。
 - 校验：`bash scripts/verify-baseline.sh <目标项目根> [--show-diff] [--strict]`（自动识别目标的两种技能布局与前/后端仓）。
 - 文件校验通过 ≠ 自动触发已实测：从目标项目启动新会话，用"今天做什么"、真实开发与审查请求验证路由。
 

@@ -9,6 +9,7 @@ disable-model-invocation: true
 
 # Database Migration Generator
 
+> **触发约束**：仅在用户显式要求生成迁移脚本时执行（Claude Code：frontmatter `disable-model-invocation: true` 强制此约束；其他宿主：无等效字段，按本行文字约束执行，不自动触发）。
 > 适用于未集成 Flyway / Liquibase、但需要可审计 SQL 变更历史的项目。本 skill 约定统一的
 > 迁移文件结构，未来接入 Flyway 可直接迁移。已集成迁移框架的项目按框架规范执行，仅参考本文的设计规则。
 

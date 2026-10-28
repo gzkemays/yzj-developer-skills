@@ -6,7 +6,7 @@
 
 ## 目录与加载
 
-- `common/skills/<name>/SKILL.md` — 通用流程技能（研发生命周期、对齐、进度、记忆、提交等），目标项目**根目录**层使用。
+- `common/skills/<name>/SKILL.md` — 通用流程技能（研发生命周期、对齐、进度、记忆、提交等），目标项目**根目录**层使用；个别根级路由入口为同栈专用（如 `yzj-dev-workflow` 仅后端同栈项目安装）。
 - `backend/<name>/SKILL.md` — 后端规范技能（YZJ 四层 + MyBatis-Flex 同栈适用）。
 - `frontend/<name>/SKILL.md` — 前端规范技能（Vue 3 + Naive UI 同栈适用）。
 - `templates/` — 目标项目入口与文档骨架模板（`CLAUDE.md.template`、`AGENTS.md.template`、`common/rules/`、`.document/`）。
@@ -16,8 +16,9 @@
 
 ## 技能路由
 
-- 开发流程：`dev-session`（12 阶段总入口）→ `pre-dev-alignment`（编码前对齐与文档门禁），按需加载 `progress-tracker` / `team-memory` / `capability-registry` / `similar-issue-sweep` / `dev-output`。
+- 开发流程：`dev-session`（12 阶段总入口）→ `pre-dev-alignment`（编码前对齐与文档门禁）；session 开局（"今天做什么 / 接着做"）用 `iteration-planner`；按需加载 `progress-tracker` / `team-memory` / `capability-registry` / `similar-issue-sweep` / `dev-output`。
 - 后端业务：`yzj-dev-workflow` 及其引用的 backend 子技能；审查：`backend/reviewer`。前端：`frontend/view-conventions`、`frontend/i18n-automation`；审查：`frontend/reviewer`。同栈才适用，以技能描述为准。
+- 跨端契约：`api-contract-checker`——两端接口变更时按技术设计文档「契约」章节逐条校验（dev-session P4 引用）。
 - 接入目标项目：`common/skills/project-onboarding`；创建 / 修改团队技能：`common/skills/skill-creator`（其评测脚本依赖 Claude Code CLI，其他宿主仅参考方法论）。
 - Git 提交：`common/skills/git-commit`——未获授权不执行 commit / push。
 - 维护本技能库、只读咨询和小型文档调整无需套用业务项目的完整 12 阶段流程；本仓库不是业务项目，`templates/.document/` 是骨架，不当成真实台账。
@@ -43,7 +44,7 @@
 ## 维护约定
 
 - **单一源**：修改规范直接改 `common/skills/`、`backend/`、`frontend/` 下的源文件，无同步脚本、无生成物。宿主差异一律写成行内映射「（Claude Code：X；其他宿主：Y）」，不复制出宿主专属副本。
-- 每个技能 `name` 与目录名一致；frontmatter 只用 Agent Skills 开放标准字段（`name`/`description` 等）。
+- 每个技能 `name` 与目录名一致；frontmatter 以 Agent Skills 开放标准字段为主（`name`/`description` 等）。宿主扩展字段（如 `disable-model-invocation`、`user-invocable`）仅对支持的宿主生效——凡影响触发行为的，必须同时在 description / 正文写明等效文字约束（如"仅在用户显式要求时执行"），让不识别该字段的宿主也按文字执行。
 - 修改流程类 skill（dev-session / reviewer / progress-tracker）需团队过目；重大流程变更更新 `README.md`「当前基线」日期。
 - 不把个人 settings、凭据写入仓库；适配宿主不意味着新增业务规则或假装工具存在。
 
