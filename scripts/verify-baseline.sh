@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # verify-baseline.sh — 校验目标项目的 skill 是否与 framework 基线对齐。
 #
-# 布局无关：按「标志文件」自动识别项目里每个 .claude/skills 属于 后端 / 前端 / 根，
-# 再对应到 framework 的 backend/ · frontend/ · .claude/skills/ 逐一比对。不依赖仓库目录叫什么名字。
+# 布局无关：按「标志文件」自动识别项目里每个技能目录（.claude/skills 或 common/skills，
+# 分别对应 Claude Code 与其他宿主的加载布局）属于 后端 / 前端 / 根，
+# 再对应到 framework 的 backend/ · frontend/ · common/skills/ 逐一比对。不依赖仓库目录叫什么名字。
 #
 # 用法（在 Git Bash / WSL 运行；PowerShell 用 `bash scripts/verify-baseline.sh ...`）：
 #   bash verify-baseline.sh <project-root> [framework-skills-root] [--show-diff] [--strict]
@@ -36,7 +37,7 @@ is_flow () { case " $FLOW " in *" $1 "*) return 0;; *) return 1;; esac; }
 # glob 是否匹配到东西（compgen -G 逐模式判断，避开 `ls a b c` 任一不存在即非零的坑）
 has_glob () { compgen -G "$1" >/dev/null 2>&1; }
 
-# 按标志文件分类「含 .claude 的目录」为 backend / frontend / root（布局无关，支持嵌套 Maven / 子目录前端）
+# 按标志文件分类「含技能目录的宿主目录」为 backend / frontend / root（布局无关，支持嵌套 Maven / 子目录前端）
 classify () {
   local d="$1" pj
   # 项目根以 .document/ 为准（最高优先级，避免"含后端子仓库的根"被误判为后端）
@@ -52,13 +53,13 @@ classify () {
   done
   echo root
 }
-area_of () { case "$1" in backend) echo "$FW/backend";; frontend) echo "$FW/frontend";; *) echo "$FW/.claude/skills";; esac; }
+area_of () { case "$1" in backend) echo "$FW/backend";; frontend) echo "$FW/frontend";; *) echo "$FW/common/skills";; esac; }
 
 # framework 中定位某 skill：先查分类区域，否则跨区唯一匹配（reviewer 这类多区同名时只认分类区域）
 find_fw () {
   local n="$1" pref="$2" hit="" ar
   [ -f "$pref/$n/SKILL.md" ] && { echo "$pref/$n/SKILL.md"; return; }
-  for ar in "$FW/.claude/skills" "$FW/backend" "$FW/frontend"; do
+  for ar in "$FW/common/skills" "$FW/backend" "$FW/frontend"; do
     [ -f "$ar/$n/SKILL.md" ] && { [ -n "$hit" ] && return 0; hit="$ar/$n/SKILL.md"; }
   done
   [ -n "$hit" ] && echo "$hit"
@@ -69,15 +70,16 @@ echo "framework 基线: $FW"
 echo "目标项目:       $PROJECT"
 echo
 
-mapfile -t SKILLDIRS < <(find "$PROJECT" -type d -path '*/.claude/skills' \
+mapfile -t SKILLDIRS < <(find "$PROJECT" -type d \( -path '*/.claude/skills' -o -path '*/common/skills' \) \
   -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/.bak-*/*' -not -path '*/.worktree/*' 2>/dev/null | sort)
-[ "${#SKILLDIRS[@]}" -gt 0 ] || { echo "✗ 未发现任何 .claude/skills —— 项目尚未引入？"; exit 1; }
+[ "${#SKILLDIRS[@]}" -gt 0 ] || { echo "✗ 未发现任何技能目录（.claude/skills 或 common/skills）—— 项目尚未引入？"; exit 1; }
 
 for SD in "${SKILLDIRS[@]}"; do
   HOST="$(cd "$SD/../.." && pwd)"
   KIND="$(classify "$HOST")"; PREF="$(area_of "$KIND")"
   REL="${HOST#$PROJECT}"; REL="${REL#/}"; [ -n "$REL" ] || REL="(root)"
-  echo "── [$KIND] $REL/.claude/skills"
+  SUB="${SD#"$HOST"/}"
+  echo "── [$KIND] $REL/$SUB"
   for SKILL in "$SD"/*/; do
     [ -d "$SKILL" ] || continue
     name="$(basename "$SKILL")"; pf="${SKILL}SKILL.md"
@@ -105,19 +107,25 @@ for SD in "${SKILLDIRS[@]}"; do
   echo
 done
 
-RS="$PROJECT/.claude/skills"
-if [ -d "$RS" ]; then
-  for f in $REQUIRED; do [ -d "$RS/$f" ] || { echo "✗ root 缺流程 skill: $f"; ERRORS=$((ERRORS+1)); }; done
-else
-  echo "✗ 项目根无 .claude/skills/"; ERRORS=$((ERRORS+1))
-fi
-# 常驻规则层为软检查：缺失只提示，不计错误
-if [ -d "$PROJECT/.claude/rules" ]; then
-  for f in collaboration.md api-contract.md; do
-    [ -f "$PROJECT/.claude/rules/$f" ] || echo "ℹ 项目根 .claude/rules/ 缺 $f（可从 templates/.claude/rules 补；契约表留在 CLAUDE.md 亦可）"
+# root 必备流程 skill：两种布局（.claude/skills / common/skills）任一存在即可
+if [ -d "$PROJECT/.claude/skills" ] || [ -d "$PROJECT/common/skills" ]; then
+  for f in $REQUIRED; do
+    [ -d "$PROJECT/.claude/skills/$f" ] || [ -d "$PROJECT/common/skills/$f" ] \
+      || { echo "✗ root 缺流程 skill: $f"; ERRORS=$((ERRORS+1)); }
   done
 else
-  echo "ℹ 项目根无 .claude/rules/（常驻规则层）—— 建议从 templates/.claude/rules 补 collaboration.md / api-contract.md"
+  echo "✗ 项目根无技能目录（.claude/skills 或 common/skills）"; ERRORS=$((ERRORS+1))
+fi
+# 常驻规则层为软检查：缺失只提示，不计错误（两种布局任一即可）
+RULES=""
+[ -d "$PROJECT/.claude/rules" ] && RULES="$PROJECT/.claude/rules"
+[ -z "$RULES" ] && [ -d "$PROJECT/common/rules" ] && RULES="$PROJECT/common/rules"
+if [ -n "$RULES" ]; then
+  for f in collaboration.md api-contract.md; do
+    [ -f "$RULES/$f" ] || echo "ℹ ${RULES#$PROJECT/} 缺 $f（可从 templates/common/rules 补；契约表留在入口文件亦可）"
+  done
+else
+  echo "ℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md"
 fi
 
 echo "──────── 小结 ────────"

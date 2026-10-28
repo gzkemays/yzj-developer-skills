@@ -1,6 +1,6 @@
 # {项目名} Shared Developer Memory
 
-> 团队共享技术沉淀，随代码入库（规范见 `team-memory` skill）。个人偏好请存入 `~/.claude/projects/` 个人 memory。
+> 团队共享技术沉淀，随代码入库（规范见 `team-memory` skill）。个人偏好请存入个人 memory（Claude Code：`~/.claude/projects/`；其他宿主：用户已配置并授权的位置）。
 > 索引行的钩子写"结论"而非"主题"——读一行就能避坑。
 
 ## Development Constraints（feedback 类）

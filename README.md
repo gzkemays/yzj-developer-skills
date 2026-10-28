@@ -1,83 +1,57 @@
 # YZJ 团队共享技能库（skills）
 
-## Codex 加载目录（2026-10-26）
+## common 通用加载目录（2026-10-28）
 
-本仓库已增加 Codex 适配层，原有 `.claude/`、`backend/`、`frontend/` 和 Claude 模板保持原样。下文原有流程说明仍以 Claude Code 布局为背景；**Codex 接入以本节、`AGENTS.md` 和 Codex 版 `project-onboarding` 为准**。
+本仓库以 `common/` 为**模型无关的唯一内容源**：原 `.claude/skills/`（Claude Code 专属路径）迁移为 `common/skills/`，技能正文完成宿主无关化——宿主差异一律写成行内映射「（Claude Code：X；其他宿主：Y）」。曾经的 Codex 生成式适配层（`.agents/` + 同步/校验脚本）已删除：**任何模型接入都不再需要定制化处理**，拷贝 / 引用 common 内容 + 一个入口文件即可。
 
 ```text
 skills/
-├── AGENTS.md                         # Codex 常驻入口与维护说明
-├── .agents/
-│   ├── catalog.json                  # 分类与原始规范来源映射
-│   ├── rules/collaboration.md         # 由 AGENTS.md 显式要求读取
-│   └── skills/<name>/
-│       ├── SKILL.md                  # 名称、触发描述与执行入口
-│       ├── references/rules.md        # 长规范按需加载（如有）
-│       └── scripts/                  # 随技能携带的脚本（如有）
+├── AGENTS.md                  # 通用宿主常驻入口（任何模型从这里开始）
+├── CLAUDE.md                  # Claude Code 维护会话入口（@AGENTS.md + 专属路由）
+├── common/skills/<name>/      # 通用流程技能（源基线；装到目标项目根目录层）
+├── backend/<name>/            # 后端规范技能（YZJ 四层 + MyBatis-Flex 同栈）
+├── frontend/<name>/           # 前端规范技能（Vue 3 + Naive UI 同栈）
 ├── templates/
-│   ├── AGENTS.md.template            # 目标项目 Codex 入口模板
-│   ├── .agents/rules/                # 协作规范与 API 契约模板
-│   └── .document/                    # 复用原有文档骨架
+│   ├── CLAUDE.md.template     # Claude Code 项目入口模板
+│   ├── AGENTS.md.template     # 其他宿主项目入口模板（含不可删减的「执行门禁」）
+│   ├── common/rules/          # 常驻规则模板（协作原则 / 契约速查，宿主无关）
+│   └── .document/             # 项目文档骨架
 └── scripts/
-    ├── sync-codex-skills.py           # 生成/检查 Codex 适配层
-    └── verify-codex-skills.py         # 跨平台结构、引用与基线校验
+    └── verify-baseline.sh     # 基线校验（兼容 .claude/skills 与 common/skills 两种目标布局）
 ```
 
-### 已整理的能力
+### 接入方式（按宿主）
 
-共 **33 个 Codex 技能**：13 个通用/编排入口、17 个后端规范、3 个前端规范。分类与源文件关系见 `.agents/catalog.json`。
+| 宿主 | 安装目标 | 入口 |
+|------|---------|------|
+| **Claude Code** | `common/skills/*` → 项目根 `.claude/skills/`；`templates/common/rules/*` → `.claude/rules/`；`backend/`、`frontend/` → 各子仓 `.claude/skills/`（宿主只认 `.claude/`，属硬约束） | `templates/CLAUDE.md.template` 实例化 CLAUDE.md |
+| **其他模型** | `common/skills/*` → 项目根 `common/skills/`，`templates/common/rules/*` → `common/rules/`（内容同源直用，无需任何适配） | `templates/AGENTS.md.template` 实例化 AGENTS.md（显式引用技能与规则） |
+| **多宿主** | 以 `common/` 为内容源，另复制一份到各级 `.claude/`；两份同源、re-sync 时一起更新 | 两个入口并存，CLAUDE.md 首行 `@AGENTS.md` |
 
-- 通用技能沿用原名；团队技能创建器改为 `yzj-skill-creator`，避免与宿主内置能力混淆。
-- 前后端审查分别为 `backend-reviewer` 和 `frontend-reviewer`，不再共用 `reviewer` 名称。
-- 已弃用的 `framework-usage` 不安装，直接使用 `common`、`cache`、`mybatis`、`security`。
-- 开发前对齐通过当前会话提交计划与设计，保留所需文档评审；不依赖原宿主的计划模式 API。
-- 预览采用当前会话可用能力；缺少浏览器能力时只报告构建、类型检查结果及未验证交互。
-- 团队记忆仍使用 `.document/`；个人记忆仅在用户已配置并授权时读取。
-- i18n 脚本随目录携带，聚合器使用当前 Python 解释器启动子脚本，不要求 PATH 中另有 `python`。
-- `.agents/rules/` 是普通文档目录，**不会因为目录名自动成为常驻规则**；由 AGENTS.md 明确引用并要求读取。
+**两条硬约定**贯穿所有入口与模板（详见 `common/skills/project-onboarding`）：
+
+1. **相对路径**：入口文件中的加载引用一律相对入口文件所在目录，**禁止绝对路径**——同一父目录常并存多个项目，且项目会迁移 / 改名；验收口径是"项目整体移动后引用仍成立"。
+2. **执行门禁不得删减**：AGENTS.md 模板的「执行门禁」节是防接入宿主偷懒的兜底（必读全文 / 不跳审查 / 自证产出 / 不虚报验证 / 批准须显式）。
 
 ### 在本仓库使用
 
-从 **`skills/` 仓库目录**启动 Codex 新会话，或将它作为项目打开，检查 AGENTS.md 与技能列表。当前会话的工作目录若是外层 `framework/`，不要假定它会向下发现 `skills/.agents/skills/`。可直接指定相应 SKILL.md 读取；自动发现应在正确的项目根验证。
+从 **`skills/` 仓库目录**启动会话：Claude Code 自动加载根 CLAUDE.md（`@AGENTS.md`），其他宿主读 AGENTS.md。本仓库的技能源在 `common/skills/`，**任何宿主都不自动发现**——按入口文件的路由表读取对应 SKILL.md 全文执行。工作目录若是外层 `framework/`，直接指定相应 SKILL.md 读取。
 
-### 引入目标项目
+### 维护与同步
 
-在能同时访问源库和目标项目的会话中使用 Codex 版 `project-onboarding`，例如“把这套 Codex 规范引入到 D:/projects/example”。也可按下面顺序手工安装：
-
-1. 从 `.agents/skills/` 选取通用技能及同栈规范，复制**完整技能目录与资源**到目标 `.agents/skills/`。`yzj-dev-workflow`、`api-contract-checker` 有技术栈前提；引入器和创建器可选，不将整套规范强加给异栈项目。
-2. 用 `templates/AGENTS.md.template` 创建或合并目标 AGENTS.md；复制 `templates/.agents/rules/`，按实际项目填契约与路径，删除不适用项。
-3. `.document/` 只补缺失骨架，已有台账、设计、memory 和能力册保持并合并。既有 reviewer 的项目专有检查与漏检史需保留。
-4. 多个独立 Git 仓库、子仓和 Worktree 分别确认各自根内的入口；不能依赖共同父目录跨 Git 边界加载。共享文档根写入各入口。
-5. 在源库执行校验，再从目标启动新会话验证技能发现和典型请求路由。文件校验通过不等于已验证自动触发。
-
-```text
-python scripts/verify-codex-skills.py <目标项目根> --strict --show-diff
-python scripts/verify-codex-skills.py <目标项目根> --require-area backend
-```
-
-Python 3.10+ 即可，两个工具均只用标准库。`python` 是示意，未加入 PATH 时使用解释器绝对路径。原 `verify-baseline.sh` 继续校验原布局，Codex 使用新的 Python 校验器。
-
-### 后续维护与同步
-
-普通技能由原有规范生成，宿主差异集中在同步脚本；修改共享规范后执行：
-
-```text
-python scripts/sync-codex-skills.py
-python scripts/sync-codex-skills.py --check
-python scripts/verify-codex-skills.py --strict
-```
-
-同步脚本保留手工维护的 Codex `project-onboarding`、`yzj-skill-creator`、AGENTS.md、规则和模板。不要仅改生成物，否则下次同步会覆盖。源技能删除、改名或从长规范变为短规范后，需检查并清理已确认失效的旧生成文件；同步器不自动删除未知文件。
-
-校验器比较整个技能包（包括 references 与脚本），忽略文本行尾差异。`--strict` 对任何基线差异返回非零，包括带 `📌` 的项目覆写，须检查后处理；不将覆写标记当成已通过审核。项目独有技能只做基础结构与引用检查。
+- **单一源、无同步脚本**：修改规范直接改 `common/skills/`、`backend/`、`frontend/` 下的源文件；宿主差异用行内映射表述，不生成宿主专属副本。
+- 技能 `name` 与目录名一致；frontmatter 以 Agent Skills 开放标准字段为主，宿主扩展字段须在 description / 正文写明等效文字约束（见 AGENTS.md「维护约定」）。
+- 组织侧同步副本（如 claude.ai 组织技能库上传过本仓库技能）**不随 git 更新**：基线变更后需重新上传或移除旧副本，否则与仓库形成双源漂移，且会在所有项目的会话里与项目安装副本并存。
+- 校验：`bash scripts/verify-baseline.sh <目标项目根> [--show-diff] [--strict]`（自动识别目标的两种技能布局与前/后端仓）。
+- 文件校验通过 ≠ 自动触发已实测：从目标项目启动新会话，用"今天做什么"、真实开发与审查请求验证路由。
 
 ---
 
 > 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
 > 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
 >
-> **当前基线**：`2026-10-24`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
-> **适用前提**：Claude Code（按工作目录加载 CLAUDE.md + skills）。流程方法论 skill **与技术栈无关**
+> **当前基线**：`2026-10-28`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
+> **适用宿主**：任意 AI 编码宿主——Claude Code 按 `.claude/` 自动加载，其他宿主经 AGENTS.md 显式加载 `common/`。流程方法论 skill **与技术栈无关**
 > （dev-session / pre-dev-alignment / progress-tracker / team-memory / capability-registry /
 > similar-issue-sweep / dev-output / iteration-planner / project-onboarding / git-commit），任意项目可直接用；
 > **栈相关 skill**（`yzj-dev-workflow`、`api-contract-checker`、`backend/*` = YZJ 四层 + MyBatis-Flex、
@@ -89,7 +63,7 @@ python scripts/verify-codex-skills.py --strict
 
 ```
 skills/
-├── .claude/skills/          # 通用能力（项目根 .claude/skills/）
+├── common/skills/           # 通用能力（装到目标项目根的技能目录）
 │   ├── dev-session/         #   研发生命周期编排（12 阶段 + 门禁 + 全程规则）★ 总入口
 │   ├── pre-dev-alignment/   #   开发前对齐（前后端统一版 + 结论落档）
 │   ├── iteration-planner/   #   迭代规划（session 开局对齐上下文）
@@ -103,7 +77,7 @@ skills/
 │   ├── project-onboarding/  #   引入/融入向导（新项目初始化 + 既有项目对比合并）★
 │   ├── git-commit/          #   Git 提交与分支规范（分支门禁 + feat/opt/fix + 无 AI 记号/进度词 + 安全暂存 + Worktree 附录）★
 │   └── skill-creator/       #   技能创建与评测
-├── backend/                 # 后端能力（后端仓库 .claude/skills/）
+├── backend/                 # 后端能力（装到后端仓库的技能目录）
 │   ├── reviewer/            #   后端审查（七步硬流程 + 安全/金融/测试维度 + 55 条禁止清单 + 复查模式 + 漏检史）★
 │   ├── project-structure / model-conventions / service-conventions
 │   ├── controller-conventions / integration-flow / mybatis / cache
@@ -112,16 +86,17 @@ skills/
 │   ├── testing/             #   单元测试规范（命名 / 模板 / 必测场景 / 禁止项 / 覆盖率）
 │   ├── tabledef/            #   TableDef 手写维护规范
 │   └── db-migration/        #   SQL 迁移脚本生成（up + down）
-├── frontend/                 # 前端能力（前端仓库 .claude/skills/）
+├── frontend/                 # 前端能力（装到前端仓库的技能目录）
 │   ├── reviewer/            #   前端审查（七步硬流程 + 契约/i18n/token 扫描）★
 │   ├── view-conventions/    #   页面开发规范（Vue 3 + Naive UI CRUD 模式）
 │   └── i18n-automation/     #   i18n 自动化（补齐/校验/硬编码审计 + 脚本）
 ├── templates/               # 新项目引入模板
-│   ├── CLAUDE.md.template   #   项目根 CLAUDE.md 骨架
-│   ├── .claude/rules/       #   常驻规则模板（collaboration 协作原则 / api-contract 契约速查，自动加载）
+│   ├── CLAUDE.md.template   #   Claude Code 项目根入口骨架
+│   ├── AGENTS.md.template   #   其他宿主项目入口骨架（含「执行门禁」）
+│   ├── common/rules/        #   常驻规则模板（collaboration 协作原则 / api-contract 契约速查）
 │   └── .document/           #   项目文档目录骨架（plan/STATUS.md + backlog、design、memory、capability、adr）
 └── scripts/                 # 工具脚本
-    └── verify-baseline.sh   #   校验项目 skill 与基线对齐（布局无关，自动识别前/后端）
+    └── verify-baseline.sh   #   校验项目 skill 与基线对齐（布局无关，自动识别前/后端与两种技能布局）
 ```
 
 ---
@@ -135,19 +110,21 @@ skills/
 手动步骤（也是对 AI 流程的核对清单）：
 
 ```
-1. 拷贝通用能力 →  {project}/.claude/skills/        ← 本仓库 .claude/skills/*
-2. 拷贝常驻规则 →  {project}/.claude/rules/         ← 本仓库 templates/.claude/rules/*（契约占位符按项目填）
+（Claude Code 项目；其他宿主把 1/2 的目标换成 {project}/common/skills 与 {project}/common/rules，
+  第 6 步改用 templates/AGENTS.md.template，详见顶部「接入方式」与 project-onboarding）
+1. 拷贝通用能力 →  {project}/.claude/skills/        ← 本仓库 common/skills/*
+2. 拷贝常驻规则 →  {project}/.claude/rules/         ← 本仓库 templates/common/rules/*（契约占位符按项目填）
 3. 拷贝后端能力 →  {project}/{backend}/.claude/skills/   ← 本仓库 backend/*
 4. 拷贝前端能力 →  {project}/{frontend}/.claude/skills/  ← 本仓库 frontend/*
 5. 拷贝文档骨架 →  {project}/.document/             ← 本仓库 templates/.document/*
-6. 用 templates/CLAUDE.md.template 建项目根 CLAUDE.md，填好占位符
+6. 用 templates/CLAUDE.md.template 建项目根 CLAUDE.md，填好占位符；加载引用一律相对路径
    （仓库路径、构建命令、设计系统 token 前缀；契约速查表填在 rules/api-contract.md）
 7. 首次会话验证：说"今天做什么" → 应触发 iteration-planner 读取台账与计划
 ```
 
 > **既有项目融入不是无脑覆盖**：流程 skill 按基线对齐；`reviewer` 与项目专有 skill **合并保留**项目沉淀（漏检史、项目注解、设计 token、命名规则）；项目独有 skill 不动。详见 `project-onboarding`「既有项目对比融入」。
 
-> Claude Code 按**当前工作目录**加载对应 CLAUDE.md 与 skills：项目根管流程，子仓库管前/后端规范。
+> Claude Code 按**当前工作目录**加载对应 CLAUDE.md 与 skills，其他宿主按入口文件（AGENTS.md）声明的相对路径读取：项目根管流程，子仓库管前/后端规范。
 > 引入后项目可在各自仓库追加**项目级 skill**（业务特定约定），通用部分演进后反哺回本仓库。
 
 ### 引入后验证清单（多项目通用 · 全绿才算"AI 能识别并执行"）
@@ -157,9 +134,9 @@ skills/
 **A. 四件套就位（结构）**
 
 ```
-- [ ] 项目根 CLAUDE.md 占位符全部替换，无残留 {xxx}
-- [ ] 根 .claude/rules/ 有 collaboration.md + api-contract.md（契约表与 CLAUDE.md 二选一，不重复维护）
-- [ ] 根 .claude/skills/ 有流程层；后端 / 前端仓库各有 .claude/skills/
+- [ ] 项目根入口（CLAUDE.md / AGENTS.md）占位符全部替换，无残留 {xxx}；加载引用全部为相对路径
+- [ ] 根常驻规则层（.claude/rules 或 common/rules）有 collaboration.md + api-contract.md（契约表与入口二选一，不重复维护）
+- [ ] 根技能目录（.claude/skills 或 common/skills）有流程层；后端 / 前端仓库各有技能目录
 - [ ] .document/ 含 plan/STATUS.md、design/、adr/、developer/memory + capability
 - [ ] 每个 skill 的 name 与目录名一致（无 code-reviewer vs reviewer 类错位）
 ```
@@ -168,7 +145,7 @@ skills/
 
 ```
 - [ ] 流程 skill 与本仓库当前版逐字一致：
-      diff --strip-trailing-cr {项目}/.claude/skills/{skill}/SKILL.md {framework}/.claude/skills/{skill}/SKILL.md  → 空
+      diff --strip-trailing-cr {项目技能目录}/{skill}/SKILL.md {framework}/common/skills/{skill}/SKILL.md  → 空
 - [ ] reviewer / 规范 skill = 基线 + 项目专有项（diff 差异仅漏检史 / 项目注解 / 设计 token / 命名规则）
 - [ ] 流程 skill 带项目专有硬约束的，差异仅为「📌 项目覆写」标记段，且文件头有差异清单（`project-onboarding`「📌 覆写约定」）
 - [ ] 项目 CLAUDE.md 顶部记录引入时的 framework 基线（commit 短号或日期），落后于「当前基线」即提示 re-sync
@@ -185,7 +162,7 @@ skills/
 
 > 任一项不过 → 回 `project-onboarding` 对应步骤补齐。
 >
-> **一键校验**：`bash scripts/verify-baseline.sh {项目根}`（framework 省略时取本仓库）。它**按标志文件自动识别项目的前/后端仓库布局**（不依赖目录名，支持分仓 / mono-repo / 单栈），逐 skill 输出 `✓ 一致 / Δ 流程漂移 / 📌 项目覆写 / ℹ 项目专有差异 / ⊘ 项目专有 / ✗ 结构错误`，并查 `name` 与目录名是否一致、root 流程 skill 是否齐全、`.claude/rules/` 是否就位（软提示）。可在各项目本地 / CI 定期跑，实现多项目持续校验。加 `--show-diff` 看差异、`--strict` 让流程漂移即失败。
+> **一键校验**：`bash scripts/verify-baseline.sh {项目根}`（framework 省略时取本仓库）。它**按标志文件自动识别项目的前/后端仓库布局**（不依赖目录名，支持分仓 / mono-repo / 单栈），逐 skill 输出 `✓ 一致 / Δ 流程漂移 / 📌 项目覆写 / ℹ 项目专有差异 / ⊘ 项目专有 / ✗ 结构错误`，并查 `name` 与目录名是否一致、root 流程 skill 是否齐全、常驻规则层（`.claude/rules` 或 `common/rules`）是否就位（软提示）。可在各项目本地 / CI 定期跑，实现多项目持续校验。加 `--show-diff` 看差异、`--strict` 让流程漂移即失败。
 
 ---
 
@@ -252,7 +229,7 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 | 任务清单失真（已做标未做、已回滚标已完成）、砍掉的范围被遗忘 | `progress-tracker` 回填 DoD + `[⛔]` 已废弃 + backlog 文档（推迟即落档） |
 | 全栈契约靠口头，后端先改实现再补文档 | 技术设计文档「契约」章节冻结 + 联动需求接口确认停顿点 + 契约变更先改文档 |
 | 项目专有覆写散落在正文，re-sync 时被基线冲掉 | `project-onboarding`「📌 覆写约定」（文件头差异清单 + 行内标记）+ verify-baseline 识别 📌 |
-| 协作底线只写在 skill 里、按需才加载 | `templates/.claude/rules/` 常驻规则（冲突处理 / 刹车点 / 纠正 vs 妥协 / 契约速查），Claude Code 自动加载 |
+| 协作底线只写在 skill 里、按需才加载 | `templates/common/rules/` 常驻规则（冲突处理 / 刹车点 / 纠正 vs 妥协 / 执行自证 / 契约速查），Claude Code 自动加载、其他宿主经 AGENTS.md 显式引用 |
 | 后端规范没有金融、安全编码、测试维度，reviewer 十个维度里没有安全 | `backend/financial` + `security` 第八节红线 + `backend/testing`；reviewer 新增安全 / 金融 / 测试维度、HIGH RISK 升级（🟡 视同 🔴 + 双人审批）、ARCH 级复查模式 |
 | 框架日志过滤器默认打全量 body，"业务不打敏感日志"被误当成"敏感数据不入日志" | `logging` 第九节：`LoggerFilter` 忽略清单作为接口 DoD、逐层各配、逐层验证；reviewer 漏检史登记 |
 | 对外接口先改实现后补文档，第三方按旧文档对接 | reviewer #48：对外接口 / SDK / proto 变更的对接文档必须同一次提交更新 |
@@ -263,7 +240,7 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 
 1. 项目开发中，可复用产出按 `capability-registry` 登记，跨项目通用的进「待反哺 framework」区
 2. 迭代间歇做通用化改造（去项目专有命名/路径/业务假设）
-3. 按归属落位：流程方法论 → `.claude/skills/`；后端规范 → `backend/`；前端规范 → `frontend/`
+3. 按归属落位：流程方法论 → `common/skills/`；后端规范 → `backend/`；前端规范 → `frontend/`
 4. 提交本仓库：`feat(capability): 反哺 {能力} from {项目}`
 5. 项目登记册标记 `已反哺`；其他项目拉取更新即可受益
 

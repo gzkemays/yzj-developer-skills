@@ -1,6 +1,7 @@
 # {项目名} — {一句话定位}
 
 > 团队共享的 Claude Code 项目指令。Updated: {yyyy-MM-dd}
+> 多宿主项目：首行放 `@AGENTS.md` 导入通用入口，本文件只写 Claude Code 专属补充（本行按需删除）。
 > **framework 基线**：{引入时 skills 的 commit 短号 / 日期}（落后于 skills/README「当前基线」时，按「引入后验证」B 组 diff 决定 re-sync）
 > 模板来源：framework/skills/templates/CLAUDE.md.template（占位符 {xxx} 全部替换后删除本行）
 
@@ -12,8 +13,8 @@
     .claude/skills/        # ← 后端开发 SKILL（引自 framework/skills/backend）
   {frontend-repo}/         # {前端技术栈，如 Vue 3 + Naive UI + Pinia}
     .claude/skills/        # ← 前端开发 SKILL（引自 framework/skills/frontend）
-  .claude/rules/           # ← 常驻规则（协作原则 + 契约速查，引自 framework/skills/templates/.claude/rules）
-  .claude/skills/          # ← 通用流程 SKILL（引自 framework/skills/.claude）
+  .claude/rules/           # ← 常驻规则（协作原则 + 契约速查，引自 framework/skills/templates/common/rules）
+  .claude/skills/          # ← 通用流程 SKILL（引自 framework/skills/common/skills）
   .document/
     plan/                  # 迭代计划 + STATUS.md 台账（L3 需求/调整文档）+ backlog-*.md 待立项
     design/                # 技术设计文档（L2/L3 编码前评审）+ 视觉交互 DEMO
@@ -66,7 +67,7 @@ P1 分析需求(台账+定级) → P2 加载沉淀 → P3 开发(对齐落档) �
 
 ## Rules（常驻规则，自动加载）
 
-`.claude/rules/*.md` 随会话常驻，与本文件同级生效（引自 framework/skills/templates/.claude/rules）：
+`.claude/rules/*.md` 随会话常驻，与本文件同级生效（引自 framework/skills/templates/common/rules）：
 
 | 文件 | 内容 |
 |------|------|

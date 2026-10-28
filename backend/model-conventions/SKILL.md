@@ -173,6 +173,13 @@ public class ElectronReleaseVersionInfoQuery extends CommonQuery<ElectronRelease
 
 ## 四、ConvertAid 转换辅助类
 
+### 字段映射方式
+
+- 编写转换前读取同业务域已有 `ConvertAid` 以及源/目标模型的字段定义，复用既有转换；新转换优先逐字段使用 builder 或 setter，使输出字段可审查。
+- 尽量减少 `BeanUtils.copyProperties` 等按名称反射复制；不能为省代码将 Entity 整体复制到 DTO/VO，也不能换一个通用复制工具绕开字段审查。已有调用不做无关的全库替换；本次确需保留时说明字段同构、空值覆盖及敏感字段边界为何安全。
+- 映射必须核对继承字段、别名、枚举码、默认值、空值行为和有意排除的字段。凭据、内部控制字段等不能因源模型新增字段而自动进入对外响应。
+- 修改既有转换保持原契约，不能顺手改变 null 返回、更新时 null 是否覆盖、集合顺序或可变性。对字段裁剪、默认值、嵌套转换等实际行为做针对性验证，不以编译通过代替映射正确。
+
 ### 何时使用
 
 | 场景 | 方式 |
@@ -203,12 +210,27 @@ public class UserRolePermissionDTO {
  * @since 2026/01/01 01:58
  **/
 public class SystemPermissionConvertAid {
-    /** Entity → Model */
+    /**
+     * 将权限实体转换为对外模型。
+     *
+     * @param entity 权限实体；null 时不构建模型
+     * @return 权限模型；entity 为 null 时返回 null
+     */
     public static SystemPermission convertToModel(SystemPermissionEntity entity) {
-        // 采用 set/get 赋值，或建造者模式
+        if (entity == null) {
+            return null;
+        }
+        return SystemPermission.builder()
+                .id(entity.getId())
+                .build(); // 其余允许输出的字段逐项显式映射
     }
 
-    /** Model → Entity */
+    /**
+     * 将权限模型转换为新实体。
+     *
+     * @param model 待转换的权限模型
+     * @return 新的权限实体；model 为 null 时返回 null
+     */
     public static SystemPermissionEntity convertToEntity(SystemPermission model) {
         // 转换逻辑
     }
@@ -260,4 +282,4 @@ private Integer type;
 
 ## 七、不继承 CommonEntity
 
-Model 类（DTO/VO/通用模型）是独立的传输对象，不继承 `CommonEntity`。可包含聚合/计算字段，通过 `DataUtils` 或 `ConvertAid` 编写互转逻辑。
+Model 类（DTO/VO/通用模型）是独立的传输对象，不继承 `CommonEntity`。可包含聚合/计算字段，按第四节在 POJO 或 `ConvertAid` 中显式映射；使用 `DataUtils` 的空值/集合辅助能力不等于允许盲目复制全部属性。
