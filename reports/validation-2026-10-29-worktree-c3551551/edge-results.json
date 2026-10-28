@@ -1,0 +1,257 @@
+{
+  "base_commit": "7cded4dce4b37ec1058679157ad2f777ec79b997",
+  "working_tree_modified": true,
+  "tested_script_sha256": "c35515516b55ff45d307aad44d1fef6878f82a0530961f8c9a5741297850f10d",
+  "source_unchanged": true,
+  "total": 12,
+  "matched": 8,
+  "mismatched": 4,
+  "cases": [
+    {
+      "id": "control",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matches_expectation": true,
+      "counts": {
+        "consistent": 15,
+        "specific": 0,
+        "override": 0,
+        "drift": 0,
+        "errors": 0
+      },
+      "note": "13 common skills plus cache and backend reviewer.",
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\control",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline",
+        "--strict"
+      ],
+      "output": "framework 基线: /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/baseline\n目标项目:       /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/control\n\n── [backend] apps/api/common/skills\n   ✓  cache  一致\n   ✓  reviewer  一致\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   ✓  iteration-planner  一致\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   ✓  project-onboarding  一致\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 15   ℹ 项目专有差异 0   📌 项目覆写 0   Δ 流程漂移(需确认) 0   ✗ 结构错误 0\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    },
+    {
+      "id": "unclosed-frontmatter",
+      "expected_exit": "nonzero",
+      "actual_exit": 0,
+      "matches_expectation": false,
+      "counts": {
+        "consistent": 14,
+        "specific": 1,
+        "override": 0,
+        "drift": 0,
+        "errors": 0
+      },
+      "note": "Opening delimiter is present; closing delimiter is absent even at EOF.",
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\unclosed-frontmatter",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline",
+        "--strict"
+      ],
+      "output": "framework 基线: /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/baseline\n目标项目:       /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/unclosed-frontmatter\n\n── [backend] apps/api/common/skills\n   ℹ  cache  与基线差 257 行（reviewer/规范类，多为项目专有项）\n   ✓  reviewer  一致\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   ✓  iteration-planner  一致\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   ✓  project-onboarding  一致\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 14   ℹ 项目专有差异 1   📌 项目覆写 0   Δ 流程漂移(需确认) 0   ✗ 结构错误 0\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    },
+    {
+      "id": "whitespace-only-quoted-description",
+      "expected_exit": "nonzero",
+      "actual_exit": 0,
+      "matches_expectation": false,
+      "counts": {
+        "consistent": 14,
+        "specific": 1,
+        "override": 0,
+        "drift": 0,
+        "errors": 0
+      },
+      "note": "A double-quoted description contains whitespace only.",
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\whitespace-only-quoted-description",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline",
+        "--strict"
+      ],
+      "output": "framework 基线: /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/baseline\n目标项目:       /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/whitespace-only-quoted-description\n\n── [backend] apps/api/common/skills\n   ℹ  cache  与基线差 2 行（reviewer/规范类，多为项目专有项）\n   ✓  reviewer  一致\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   ✓  iteration-planner  一致\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   ✓  project-onboarding  一致\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 14   ℹ 项目专有差异 1   📌 项目覆写 0   Δ 流程漂移(需确认) 0   ✗ 结构错误 0\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    },
+    {
+      "id": "quoted-name-trailing-spaces",
+      "expected_exit": 0,
+      "actual_exit": 1,
+      "matches_expectation": false,
+      "counts": {
+        "consistent": 14,
+        "specific": 1,
+        "override": 0,
+        "drift": 0,
+        "errors": 1
+      },
+      "note": "Supported double-quoted name followed by ordinary trailing whitespace.",
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\quoted-name-trailing-spaces",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline",
+        "--strict"
+      ],
+      "output": "framework 基线: /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/baseline\n目标项目:       /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/quoted-name-trailing-spaces\n\n── [backend] apps/api/common/skills\n   ℹ  cache  与基线差 2 行（reviewer/规范类，多为项目专有项）  ⚠ name='cache\"'≠目录名\n   ✓  reviewer  一致\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   ✓  iteration-planner  一致\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   ✓  project-onboarding  一致\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 14   ℹ 项目专有差异 1   📌 项目覆写 0   Δ 流程漂移(需确认) 0   ✗ 结构错误 1\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    },
+    {
+      "id": "bom-metadata",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matches_expectation": true,
+      "counts": {
+        "consistent": 14,
+        "specific": 1,
+        "override": 0,
+        "drift": 0,
+        "errors": 0
+      },
+      "note": "The lightweight reader explicitly attempts to support a UTF-8 BOM.",
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\bom-metadata",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline",
+        "--strict"
+      ],
+      "output": "framework 基线: /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/baseline\n目标项目:       /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/bom-metadata\n\n── [backend] apps/api/common/skills\n   ℹ  cache  与基线差 2 行（reviewer/规范类，多为项目专有项）\n   ✓  reviewer  一致\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   ✓  iteration-planner  一致\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   ✓  project-onboarding  一致\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 14   ℹ 项目专有差异 1   📌 项目覆写 0   Δ 流程漂移(需确认) 0   ✗ 结构错误 0\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    },
+    {
+      "id": "bom-declared-override",
+      "expected_exit": 0,
+      "actual_exit": 1,
+      "matches_expectation": false,
+      "counts": {
+        "consistent": 14,
+        "specific": 0,
+        "override": 0,
+        "drift": 1,
+        "errors": 0
+      },
+      "note": "UTF-8 BOM plus the same valid override declaration as the normal case.",
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\bom-declared-override",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline",
+        "--strict"
+      ],
+      "output": "framework 基线: /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/baseline\n目标项目:       /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/bom-declared-override\n\n── [backend] apps/api/common/skills\n   ✓  cache  一致\n   ✓  reviewer  一致\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   Δ  iteration-planner  流程 skill 与基线差 5 行  ⚠需确认是否有意\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   ✓  project-onboarding  一致\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 14   ℹ 项目专有差异 0   📌 项目覆写 0   Δ 流程漂移(需确认) 1   ✗ 结构错误 0\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    },
+    {
+      "id": "declaration-post-fm-line-20",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matches_expectation": true,
+      "counts": {
+        "consistent": 14,
+        "specific": 0,
+        "override": 1,
+        "drift": 0,
+        "errors": 0
+      },
+      "note": "Declaration at exactly the new inclusive upper bound.",
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\declaration-post-fm-line-20",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline",
+        "--strict"
+      ],
+      "output": "framework 基线: /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/baseline\n目标项目:       /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/declaration-post-fm-line-20\n\n── [backend] apps/api/common/skills\n   ✓  cache  一致\n   ✓  reviewer  一致\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   📌  iteration-planner  流程 skill 带项目覆写标记，与基线差 21 行（按文件头差异清单核对）\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   ✓  project-onboarding  一致\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 14   ℹ 项目专有差异 0   📌 项目覆写 1   Δ 流程漂移(需确认) 0   ✗ 结构错误 0\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    },
+    {
+      "id": "declaration-post-fm-line-21",
+      "expected_exit": "nonzero",
+      "actual_exit": 1,
+      "matches_expectation": true,
+      "counts": {
+        "consistent": 14,
+        "specific": 0,
+        "override": 0,
+        "drift": 1,
+        "errors": 0
+      },
+      "note": "Declaration just beyond the documented new window.",
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\declaration-post-fm-line-21",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline",
+        "--strict"
+      ],
+      "output": "framework 基线: /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/baseline\n目标项目:       /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/declaration-post-fm-line-21\n\n── [backend] apps/api/common/skills\n   ✓  cache  一致\n   ✓  reviewer  一致\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   Δ  iteration-planner  流程 skill 与基线差 22 行  ⚠需确认是否有意\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   ✓  project-onboarding  一致\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 14   ℹ 项目专有差异 0   📌 项目覆写 0   Δ 流程漂移(需确认) 1   ✗ 结构错误 0\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    },
+    {
+      "id": "long-frontmatter-valid-declaration",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "matches_expectation": true,
+      "counts": {
+        "consistent": 14,
+        "specific": 0,
+        "override": 1,
+        "drift": 0,
+        "errors": 0
+      },
+      "note": "Long frontmatter must not consume the separate 20-line body window.",
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\long-frontmatter-valid-declaration",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline",
+        "--strict"
+      ],
+      "output": "framework 基线: /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/baseline\n目标项目:       /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/long-frontmatter-valid-declaration\n\n── [backend] apps/api/common/skills\n   ✓  cache  一致\n   ✓  reviewer  一致\n\n── [root] (root)/common/skills\n   ✓  api-contract-checker  一致\n   ✓  capability-registry  一致\n   ✓  dev-output  一致\n   ✓  dev-session  一致\n   ✓  git-commit  一致\n   📌  iteration-planner  流程 skill 带项目覆写标记，与基线差 28 行（按文件头差异清单核对）\n   ✓  pre-dev-alignment  一致\n   ✓  progress-tracker  一致\n   ✓  project-onboarding  一致\n   ✓  similar-issue-sweep  一致\n   ✓  skill-creator  一致\n   ✓  team-memory  一致\n   ✓  yzj-dev-workflow  一致\n\nℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md\n──────── 小结 ────────\n✓ 一致 14   ℹ 项目专有差异 0   📌 项目覆写 1   Δ 流程漂移(需确认) 0   ✗ 结构错误 0\n提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。\n"
+    },
+    {
+      "id": "missing-sentinel-common",
+      "expected_exit": 2,
+      "actual_exit": 2,
+      "matches_expectation": true,
+      "counts": null,
+      "note": "Only the selected sentinel is missing from the baseline.",
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\missing-sentinel-common",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline-without-common",
+        "--strict"
+      ],
+      "output": "✗ 基线无效：缺 /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/baseline-without-common/common/skills/dev-session/SKILL.md（空目录 / 不完整检出不能作为比较基线）\n"
+    },
+    {
+      "id": "missing-sentinel-backend",
+      "expected_exit": 2,
+      "actual_exit": 2,
+      "matches_expectation": true,
+      "counts": null,
+      "note": "Only the selected sentinel is missing from the baseline.",
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\missing-sentinel-backend",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline-without-backend",
+        "--strict"
+      ],
+      "output": "✗ 基线无效：缺 /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/baseline-without-backend/backend/reviewer/SKILL.md（空目录 / 不完整检出不能作为比较基线）\n"
+    },
+    {
+      "id": "missing-sentinel-frontend",
+      "expected_exit": 2,
+      "actual_exit": 2,
+      "matches_expectation": true,
+      "counts": null,
+      "note": "Only the selected sentinel is missing from the baseline.",
+      "command": [
+        "D:\\developer\\Git\\bin\\bash.exe",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline\\scripts\\verify-baseline.sh",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\missing-sentinel-frontend",
+        "D:\\.project\\framework\\.skill-edge-validation-c63039e462f440088a3978207220ab77\\baseline-without-frontend",
+        "--strict"
+      ],
+      "output": "✗ 基线无效：缺 /d/.project/framework/.skill-edge-validation-c63039e462f440088a3978207220ab77/baseline-without-frontend/frontend/reviewer/SKILL.md（空目录 / 不完整检出不能作为比较基线）\n"
+    }
+  ]
+}

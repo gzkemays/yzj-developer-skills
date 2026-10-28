@@ -1,0 +1,383 @@
+{
+  "python": "3.12.14",
+  "environment": {
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8"
+  },
+  "previous_harness_unchanged": {
+    "validate.py": true,
+    "check_locale.py": true
+  },
+  "skills": [
+    {
+      "area": "common/skills",
+      "skill": "api-contract-checker",
+      "path": "common/skills/api-contract-checker/SKILL.md",
+      "fields_valid": true,
+      "sha256": "5f1bcc5ec527bf2c22ebc71b0444d50ff56be1e93ab922bd6efb522ddd0ee70b"
+    },
+    {
+      "area": "common/skills",
+      "skill": "capability-registry",
+      "path": "common/skills/capability-registry/SKILL.md",
+      "fields_valid": true,
+      "sha256": "ba34e70683dc3796fb15101e3e2d9fbc8b9c7b69ed574b5faef24e99b1fa58c4"
+    },
+    {
+      "area": "common/skills",
+      "skill": "dev-output",
+      "path": "common/skills/dev-output/SKILL.md",
+      "fields_valid": true,
+      "sha256": "3b2717d6f21f2e1f2ea8fd0d8dcc0cda6812684f29a30886c964cb25c5accf7c"
+    },
+    {
+      "area": "common/skills",
+      "skill": "dev-session",
+      "path": "common/skills/dev-session/SKILL.md",
+      "fields_valid": true,
+      "sha256": "26f3c583e75671e86a315e1719f7f347961013cab263a0be8da6bb69d52adff2"
+    },
+    {
+      "area": "common/skills",
+      "skill": "git-commit",
+      "path": "common/skills/git-commit/SKILL.md",
+      "fields_valid": true,
+      "sha256": "7fc383ff6c13a96cb6962f654c5d6124b4824ea8719ff9f05598ccda5c88b1f8"
+    },
+    {
+      "area": "common/skills",
+      "skill": "iteration-planner",
+      "path": "common/skills/iteration-planner/SKILL.md",
+      "fields_valid": true,
+      "sha256": "514b045f37ae62e8cc81519ade689da2d9292e02985c6752b6ae1cc0075fd734"
+    },
+    {
+      "area": "common/skills",
+      "skill": "pre-dev-alignment",
+      "path": "common/skills/pre-dev-alignment/SKILL.md",
+      "fields_valid": true,
+      "sha256": "7e594c0b8362b4dce19512a619edae316079a87c9eca2519d3d6bee1fbe4b2a5"
+    },
+    {
+      "area": "common/skills",
+      "skill": "progress-tracker",
+      "path": "common/skills/progress-tracker/SKILL.md",
+      "fields_valid": true,
+      "sha256": "d7ec5f819736ebcd2c7c33062860d0c1ab207ebd9206e6f1d44cb3801c0de13a"
+    },
+    {
+      "area": "common/skills",
+      "skill": "project-onboarding",
+      "path": "common/skills/project-onboarding/SKILL.md",
+      "fields_valid": true,
+      "sha256": "b1138e22d0565949d75bfb3c057a7a1c0f9b14b3bcaf7231c31968756bc8853d"
+    },
+    {
+      "area": "common/skills",
+      "skill": "similar-issue-sweep",
+      "path": "common/skills/similar-issue-sweep/SKILL.md",
+      "fields_valid": true,
+      "sha256": "c098806ac8ee6dfbbfc73d0909f99ecfbd93017614ae2e3e69e907add763f3c3"
+    },
+    {
+      "area": "common/skills",
+      "skill": "skill-creator",
+      "path": "common/skills/skill-creator/SKILL.md",
+      "fields_valid": true,
+      "sha256": "807d38fa5a301613025f8e31c5038cae34368c8e3da17428b356c8878b938fa0"
+    },
+    {
+      "area": "common/skills",
+      "skill": "team-memory",
+      "path": "common/skills/team-memory/SKILL.md",
+      "fields_valid": true,
+      "sha256": "e0dc4619cc4f93555e119217d07594f2225c30017f24b09dbd3fdb2e0edd1873"
+    },
+    {
+      "area": "common/skills",
+      "skill": "yzj-dev-workflow",
+      "path": "common/skills/yzj-dev-workflow/SKILL.md",
+      "fields_valid": true,
+      "sha256": "a7f955528bb9445aee5a267c74dce33cfbdcf1cf68060c417eb598dc57f615b2"
+    },
+    {
+      "area": "backend",
+      "skill": "cache",
+      "path": "backend/cache/SKILL.md",
+      "fields_valid": true,
+      "sha256": "9c2e772a27a0df21a24dc424cc0c9c4db67ad7c3c6a67539a2441ec98e4fd895"
+    },
+    {
+      "area": "backend",
+      "skill": "common",
+      "path": "backend/common/SKILL.md",
+      "fields_valid": true,
+      "sha256": "d97e7c4074d1d81dd2c61aaf6435091deabc0bf7d6f4aba5f5ecd9a1f9f82573"
+    },
+    {
+      "area": "backend",
+      "skill": "controller-conventions",
+      "path": "backend/controller-conventions/SKILL.md",
+      "fields_valid": true,
+      "sha256": "42493718db7e7cd29b4837da510d456db414a1579babadff0a96eb7de17a23c1"
+    },
+    {
+      "area": "backend",
+      "skill": "database-design",
+      "path": "backend/database-design/SKILL.md",
+      "fields_valid": true,
+      "sha256": "e3e6728ee0c7240fa51e96e8b93aec65bb446794212967b2a7c9b65e81d32962"
+    },
+    {
+      "area": "backend",
+      "skill": "db-migration",
+      "path": "backend/db-migration/SKILL.md",
+      "fields_valid": true,
+      "sha256": "f72bf5c1cfdf7693cca65ff130b86f5243a72b054c4b6427608349e2fd789dee"
+    },
+    {
+      "area": "backend",
+      "skill": "financial",
+      "path": "backend/financial/SKILL.md",
+      "fields_valid": true,
+      "sha256": "fa52e9ca1cdca14f617e1af94084d48581ad5cae98346f5b90d12b8d07c15e3d"
+    },
+    {
+      "area": "backend",
+      "skill": "framework-usage",
+      "path": "backend/framework-usage/SKILL.md",
+      "fields_valid": true,
+      "sha256": "a94b7c270e3f6a8e17e542e80c16c55a19926fa44ed06cb0c70e8b462df4b9ae"
+    },
+    {
+      "area": "backend",
+      "skill": "grpc",
+      "path": "backend/grpc/SKILL.md",
+      "fields_valid": true,
+      "sha256": "9d7b4210f30996fe937e3d41e64573e089e09f07c52ac9e452c56325780d4cee"
+    },
+    {
+      "area": "backend",
+      "skill": "integration-flow",
+      "path": "backend/integration-flow/SKILL.md",
+      "fields_valid": true,
+      "sha256": "90b95aaa1f7a6c122d605d9e846da8f8409f21d5fcc8d30382c1973e373e97d2"
+    },
+    {
+      "area": "backend",
+      "skill": "logging",
+      "path": "backend/logging/SKILL.md",
+      "fields_valid": true,
+      "sha256": "92bff6f4dd5d467e0da9b61c95c8927ca01d735c8a9c3837f54690065c2e116a"
+    },
+    {
+      "area": "backend",
+      "skill": "model-conventions",
+      "path": "backend/model-conventions/SKILL.md",
+      "fields_valid": true,
+      "sha256": "47e1f530d01f649fd35649d987b495b798930960adae730ede53cb5178f0daf0"
+    },
+    {
+      "area": "backend",
+      "skill": "mybatis",
+      "path": "backend/mybatis/SKILL.md",
+      "fields_valid": true,
+      "sha256": "4da9cc17463aae92fb59746934d65720ee6f4541d85aa474a68de60920a1b493"
+    },
+    {
+      "area": "backend",
+      "skill": "project-structure",
+      "path": "backend/project-structure/SKILL.md",
+      "fields_valid": true,
+      "sha256": "e7f239aba8f5669526e85a87da1914daad495b916dac8a3a066953d43acd7d32"
+    },
+    {
+      "area": "backend",
+      "skill": "reviewer",
+      "path": "backend/reviewer/SKILL.md",
+      "fields_valid": true,
+      "sha256": "a5f05d6ecb8a58c9287a9cd3c2d82de201559a8dd45f94dfb2ddfba81dc6d1b4"
+    },
+    {
+      "area": "backend",
+      "skill": "security",
+      "path": "backend/security/SKILL.md",
+      "fields_valid": true,
+      "sha256": "5fffc0086fc4945265608c8f84043054d11b5738b2b5f2ac6b7c41d1468234f1"
+    },
+    {
+      "area": "backend",
+      "skill": "service-conventions",
+      "path": "backend/service-conventions/SKILL.md",
+      "fields_valid": true,
+      "sha256": "7b4589800a7f01dc39cc6ce03531592de2db26b1f469c798fced8ee618c0298f"
+    },
+    {
+      "area": "backend",
+      "skill": "tabledef",
+      "path": "backend/tabledef/SKILL.md",
+      "fields_valid": true,
+      "sha256": "f875319253071fe7107da0005b6e4f6845cacf4f757fd2858de7df44ee4d322f"
+    },
+    {
+      "area": "backend",
+      "skill": "testing",
+      "path": "backend/testing/SKILL.md",
+      "fields_valid": true,
+      "sha256": "6529c3ad0a36c3e2f0fefd2c8c0c0a7612b86f7275ea831c8d818a82576a62a1"
+    },
+    {
+      "area": "frontend",
+      "skill": "i18n-automation",
+      "path": "frontend/i18n-automation/SKILL.md",
+      "fields_valid": true,
+      "sha256": "80be364863589fd917a92285c5245c69ed0db147d60dd269fb623887a4697248"
+    },
+    {
+      "area": "frontend",
+      "skill": "reviewer",
+      "path": "frontend/reviewer/SKILL.md",
+      "fields_valid": true,
+      "sha256": "958592523b457eab185ce5c46951638c213ec25997495f57b01cdc00767ea441"
+    },
+    {
+      "area": "frontend",
+      "skill": "view-conventions",
+      "path": "frontend/view-conventions/SKILL.md",
+      "fields_valid": true,
+      "sha256": "d3b041e675f2e153fe560f862efa4f09f1fa2a3a9a101630c7c7d975b7ba0230"
+    }
+  ],
+  "resource_references": [
+    {
+      "skill": "common/skills/skill-creator/SKILL.md",
+      "reference": "agents/analyzer.md",
+      "exists": true
+    },
+    {
+      "skill": "common/skills/skill-creator/SKILL.md",
+      "reference": "agents/comparator.md",
+      "exists": true
+    },
+    {
+      "skill": "common/skills/skill-creator/SKILL.md",
+      "reference": "agents/grader.md",
+      "exists": true
+    },
+    {
+      "skill": "common/skills/skill-creator/SKILL.md",
+      "reference": "assets/eval_review.html",
+      "exists": true
+    },
+    {
+      "skill": "common/skills/skill-creator/SKILL.md",
+      "reference": "eval-viewer/generate_review.py",
+      "exists": true
+    },
+    {
+      "skill": "common/skills/skill-creator/SKILL.md",
+      "reference": "references/schemas.md",
+      "exists": true
+    },
+    {
+      "skill": "frontend/i18n-automation/SKILL.md",
+      "reference": "scripts/detect_hardcoded_literals.py",
+      "exists": true
+    },
+    {
+      "skill": "frontend/i18n-automation/SKILL.md",
+      "reference": "scripts/extract_schema_keys.py",
+      "exists": true
+    },
+    {
+      "skill": "frontend/i18n-automation/SKILL.md",
+      "reference": "scripts/parse_locale_files.py",
+      "exists": true
+    },
+    {
+      "skill": "frontend/i18n-automation/SKILL.md",
+      "reference": "scripts/run_i18n_audit.py",
+      "exists": true
+    },
+    {
+      "skill": "frontend/i18n-automation/SKILL.md",
+      "reference": "scripts/sort_and_merge_keys.py",
+      "exists": true
+    },
+    {
+      "skill": "frontend/i18n-automation/SKILL.md",
+      "reference": "scripts/validate_i18n_integrity.py",
+      "exists": true
+    }
+  ],
+  "python_syntax": [
+    {
+      "path": "common/skills/skill-creator/eval-viewer/generate_review.py",
+      "error": null
+    },
+    {
+      "path": "common/skills/skill-creator/scripts/__init__.py",
+      "error": null
+    },
+    {
+      "path": "common/skills/skill-creator/scripts/aggregate_benchmark.py",
+      "error": null
+    },
+    {
+      "path": "common/skills/skill-creator/scripts/generate_report.py",
+      "error": null
+    },
+    {
+      "path": "common/skills/skill-creator/scripts/improve_description.py",
+      "error": null
+    },
+    {
+      "path": "common/skills/skill-creator/scripts/package_skill.py",
+      "error": null
+    },
+    {
+      "path": "common/skills/skill-creator/scripts/quick_validate.py",
+      "error": null
+    },
+    {
+      "path": "common/skills/skill-creator/scripts/run_eval.py",
+      "error": null
+    },
+    {
+      "path": "common/skills/skill-creator/scripts/run_loop.py",
+      "error": null
+    },
+    {
+      "path": "common/skills/skill-creator/scripts/utils.py",
+      "error": null
+    },
+    {
+      "path": "frontend/i18n-automation/scripts/_common.py",
+      "error": null
+    },
+    {
+      "path": "frontend/i18n-automation/scripts/detect_hardcoded_literals.py",
+      "error": null
+    },
+    {
+      "path": "frontend/i18n-automation/scripts/extract_schema_keys.py",
+      "error": null
+    },
+    {
+      "path": "frontend/i18n-automation/scripts/parse_locale_files.py",
+      "error": null
+    },
+    {
+      "path": "frontend/i18n-automation/scripts/run_i18n_audit.py",
+      "error": null
+    },
+    {
+      "path": "frontend/i18n-automation/scripts/sort_and_merge_keys.py",
+      "error": null
+    },
+    {
+      "path": "frontend/i18n-automation/scripts/validate_i18n_integrity.py",
+      "error": null
+    }
+  ]
+}
