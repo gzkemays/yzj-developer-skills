@@ -5,6 +5,12 @@
 # 分别对应 Claude Code 与其他宿主的加载布局）属于 后端 / 前端 / 根，
 # 再对应到 framework 的 backend/ · frontend/ · common/skills/ 逐一比对。不依赖仓库目录叫什么名字。
 #
+# 单栈项目（根目录本身就是后端/前端仓，根级直接有 pom.xml / src/views 等标志）允许根技能目录
+# 混放「通用 + 单端规范」，按本级标志消歧；只认本级标志、不认一层嵌套——含前后端子仓的公共根仍按纯 root 处理。
+# 已识别安装某端规范的技能目录必须含该端 reviewer（P4 硬流程必需），缺失计结构错误。
+# 已知残角：单栈根被人为混入另一端技能并覆盖 reviewer 时，会解析到本端基线、以 ℹ 大差异呈现而非报错——由
+# project-onboarding dry-run 门禁的人工判读兜底。
+#
 # 用法（在 Git Bash / WSL 运行；PowerShell 用 `bash scripts/verify-baseline.sh ...`）：
 #   bash verify-baseline.sh <project-root> [framework-skills-root] [--show-diff] [--strict]
 #     framework-skills-root  省略时 = 本脚本所在的 skills 仓库
@@ -56,11 +62,23 @@ classify () {
 }
 area_of () { case "$1" in backend) echo "$FW/backend";; frontend) echo "$FW/frontend";; *) echo "$FW/common/skills";; esac; }
 
-# framework 中定位某 skill：先查分类区域，否则跨区唯一匹配；多区同名且无法按分类消歧 → 返回歧义标记
-# （前后端 reviewer 同名：装在可分类为 backend/frontend 的目录里能消歧，混装进 root 目录则报来源歧义）
+# 根目录的本级栈标志（单栈项目：根同时就是后端/前端仓）。只认本级、不认一层嵌套——
+# 含前后端子仓的公共根不得因 apps/api/pom.xml 之类被判成单栈。
+stack_hints () {
+  local d="$1"
+  if has_glob "$d/pom.xml" || has_glob "$d/build.gradle*" \
+     || { [ -d "$d/domain" ] && [ -d "$d/integration" ]; } || [ -d "$d/src/main/java" ]; then echo backend; fi
+  if [ -d "$d/src/views" ]; then echo frontend; return; fi
+  [ -f "$d/package.json" ] && grep -q '"vue"' "$d/package.json" 2>/dev/null && echo frontend
+}
+
+# framework 中定位某 skill：先按优先区域列表（分类区域 + 单栈根的本级栈区域）查，
+# 否则跨区唯一匹配；多区同名且无法消歧 → 返回歧义标记（前后端 reviewer 同名即此类）
 find_fw () {
-  local n="$1" pref="$2" ar; local -a hits=()
-  [ -f "$pref/$n/SKILL.md" ] && { echo "$pref/$n/SKILL.md"; return; }
+  local n="$1" ar; local -a hits=()
+  for ar in $2; do
+    [ -f "$ar/$n/SKILL.md" ] && { echo "$ar/$n/SKILL.md"; return; }
+  done
   for ar in "$FW/common/skills" "$FW/backend" "$FW/frontend"; do
     [ -f "$ar/$n/SKILL.md" ] && hits+=("$ar/$n/SKILL.md")
   done
@@ -81,22 +99,35 @@ mapfile -t SKILLDIRS < <(find "$PROJECT" -type d \( -path '*/.claude/skills' -o 
 
 for SD in "${SKILLDIRS[@]}"; do
   HOST="$(cd "$SD/../.." && pwd)"
-  KIND="$(classify "$HOST")"; PREF="$(area_of "$KIND")"
+  KIND="$(classify "$HOST")"; PREFS="$(area_of "$KIND")"
+  HINTS=""
+  if [ "$KIND" = root ]; then
+    HINTS="$(stack_hints "$HOST")"
+    for h in $HINTS; do PREFS="$PREFS $FW/$h"; done
+  fi
+  # 该目录必须具备的 reviewer 端：backend/frontend 目录，或恰好单一栈标志的单栈根
+  REQAREA=""
+  case "$KIND" in
+    backend|frontend) REQAREA="$KIND" ;;
+    root) [ "$(echo $HINTS | wc -w)" -eq 1 ] && REQAREA="$HINTS" ;;
+  esac
+  AREA_HIT=0
   REL="${HOST#$PROJECT}"; REL="${REL#/}"; [ -n "$REL" ] || REL="(root)"
   SUB="${SD#"$HOST"/}"
-  echo "── [$KIND] $REL/$SUB"
+  echo "── [$KIND${HINTS:+ 单栈:$HINTS}] $REL/$SUB"
   for SKILL in "$SD"/*/; do
     [ -d "$SKILL" ] || continue
     name="$(basename "$SKILL")"; pf="${SKILL}SKILL.md"
     [ -f "$pf" ] || { echo "   ?  $name  项目内缺 SKILL.md"; ERRORS=$((ERRORS+1)); continue; }
     nm="$(sed -n 's/^name:[[:space:]]*//p' "$pf" | head -1 | tr -d '\r ')"
     mism=""; [ -n "$nm" ] && [ "$nm" != "$name" ] && { mism="  ⚠ name='$nm'≠目录名"; ERRORS=$((ERRORS+1)); }
-    ff="$(find_fw "$name" "$PREF")"
+    ff="$(find_fw "$name" "$PREFS")"
     if [ -z "$ff" ]; then echo "   ⊘  $name  framework 无 → 项目专有，跳过$mism"; continue; fi
     case "$ff" in __AMBIGUOUS__*)
-      echo "   ✗  $name  来源歧义：基线多处同名（${ff#__AMBIGUOUS__ }），该目录分类为 [$KIND] 无法消歧——前后端规范应装各自目录$mism"
+      echo "   ✗  $name  来源歧义：基线多处同名（${ff#__AMBIGUOUS__ }），该目录分类为 [$KIND] 无法消歧——前后端规范应装各自目录（单栈项目需根级有 pom.xml / src/views 等本级标志）$mism"
       ERRORS=$((ERRORS+1)); continue;;
     esac
+    [ -n "$REQAREA" ] && case "$ff" in "$FW/$REQAREA/"*) AREA_HIT=1;; esac
     if diff --strip-trailing-cr -q "$ff" "$pf" >/dev/null 2>&1; then
       echo "   ✓  $name  一致$mism"; OK=$((OK+1))
     else
@@ -113,6 +144,12 @@ for SD in "${SKILLDIRS[@]}"; do
       [ "$SHOW_DIFF" -eq 1 ] && diff --strip-trailing-cr "$ff" "$pf" | sed 's/^/        /'
     fi
   done
+  # 已安装某端规范（命中该端基线技能 ≥1）的目录必须有该端 reviewer——P4 硬流程必需；
+  # 只放项目专有技能的目录不触发此检查
+  if [ -n "$REQAREA" ] && [ "$AREA_HIT" -eq 1 ] && [ ! -f "$SD/reviewer/SKILL.md" ]; then
+    echo "   ✗  缺必备审查技能：$REL/$SUB/reviewer —— 已安装 $REQAREA 规范但缺 reviewer（P4 硬流程必需）"
+    ERRORS=$((ERRORS+1))
+  fi
   echo
 done
 
