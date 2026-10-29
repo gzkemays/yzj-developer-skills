@@ -111,6 +111,8 @@ public class AuthLoginFlow {
 
 ## 四、Job — 定时任务
 
+业务定时任务使用 **yzj-job**（`@YzjJob`）：自带执行记录、实时日志、多实例互斥、手动触发、告警。完整用法见 `job` skill。
+
 ```java
 /**
  * 订单超时处理任务
@@ -124,14 +126,17 @@ public class OrderTimeoutJob {
     @Resource
     private OrderService orderService;
 
-    @Scheduled(cron = "0 */5 * * * ?")
-    public void execute() {
-        // 定时任务逻辑
+    @YzjJob(name = "orderTimeout", cron = "0 */5 * * * ?", timeout = "4m", description = "关闭超时未支付订单")
+    public String execute(JobContext ctx) {
+        int closed = orderService.closeTimeoutOrders();
+        ctx.log().info("关闭超时订单 {} 笔", closed);
+        return "closed=" + closed;
     }
 }
 ```
 
 > 即使只涉及单业务，定时任务也放在 `integration/jobs/`。
+> `@Scheduled` 只用于无需记录、无需多实例互斥的本地轻量维护（如刷新本地缓存）。
 
 ---
 
