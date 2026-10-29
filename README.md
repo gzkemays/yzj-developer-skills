@@ -118,7 +118,7 @@ skills/
 ├── backend/                 # 后端能力（装到后端仓库的技能目录）
 │   ├── reviewer/            #   后端审查（七步硬流程 + 安全/金融/测试维度 + 55 条禁止清单 + 复查模式 + 漏检史）★
 │   ├── project-structure / model-conventions / service-conventions
-│   ├── controller-conventions / integration-flow / mybatis / cache
+│   ├── controller-conventions / integration-flow / mybatis / cache / job
 │   ├── security / common / logging / database-design / grpc / framework-usage
 │   ├── financial/           #   金融级规范（BigDecimal / 幂等 / 事务 / 行锁 / 流水 / 脱敏）★
 │   ├── testing/             #   单元测试规范（命名 / 模板 / 必测场景 / 禁止项 / 覆盖率）

@@ -166,13 +166,16 @@ fix/2026.08.18-order-remark-npe      # 确认订单备注 NPE
 | 在主干 `commit`（无本次明确授权） | 见 2.5 |
 | `git add -A` / `git add .` / `git commit -am` 盲加 | 会夹带他人改动、临时文件、本地配置，见 2.4 |
 | `git merge` / `git rebase` 到主干、`git push origin HEAD:{主干}` | **合并主干是开发者的动作**，AI 一律不做 |
-| 自行创建 / 合并 PR / MR | 除开发者明确要求；默认只推分支，附上远端返回的链接 |
+| 自行创建 / 合并 PR / MR | 除开发者明确要求；默认只推分支，附上远端返回的链接；获准创建时中文标题 / 描述按下方「非 ASCII 文本传参」经 UTF-8 文件传入 |
+| 把中文等非 ASCII 文本直接写进 CLI / API 调用的命令行参数 | Windows 上原生程序按系统代码页（如 936 GBK）接收参数，远端按 UTF-8 解析即成乱码且原文丢失，见下方说明 |
 | `git push --force` / `--force-with-lease` | 一律不做；推送被拒 → 如实报告原因，等开发者决定 |
 | `git reset --hard` / `git checkout -- .` / 改写已推送历史 | 会丢开发者的工作，一律不做 |
 | 删除分支（本地或远端） | 合并后的清理由开发者自行处理 |
 | 修改 git 远端、分支保护、hooks 配置 | 属仓库设置，不在提交流程内 |
 
 > 推送失败（无远端 / 无权限 / 被拒 / 无 upstream）时：**保留本地 commit**，把原始报错和分支名给开发者，不重试、不改写、不换路径推送。
+
+> **非 ASCII 文本传参**：commit message、PR / MR 标题与描述等含中文的文本，一律先写入 UTF-8 文件再由工具读取——`git commit -F <file>`；`curl --data-urlencode "title@<file>"`（或 `-d @<file>` 发送 UTF-8 JSON）；托管平台 CLI 用其 `--body-file` 类参数。**不要**把中文直接写在命令行参数里：Windows 上 Git Bash / PowerShell 调用原生程序（如 `/mingw64/bin/curl`）时参数会按系统代码页转码，Gitee / GitLab 等按 UTF-8 解析即存成乱码（`�`），原文不可恢复。创建后读回标题 / 描述核对无乱码；已乱码的用同样的文件方式更新修正。
 
 ---
 
@@ -338,6 +341,7 @@ feat(capability): 反哺 verify-baseline 校验脚本 from YAPD
 - [ ] 关键决策已在 `*` 要点说明（如有必要）
 - [ ] **message 与分支名中无任何 AI 记号**（`Co-Authored-By` / `Generated with` / 模型名 / AI 水印）
 - [ ] **message 与代码注释中无进度词**（`FIXED` / `Step N` / `Phase N`）
+- [ ] 含中文的 message / PR / MR 文本经 UTF-8 文件传入，未直接写进命令行参数；PR / MR 创建后已读回核对无乱码
 
 **收尾**
 

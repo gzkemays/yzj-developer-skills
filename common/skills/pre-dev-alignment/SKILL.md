@@ -433,6 +433,7 @@ L3 在编码前分**两道门禁、两份文档**（顺序不可颠倒）：
 | Controller | `controller-conventions` |
 | 跨业务 Flow / Job / Listener / Initializer | `integration-flow` |
 | 缓存 / 分布式锁 | `cache` |
+| 定时任务 / 调度（@YzjJob） | `job` |
 | 鉴权 / Token / OAuth | `security` |
 | gRPC | `grpc` |
 | TableDef 维护 | `tabledef` |
