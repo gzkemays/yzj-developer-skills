@@ -4,6 +4,7 @@
 > 多宿主项目：首行放 `@AGENTS.md` 导入通用入口，本文件只写 Claude Code 专属补充（本行按需删除）。
 > **framework 基线**：{引入时 skills 的 commit 短号 / 日期}（落后于 skills/README「当前基线」时，按「引入后验证」B 组 diff 决定 re-sync）
 > 模板来源：framework/skills/templates/CLAUDE.md.template（占位符 {xxx} 全部替换后删除本行）
+> marketplace 插件安装的层：下方 `.claude/skills/` 改注为"由 `yzj-*` 插件提供（`.claude/settings.json` 启用）"，见 project-onboarding A-4（本行按需删除）
 
 ## Project Structure
 

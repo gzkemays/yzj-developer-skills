@@ -1,0 +1,26 @@
+{
+  "name": "yzj-skills",
+  "interface": {
+    "displayName": "YZJ Skills"
+  },
+  "plugins": [
+    {
+      "name": "yzj-flow",
+      "source": { "source": "local", "path": "./common" },
+      "policy": { "installation": "AVAILABLE" },
+      "category": "Coding"
+    },
+    {
+      "name": "yzj-backend",
+      "source": { "source": "local", "path": "./backend" },
+      "policy": { "installation": "AVAILABLE" },
+      "category": "Coding"
+    },
+    {
+      "name": "yzj-frontend",
+      "source": { "source": "local", "path": "./frontend" },
+      "policy": { "installation": "AVAILABLE" },
+      "category": "Coding"
+    }
+  ]
+}

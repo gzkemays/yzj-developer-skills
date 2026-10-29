@@ -1,0 +1,10 @@
+{
+  "name": "yzj-flow",
+  "version": "2026.10.29",
+  "description": "YZJ 通用研发流程技能（dev-session 12 阶段及配套流程技能）",
+  "author": {
+    "name": "YZJ Group"
+  },
+  "repository": "https://gitee.com/yzjgroup/skills",
+  "skills": "./skills/"
+}

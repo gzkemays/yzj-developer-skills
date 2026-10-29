@@ -22,6 +22,9 @@
 # 「📌 项目覆写约定」的文件头差异清单）时报 📌 而非 Δ，--strict 下不算漂移；只有正文 📌、声明在
 # frontmatter 内或无声明的，一律按普通漂移处理。frontmatter 做轻量检查（块内 name/description 非空），
 # 刻意不做完整 YAML 校验。
+# marketplace 安装模式（项目级 .claude/settings.json 的 enabledPlugins / .codex/config.toml 的
+# [plugins."<插件>@yzj-skills"]）：技能在宿主插件缓存，不做逐字比对；只查端插件放置、前后端混装、
+# 插件与本地副本双装，根启用 yzj-flow 视为流程层齐备。
 # 扫描时跳过 .worktree/（git-commit 第八章的 worktree 副本）、.claude/worktrees/（宿主托管 worktree）、
 # .scratch/（临时参考副本）、node_modules、.git、.bak-*，避免同一 skill 被重复计数。
 set -uo pipefail
@@ -128,15 +131,41 @@ find_fw () {
   fi
 }
 
-OK=0; SPECIFIC=0; DRIFT=0; OVERRIDE=0; ERRORS=0
+# marketplace 安装：插件名 → 对应的基线技能区域
+MKT="yzj-skills"; PLUGIN_NAMES="yzj-flow yzj-backend yzj-frontend"
+plugin_area () { case "$1" in yzj-backend) echo "$FW/backend";; yzj-frontend) echo "$FW/frontend";; *) echo "$FW/common/skills";; esac; }
+# 某目录在某宿主的项目级配置里是否启用了插件：Claude Code 读该目录 .claude/settings.json 的 enabledPlugins；
+# Codex 读 .codex/config.toml 的 [plugins."<插件>@yzj-skills"] enabled = true
+plugin_on () {
+  local d="$1" host="$2" n="$3"
+  case "$host" in
+    claude) [ -f "$d/.claude/settings.json" ] \
+              && grep -Eq "\"$n@$MKT\"[[:space:]]*:[[:space:]]*true" "$d/.claude/settings.json" ;;
+    codex)  [ -f "$d/.codex/config.toml" ] \
+              && awk -v key="[plugins.\"$n@$MKT\"]" '
+                   { sub(/\r$/,""); line=$0; gsub(/^[[:space:]]+|[[:space:]]+$/,"",line) }
+                   line==key { s=1; next } line ~ /^\[/ { s=0 }
+                   s && line ~ /^enabled[[:space:]]*=[[:space:]]*true/ { f=1 }
+                   END { exit !f }' "$d/.codex/config.toml" ;;
+  esac
+}
+# 宿主 → 该宿主读取的本地技能目录（双装检查用）
+local_skills_of () { case "$1" in claude) echo ".claude/skills";; codex) echo "common/skills";; esac; }
+
+OK=0; SPECIFIC=0; DRIFT=0; OVERRIDE=0; ERRORS=0; PLUGINS=0
 echo "framework 基线: $FW"
 echo "目标项目:       $PROJECT"
 echo
 
+EXCL=(-not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/.bak-*/*' -not -path '*/.worktree/*'
+  -not -path '*/.claude/worktrees/*' -not -path '*/.scratch/*')
 mapfile -t SKILLDIRS < <(find "$PROJECT" -type d \( -path '*/.claude/skills' -o -path '*/common/skills' \) \
-  -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/.bak-*/*' -not -path '*/.worktree/*' \
-  -not -path '*/.claude/worktrees/*' -not -path '*/.scratch/*' 2>/dev/null | sort)
-[ "${#SKILLDIRS[@]}" -gt 0 ] || { echo "✗ 未发现任何技能目录（.claude/skills 或 common/skills）—— 项目尚未引入？"; exit 1; }
+  "${EXCL[@]}" 2>/dev/null | sort)
+# 启用了本 marketplace 插件的目录（项目级配置所在目录 = 该宿主会话的启动目录）
+mapfile -t PLUGINHOSTS < <(find "$PROJECT" -type f \( -path '*/.claude/settings.json' -o -path '*/.codex/config.toml' \) \
+  "${EXCL[@]}" 2>/dev/null | xargs -r -d '\n' grep -l "@$MKT" 2>/dev/null | while read -r f; do cd "$(dirname "$f")/.." && pwd; done | sort -u)
+[ "${#SKILLDIRS[@]}" -gt 0 ] || [ "${#PLUGINHOSTS[@]}" -gt 0 ] \
+  || { echo "✗ 未发现任何技能目录（.claude/skills 或 common/skills）或 marketplace 插件启用配置—— 项目尚未引入？"; exit 1; }
 
 for SD in "${SKILLDIRS[@]}"; do
   HOST="$(cd "$SD/../.." && pwd)"
@@ -217,17 +246,55 @@ for SD in "${SKILLDIRS[@]}"; do
   echo
 done
 
+# marketplace 插件安装：技能在宿主的插件缓存里，项目内只有启用配置，故不做逐字比对
+# （版本由各成员 `plugin update` / `marketplace upgrade` 拉取）；这里查放置与双装。
+for HOST in "${PLUGINHOSTS[@]}"; do
+  KIND="$(classify "$HOST")"; HINTS=""
+  [ "$KIND" = root ] && { HINTS="$(stack_hints "$HOST")"; [ "$(echo $HINTS | wc -w)" -eq 1 ] || HINTS=""; }
+  REL="${HOST#$PROJECT}"; REL="${REL#/}"; [ -n "$REL" ] || REL="(root)"
+  echo "── [$KIND${HINTS:+ 单栈:$HINTS}] $REL  marketplace 插件"
+  for h in claude codex; do
+    ON=""
+    for n in $PLUGIN_NAMES; do plugin_on "$HOST" "$h" "$n" && ON="$ON $n"; done
+    [ -n "$ON" ] || continue
+    echo "   🧩  $h 启用:$ON"; PLUGINS=$((PLUGINS+1))
+    case " $ON " in *" yzj-backend "*) case " $ON " in *" yzj-frontend "*)
+      echo "   ✗  混装：$REL 同时启用 yzj-backend 与 yzj-frontend——两端 reviewer 会同时加载，按端分仓启用"
+      ERRORS=$((ERRORS+1));;
+    esac;; esac
+    for n in $ON; do
+      # 端插件只能启用在同端目录（或该端的单栈根）
+      case "$n" in
+        yzj-backend|yzj-frontend)
+          want="${n#yzj-}"
+          if [ "$KIND" != "$want" ] && [ "$HINTS" != "$want" ]; then
+            echo "   ✗  $n 启用在 [$KIND] 目录——应启用在 $want 仓的项目级配置"; ERRORS=$((ERRORS+1))
+          fi;;
+      esac
+      # 双装：同一技能既由插件提供、又有本宿主读取的本地副本 → 会话里加载两份
+      LS="$HOST/$(local_skills_of "$h")"
+      for s in "$(plugin_area "$n")"/*/; do
+        s="$(basename "$s")"
+        [ -d "$LS/$s" ] && { echo "   ✗  双装：$s 同时来自插件 $n 与本地 ${LS#$PROJECT/}/$s——二选一（需 📌 覆写的层改回复制安装并停用插件）"; ERRORS=$((ERRORS+1)); }
+      done
+    done
+  done
+  echo
+done
+
 # root 必备流程 skill：按「已启用的宿主布局」逐一检查——双宿主项目两套目录各自都要齐，
-# 不得以一侧副本掩盖另一侧缺失（各宿主只读各自的目录）
+# 不得以一侧副本掩盖另一侧缺失（各宿主只读各自的目录）；该宿主在根启用了 yzj-flow 插件即视为齐备
 ROOT_LAYOUTS=0
-for RS in "$PROJECT/.claude/skills" "$PROJECT/common/skills"; do
+for h in claude codex; do
+  RS="$PROJECT/$(local_skills_of "$h")"
+  if plugin_on "$PROJECT" "$h" yzj-flow; then ROOT_LAYOUTS=$((ROOT_LAYOUTS+1)); continue; fi
   [ -d "$RS" ] || continue
   ROOT_LAYOUTS=$((ROOT_LAYOUTS+1))
   for f in $REQUIRED; do
     [ -d "$RS/$f" ] || { echo "✗ root 缺流程 skill: ${RS#$PROJECT/}/$f"; ERRORS=$((ERRORS+1)); }
   done
 done
-[ "$ROOT_LAYOUTS" -gt 0 ] || { echo "✗ 项目根无技能目录（.claude/skills 或 common/skills）"; ERRORS=$((ERRORS+1)); }
+[ "$ROOT_LAYOUTS" -gt 0 ] || { echo "✗ 项目根无技能目录（.claude/skills 或 common/skills），也未在根启用 yzj-flow 插件"; ERRORS=$((ERRORS+1)); }
 # 常驻规则层为软检查：缺失只提示，不计错误（两种布局任一即可）
 RULES=""
 [ -d "$PROJECT/.claude/rules" ] && RULES="$PROJECT/.claude/rules"
@@ -241,7 +308,7 @@ else
 fi
 
 echo "──────── 小结 ────────"
-echo "✓ 一致 $OK   ℹ 项目专有差异 $SPECIFIC   📌 项目覆写 $OVERRIDE   Δ 流程漂移(需确认) $DRIFT   ✗ 结构错误 $ERRORS"
+echo "✓ 一致 $OK   ℹ 项目专有差异 $SPECIFIC   📌 项目覆写 $OVERRIDE   Δ 流程漂移(需确认) $DRIFT   🧩 插件启用层 $PLUGINS   ✗ 结构错误 $ERRORS"
 echo "提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。"
 [ "$ERRORS" -gt 0 ] && exit 1
 { [ "$STRICT" -eq 1 ] && [ "$DRIFT" -gt 0 ]; } && exit 1

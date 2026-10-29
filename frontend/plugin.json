@@ -1,0 +1,10 @@
+{
+  "name": "yzj-frontend",
+  "version": "2026.10.29",
+  "description": "YZJ 前端规范技能（Vue 3 + Naive UI，含前端 reviewer）",
+  "author": {
+    "name": "YZJ Group"
+  },
+  "repository": "https://gitee.com/yzjgroup/skills",
+  "skills": "./"
+}

@@ -7,7 +7,7 @@
 ## 开始工作时
 
 - 读取 `common/rules/collaboration.md`；接口开发或跨端修改时读取 `common/rules/api-contract.md`。这些是本文件显式引用的文档，不依赖目录自动扫描。
-- 技能在 `common/skills/<name>/SKILL.md`（{按实际写明：通用在项目根，前后端规范在各自仓 / 模块目录——两端 `reviewer` 同名，不得合并进同一目录}），按 description 选择；入口引用 `references/` 的继续读取，不只看 description。
+- 技能在 `common/skills/<name>/SKILL.md`（Codex 以 marketplace 插件安装的层改写为"技能由插件 `yzj-*` 提供，按名称路由"，见 project-onboarding A-4；{按实际写明：通用在项目根，前后端规范在各自仓 / 模块目录——两端 `reviewer` 同名，不得合并进同一目录}），按 description 选择；入口引用 `references/` 的继续读取，不只看 description。
 - 项目根：本文件所在目录；共享文档根：`.document/`。台账、设计、团队记忆和能力登记只写该处。
 - 用户给出的范围与授权持续有效，不为流程重复提问；业务评审与 Git 操作授权分别判断。
 

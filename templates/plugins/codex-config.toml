@@ -1,0 +1,8 @@
+# Codex 项目级插件启用（放在该层目录的 .codex/config.toml，随仓库提交）。
+# 前提：每位成员已执行一次
+#   codex plugin marketplace add https://gitee.com/yzjgroup/skills.git
+#   codex plugin add <插件>@yzj-skills
+# 层与插件对应：项目根 → yzj-flow；后端仓 → yzj-backend；前端仓 → yzj-frontend（只保留本层那一节）。
+
+[plugins."yzj-flow@yzj-skills"]
+enabled = true
