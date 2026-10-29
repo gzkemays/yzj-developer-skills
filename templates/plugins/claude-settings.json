@@ -1,0 +1,14 @@
+{
+  "extraKnownMarketplaces": {
+    "yzj-skills": {
+      "source": {
+        "source": "git",
+        "url": "https://gitee.com/yzjgroup/skills.git"
+      },
+      "autoUpdate": true
+    }
+  },
+  "enabledPlugins": {
+    "yzj-flow@yzj-skills": true
+  }
+}

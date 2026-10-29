@@ -1,0 +1,10 @@
+{
+  "name": "yzj-backend",
+  "version": "2026.10.29",
+  "description": "YZJ 后端规范技能（YZJ 四层 + MyBatis-Flex，含后端 reviewer）",
+  "author": {
+    "name": "YZJ Group"
+  },
+  "repository": "https://gitee.com/yzjgroup/skills",
+  "skills": "./"
+}

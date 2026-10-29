@@ -7,6 +7,7 @@ description: >
   流程 skill 的项目专有硬约束按「📌 项目覆写约定」回注），并按宿主产出入口四件套——Claude Code：
   CLAUDE.md + .claude/rules + .claude/skills + .document；其他模型宿主：AGENTS.md + common/skills +
   rules 引用 + .document——让任意 AI 宿主一进项目即可识别这套规范，无需逐宿主定制。
+  技能支持两种安装模式：复制安装（任意宿主）与 marketplace 插件安装（Claude Code / Codex，随仓库发布自动更新）。
   正式接入前必须先执行只读 dry-run 预演（基线对比 + 动作清单 + 报告），开发者确认无误后才写入目标项目。
 ---
 
@@ -27,9 +28,13 @@ description: >
 
 ## 第〇步 · 判定场景与宿主
 
-- 目标无技能目录（`.claude/skills/` 与 `common/skills/` 均无）且无 `.document/plan/` → **A 新项目**（全量初始化）
+- 目标无技能目录（`.claude/skills/` 与 `common/skills/` 均无）、无 `yzj-*@yzj-skills` 插件启用配置，且无 `.document/plan/` → **A 新项目**（全量初始化）
 - 已有其一 → **B 既有项目**（对比融入，外科手术式处理）
 - **宿主判定**：问清或从上下文确认团队使用的 AI 宿主——**Claude Code** / **其他模型宿主** / **多宿主并用**。拿不准 → 问用户，不臆测。
+- **安装模式判定**（按层：项目根 / 后端仓 / 前端仓各自决定）：
+  - **marketplace 插件安装**（见 A-4）：宿主为 Claude Code 或 Codex，且该层技能无需项目覆写——技能随本仓库发布自动更新，项目内只提交启用配置。
+  - **复制安装**（A-1 / A-2 / A-3）：其他宿主（含通过非 Claude Code / Codex 宿主接入的 DeepSeek 等模型）、或该层需要 📌 项目覆写 / reviewer 回注项目专有项。
+  - 同一层**二选一**，不得插件与本地副本并存（会话里同一技能加载两份）。模型本身不决定模式：DeepSeek 经 Claude Code 接入即按 Claude Code 处理。拿不准 → 问用户。
 
 ## 第一步 · 识别项目结构（两种场景都做，**不要假设仓库叫什么名字**）
 
@@ -56,7 +61,7 @@ description: >
 
 1. **基线对比**（既有项目）：`bash scripts/verify-baseline.sh {目标根} --show-diff`，逐项判读 `✓ / ℹ / 📌 / Δ / ⊘ / ✗`；**Δ 流程漂移必须抽样 diff 确认构成**（基线更新滞后 还是 项目私改），不得仅凭差异行数下结论。新项目无对比，改为核对目标根确实无既有安装（防把"初始化"覆盖到已接入项目上）。
 2. **产出 dry-run 报告**，固定五部分：
-   - 结构与宿主识别结果（root / backend / frontend 的相对路径；Claude Code / 其他宿主 / 多宿主）
+   - 结构与宿主识别结果（root / backend / frontend 的相对路径；Claude Code / 其他宿主 / 多宿主；每层的安装模式：复制 / marketplace 插件）
    - 接入后的预期加载顺序（按宿主分别描述：Claude Code 按 cwd 自动加载链；其他宿主 AGENTS.md 显式路由链）
    - 基线对比小结与漂移构成判读（新项目改为完整安装清单）
    - **动作清单**：逐项列出将 覆盖 / 合并回注 / 新增 / 删除 / 不动 的文件范围与依据（既有项目对照 B 第 3 步分类表）
@@ -73,8 +78,8 @@ description: >
 1. **拷贝 skill 与常驻规则**（按 cwd 分层放置）：
    - `templates/common/rules/*` → `{root}/.claude/rules/`（协作原则 + 契约速查；Claude Code 自动加载，契约占位符按项目填）
    - `common/skills/*` → `{root}/.claude/skills/`
-   - `backend/*` → `{backend-repo}/.claude/skills/`
-   - `frontend/*` → `{frontend-repo}/.claude/skills/`
+   - `backend/*/` → `{backend-repo}/.claude/skills/`（只拷技能目录；`backend/plugin.json` 与 `.claude-plugin/` 是插件清单，不拷）
+   - `frontend/*/` → `{frontend-repo}/.claude/skills/`
 2. **实例化 CLAUDE.md**：以 `templates/CLAUDE.md.template` 为骨架，用第一步发现填占位符；**推断不出的列出来问用户，不臆造**。契约速查表只填在 `rules/api-contract.md`，CLAUDE.md 不重复。
 3. **文档骨架**：拷 `templates/.document/*`（`plan/STATUS.md`、`design/`、`adr/`、`developer/memory`+`capability`）。
 4. **校验**：列落地清单；跑 `bash scripts/verify-baseline.sh {项目根}` 过结构 + 基线（见 README「引入后验证」）；说"今天做什么"应触发 `iteration-planner` 读 STATUS.md（识别成功的信号）。
@@ -84,7 +89,7 @@ description: >
 1. **拷贝技能与规则**（内容与 Claude 侧完全同源，无需任何适配）：
    - `common/skills/*` → `{root}/common/skills/`
    - `templates/common/rules/*` → `{root}/common/rules/`（契约占位符按项目填）
-   - `backend/*` → `{backend-repo}/common/skills/`、`frontend/*` → `{frontend-repo}/common/skills/`（同栈才装）。**前后端两套规范不得装入同一技能目录**——两端 `reviewer` 同名，合并即互相覆盖；单仓 / mono-repo 也按端分目录（如 `apps/api/common/skills/`、`apps/web/common/skills/`），并在 AGENTS.md 写明两份 reviewer 的各自路径
+   - `backend/*/` → `{backend-repo}/common/skills/`、`frontend/*/` → `{frontend-repo}/common/skills/`（同栈才装；只拷技能目录，不拷插件清单）。**前后端两套规范不得装入同一技能目录**——两端 `reviewer` 同名，合并即互相覆盖；单仓 / mono-repo 也按端分目录（如 `apps/api/common/skills/`、`apps/web/common/skills/`），并在 AGENTS.md 写明两份 reviewer 的各自路径
 2. **实例化 AGENTS.md**：以 `templates/AGENTS.md.template` 为骨架——技能位置、规则引用全部写相对路径；「执行门禁」节原样保留；「技能来源」填 framework 来源注记（仅记录，不作加载路径）。会被单独打开的子仓各放一份 AGENTS.md（引用各自根内的技能目录）。
 3. **文档骨架**：同 A-1 第 3 步。
 4. **校验**：跑 `bash scripts/verify-baseline.sh {项目根}`（已兼容 `common/skills` 布局）；从目标项目启动该宿主新会话，验证入口可读、典型请求能路由到对应 SKILL.md 并**读全文执行**。只做了文件校验时如实说明"自动触发未实测"。
@@ -93,6 +98,18 @@ description: >
 
 - 执行 A-2（`common/` 为唯一内容源 + AGENTS.md），再执行 A-1 的第 1、2 步把 `common` 内容**复制**到各级 `.claude/`（Claude Code 只认 `.claude/skills` / `.claude/rules`，这是宿主硬约束）；CLAUDE.md 首行 `@AGENTS.md` 导入通用入口，其后只写 Claude 专属补充。
 - 两份副本内容同源；re-sync 时两处一起更新，`verify-baseline.sh` 对两处都校验。
+
+### A-4 marketplace 插件安装（Claude Code / Codex）
+
+本仓库同时是两个宿主的插件 marketplace（名 `yzj-skills`），按层拆成三个插件：`yzj-flow`（= `common/skills/`，项目根）、`yzj-backend`（= `backend/`，后端仓）、`yzj-frontend`（= `frontend/`，前端仓）。技能装在宿主的插件缓存里，**项目内不放技能副本，只提交启用配置**；入口文件、常驻规则、`.document/` 不随插件分发，仍按 A-1 / A-2 第 2、3 步落地。
+
+1. **各层提交启用配置**（层与插件一一对应；前后端插件不得在同一层同时启用——两端 reviewer 会同时加载）：
+   - Claude Code：以 `templates/plugins/claude-settings.json` 为骨架写入该层 `.claude/settings.json`（已有文件则合并 `extraKnownMarketplaces` / `enabledPlugins` 两个键，不覆盖其他键），`enabledPlugins` 只留本层插件。Claude Code 只读**会话启动目录**的 `.claude/settings.json`，因此按层启用即保持"按 cwd 分层加载"。成员首次打开该目录并信任文件夹后自动注册 marketplace 并安装插件。
+   - Codex：以 `templates/plugins/codex-config.toml` 为骨架写入该层 `.codex/config.toml`，只留本层那一节；marketplace 注册与插件安装在成员本机执行（`codex plugin marketplace add https://gitee.com/yzjgroup/skills.git`、`codex plugin add <插件>@yzj-skills`）。`codex plugin add` 默认在用户级启用，跨项目分层需成员把用户级端插件设为 `enabled = false`、由项目级配置启用——Codex 项目级覆盖尚未实测，接入时按执行门禁第 4 条实测并如实记录。
+2. **入口文件**：CLAUDE.md「Project Structure」把各层 `.claude/skills/` 注释改为"由 `yzj-*` 插件提供（`.claude/settings.json` 启用）"；AGENTS.md「开始工作时」的技能位置改写为"技能由 Codex 插件 `yzj-*` 提供，按名称路由"（其他宿主仍用 `common/skills/` 相对路径）。「执行门禁」原样保留。插件技能在 Claude Code 中带前缀（如 `/yzj-flow:dev-session`），自动路由不受影响。
+3. **成员前提**：私有仓库需本机 git 已存凭据且拉取时不会弹窗（HTTPS 凭据助手已登录 Gitee，或 SSH key 已加载）；Gitee 必须用完整 URL（`owner/repo` 简写只指 GitHub）。凭据缺失时后台更新静默失败、沿用旧版本。
+4. **更新**：本仓库发布新基线即提升插件版本；Claude Code 开启 `autoUpdate` 后会话启动时后台拉取，或手动 `claude plugin marketplace update yzj-skills`；Codex 用 `codex plugin marketplace upgrade yzj-skills`。项目侧无需 re-sync。
+5. **校验**：`bash scripts/verify-baseline.sh {项目根}`——插件层报 🧩，并检查端插件放置、前后端混装、插件与本地副本双装；从该层启动新会话，用"今天做什么"、真实开发与审查请求验证路由，未实测如实说明。
 
 ---
 
@@ -116,6 +133,7 @@ description: >
    - skill `name` 与目录名不一致（如 `name: code-reviewer` 而目录是 `reviewer`）→ 改 `name` 对齐目录
    - 路由：入口声明在 root 触发的 skill（如 P1 `iteration-planner`、P9 `progress-tracker`）必须在 root 技能目录有副本
 7. **校验**：跑 `bash scripts/verify-baseline.sh {项目根} --show-diff`——流程 skill 应"✓ 一致"，`reviewer`/规范 skill 的差异（ℹ）应仅为项目专有项，确认无意外丢失。
+8. **改用 marketplace 插件的层**（第〇步判定为插件安装）：该层副本经第 3 步对比确认**与基线逐字一致**（无 📌、无 reviewer 回注、无本地增补）才可删除并改为 A-4 启用配置；有项目专有内容的层保留复制安装。删除副本列入 dry-run 动作清单经开发者确认，非 git 目录先按第 1 步备份。
 
 ### reviewer 合并标准动作（B-3 细化）
 
@@ -144,7 +162,7 @@ description: >
 |------|-------------|--------------|
 | **入口文件** | CLAUDE.md（项目根 + 各子仓库，按 cwd 自动加载；多宿主时首行 `@AGENTS.md`） | AGENTS.md（项目根 + 会被单独打开的子仓，各自引用根内相对路径） |
 | **常驻规则** | `.claude/rules/`（自动加载，可用 `paths:` 限定触发范围） | `common/rules/`（AGENTS.md 显式要求读取，不依赖自动扫描） |
-| **技能目录** | `.claude/skills/`（随 cwd 加载：流程在 root，前后端规范在各子仓库） | `common/skills/`（AGENTS.md 声明位置；用前必读 SKILL.md 全文） |
+| **技能目录** | `.claude/skills/`（随 cwd 加载：流程在 root，前后端规范在各子仓库）；或 `yzj-*` 插件（各层 `.claude/settings.json` 启用，见 A-4） | `common/skills/`（AGENTS.md 声明位置；用前必读 SKILL.md 全文）；Codex 可改用 `yzj-*` 插件（`.codex/config.toml` 启用） |
 | **共享文档** | `.document/`（台账 / 计划 / 设计 / 沉淀，dev-session 各阶段引用） | 同左（全项目唯一一份，位置写进 AGENTS.md） |
 
 > 四者齐备后，新会话只要"今天做什么 / 开发 XX"即可触发 `iteration-planner` → `dev-session` 全流程。

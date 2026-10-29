@@ -1,0 +1,24 @@
+{
+  "name": "yzj-skills",
+  "description": "YZJ 团队研发流程与前后端规范技能库（内容源：common/skills、backend、frontend）",
+  "owner": {
+    "name": "YZJ Group"
+  },
+  "plugins": [
+    {
+      "name": "yzj-flow",
+      "source": "./common",
+      "description": "通用研发流程技能：dev-session 12 阶段、对齐、进度、记忆、能力登记、提交、知识收尾等（装在项目根）"
+    },
+    {
+      "name": "yzj-backend",
+      "source": "./backend",
+      "description": "后端规范技能：YZJ 四层 + MyBatis-Flex，含后端 reviewer（装在后端仓）"
+    },
+    {
+      "name": "yzj-frontend",
+      "source": "./frontend",
+      "description": "前端规范技能：Vue 3 + Naive UI，含前端 reviewer 与 i18n 自动化（装在前端仓）"
+    }
+  ]
+}
