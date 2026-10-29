@@ -14,7 +14,7 @@ description: >
 3. 引导用户在恰当的时机使用对应的 backend skill
 4. 编码后的自检与提交规范
 
-> **细节规范请按需读取对应 backend skill**：`project-structure`、`model-conventions`、`service-conventions`、`controller-conventions`、`integration-flow`、`mybatis`、`cache`、`security`、`common`、`logging`、`database-design`、`grpc`、`tabledef`、`db-migration`、`financial`、`testing`、`reviewer`。
+> **细节规范请按需读取对应 backend skill**：`project-structure`、`model-conventions`、`service-conventions`、`controller-conventions`、`integration-flow`、`job`、`mybatis`、`cache`、`security`、`common`、`logging`、`database-design`、`grpc`、`tabledef`、`db-migration`、`financial`、`testing`、`reviewer`。
 > 完整研发生命周期（含开发者门禁、进度台账、沉淀核对）由通用 skill `dev-session` 编排，本 skill 对应其 P3 后端路径。
 
 ---
@@ -474,6 +474,7 @@ public record AdminUserV1Controller(UserService userService) {
 | 编写 Controller（record 类 + 路径设计） | `controller-conventions` |
 | 跨业务 Flow / 定时任务 / 事件监听 / 启动初始化 | `integration-flow` |
 | 缓存读写 / 分布式锁 | `cache` |
+| 定时任务 / 延时任务 / 广播 / 按商户并行（fanOut） | `job` |
 | Token 鉴权 / OAuth / 上下文获取 | `security` |
 | 用 ApiException、CommonResult、SessionContext、CommonEnum | `common` |
 | 打日志 / 日志级别 / 敏感字段脱敏 | `logging` |

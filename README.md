@@ -2,7 +2,7 @@
 
 ## common 通用加载目录（2026-10-28）
 
-本仓库以 `common/` 为**模型无关的唯一内容源**：原 `.claude/skills/`（Claude Code 专属路径）迁移为 `common/skills/`，技能正文完成宿主无关化——宿主差异一律写成行内映射「（Claude Code：X；其他宿主：Y）」。曾经的 Codex 生成式适配层（`.agents/` + 同步/校验脚本）已删除：**任何模型接入都不再需要定制化处理**，拷贝 / 引用 common 内容 + 一个入口文件即可。
+本仓库以 `common/` 为**模型无关的唯一内容源**：原 `.claude/skills/`（Claude Code 专属路径）迁移为 `common/skills/`，技能正文完成宿主无关化——宿主差异一律写成行内映射「（Claude Code：X；其他宿主：Y）」。曾经的 Codex 生成式适配层（`.agents/` 下的技能副本 + 同步/校验脚本）已删除：**任何模型接入都不再需要定制化处理**，拷贝 / 引用 common 内容 + 一个入口文件即可。现在的 `.agents/plugins/marketplace.json` 只是 Codex marketplace 目录清单，不含技能副本。
 
 ```text
 skills/
@@ -11,14 +11,50 @@ skills/
 ├── common/skills/<name>/      # 通用流程技能（源基线；装到目标项目根目录层）
 ├── backend/<name>/            # 后端规范技能（YZJ 四层 + MyBatis-Flex 同栈）
 ├── frontend/<name>/           # 前端规范技能（Vue 3 + Naive UI 同栈）
+├── .claude-plugin/marketplace.json   # Claude Code marketplace 目录清单（元数据）
+├── .agents/plugins/marketplace.json  # Codex marketplace 目录清单（元数据）
 ├── templates/
 │   ├── CLAUDE.md.template     # Claude Code 项目入口模板
 │   ├── AGENTS.md.template     # 其他宿主项目入口模板（含不可删减的「执行门禁」）
 │   ├── common/rules/          # 常驻规则模板（协作原则 / 契约速查，宿主无关）
 │   └── .document/             # 项目文档骨架
 └── scripts/
-    └── verify-baseline.sh     # 基线校验（兼容 .claude/skills 与 common/skills 两种目标布局）
+    ├── verify-baseline.sh     # 基线校验（兼容 .claude/skills、common/skills 与 marketplace 插件三种安装）
+    └── check-plugin-manifests.sh  # 发布前校验插件清单与技能源、README 基线一致
 ```
+
+### marketplace 插件分发（2026-10-29）
+
+本仓库同时是 **Claude Code** 与 **Codex** 的插件 marketplace（名 `yzj-skills`），技能目录**原地**作为插件根，不复制、不改结构：
+
+| 插件 | 插件根 = 技能源 | 安装层 |
+|------|----------------|--------|
+| `yzj-flow` | `common/`（技能在 `common/skills/`） | 项目根 |
+| `yzj-backend` | `backend/` | 后端仓 |
+| `yzj-frontend` | `frontend/` | 前端仓 |
+
+每个插件根放两份清单：`.claude-plugin/plugin.json`（Claude Code）与 `plugin.json`（Codex portable 格式），字段逐字一致；拆成三个插件也让前后端两个同名 `reviewer` 各归其位。
+
+```bash
+# Claude Code（Gitee 必须写完整 URL；私有仓库依赖本机已存的 git 凭据）
+claude plugin marketplace add https://gitee.com/yzjgroup/skills.git
+claude plugin install yzj-flow@yzj-skills --scope project      # 在项目根执行；后端仓装 yzj-backend，前端仓装 yzj-frontend
+claude plugin marketplace update yzj-skills                    # 手动更新；或在 /plugin 里开启 auto-update
+
+# Codex
+codex plugin marketplace add https://gitee.com/yzjgroup/skills.git
+codex plugin add yzj-flow@yzj-skills
+codex plugin marketplace upgrade yzj-skills
+```
+
+团队项目推荐直接提交各层启用配置（`templates/plugins/` 骨架），成员打开目录即自动注册与安装，详见 `project-onboarding` A-4。
+
+- **模型 ≠ 宿主**：DeepSeek 等模型经 Claude Code 接入时与 Claude Code 完全一致；经其他无 marketplace 的宿主接入时走复制安装。
+- **与复制安装二选一（按层）**：需要 📌 项目覆写或 reviewer 回注的层继续复制安装；同一层插件与本地副本并存会加载两份，`verify-baseline.sh` 报错。
+- **插件只分发技能**：入口文件、常驻规则、`.document/` 骨架仍由 `project-onboarding` 落地。
+- **版本 = 基线日期**：插件 `version` 取 README「当前基线」去前导零（`2026-10-29` → `2026.10.29`），只有发布新基线才推送给成员；同一天只发布一次，当日后续改动随下次基线发布。
+
+**发布流程**：改技能源 → 更新 README「当前基线」→ 六份 `plugin.json` 的 `version` 同步改为新基线 → `bash scripts/check-plugin-manifests.sh` 通过 → `claude plugin validate .` 通过 → 提交推送 master。
 
 ### 接入方式（按宿主）
 
@@ -27,6 +63,7 @@ skills/
 | **Claude Code** | `common/skills/*` → 项目根 `.claude/skills/`；`templates/common/rules/*` → `.claude/rules/`；`backend/`、`frontend/` → 各子仓 `.claude/skills/`（宿主只认 `.claude/`，属硬约束） | `templates/CLAUDE.md.template` 实例化 CLAUDE.md |
 | **其他模型** | `common/skills/*` → 项目根 `common/skills/`，`templates/common/rules/*` → `common/rules/`（内容同源直用，无需任何适配） | `templates/AGENTS.md.template` 实例化 AGENTS.md（显式引用技能与规则） |
 | **多宿主** | 以 `common/` 为内容源，另复制一份到各级 `.claude/`；两份同源、re-sync 时一起更新 | 两个入口并存，CLAUDE.md 首行 `@AGENTS.md` |
+| **Claude Code / Codex（插件）** | 不复制技能；各层提交 `.claude/settings.json` / `.codex/config.toml` 启用对应 `yzj-*` 插件，随本仓库发布更新（见上「marketplace 插件分发」） | 同上（CLAUDE.md / AGENTS.md 仍需实例化） |
 
 **两条硬约定**贯穿所有入口与模板（详见 `common/skills/project-onboarding`）：
 
@@ -81,7 +118,7 @@ skills/
 ├── backend/                 # 后端能力（装到后端仓库的技能目录）
 │   ├── reviewer/            #   后端审查（七步硬流程 + 安全/金融/测试维度 + 55 条禁止清单 + 复查模式 + 漏检史）★
 │   ├── project-structure / model-conventions / service-conventions
-│   ├── controller-conventions / integration-flow / mybatis / cache
+│   ├── controller-conventions / integration-flow / mybatis / cache / job
 │   ├── security / common / logging / database-design / grpc / framework-usage
 │   ├── financial/           #   金融级规范（BigDecimal / 幂等 / 事务 / 行锁 / 流水 / 脱敏）★
 │   ├── testing/             #   单元测试规范（命名 / 模板 / 必测场景 / 禁止项 / 覆盖率）
@@ -117,8 +154,8 @@ skills/
   第 6 步改用 templates/AGENTS.md.template，详见顶部「接入方式」与 project-onboarding）
 1. 拷贝通用能力 →  {project}/.claude/skills/        ← 本仓库 common/skills/*
 2. 拷贝常驻规则 →  {project}/.claude/rules/         ← 本仓库 templates/common/rules/*（契约占位符按项目填）
-3. 拷贝后端能力 →  {project}/{backend}/.claude/skills/   ← 本仓库 backend/*
-4. 拷贝前端能力 →  {project}/{frontend}/.claude/skills/  ← 本仓库 frontend/*
+3. 拷贝后端能力 →  {project}/{backend}/.claude/skills/   ← 本仓库 backend/*/（只拷技能目录，不拷插件清单）
+4. 拷贝前端能力 →  {project}/{frontend}/.claude/skills/  ← 本仓库 frontend/*/
 5. 拷贝文档骨架 →  {project}/.document/             ← 本仓库 templates/.document/*
 6. 用 templates/CLAUDE.md.template 建项目根 CLAUDE.md，填好占位符；加载引用一律相对路径
    （仓库路径、构建命令、设计系统 token 前缀；契约速查表填在 rules/api-contract.md）
@@ -257,4 +294,5 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 - 修改流程类 skill（dev-session / reviewer / progress-tracker）需团队过目——它们是所有项目的执行协议
 - 新增 skill 用 `skill-creator` 创建并评测；提交与分支遵循 `git-commit` skill（授权后切 `{feat|opt|fix}/{yyyy.MM.dd}-{business}` 开发分支提交并推送、开发者自行合并主干；feat/opt/fix 三分法，scope 可选，禁止 AI 记号）
 - 重大流程变更（dev-session / reviewer / 文档门禁 / 契约规则）→ 更新本 README 顶部「当前基线」日期；各引入项目据此判断是否需 re-sync（用「引入后验证」B 组 diff 确认）
+- 发布新基线时同步六份插件清单 `version` 并跑 `scripts/check-plugin-manifests.sh`（见顶部「marketplace 插件分发」发布流程）；新增 / 删除 / 改名技能无需改清单（插件按目录自动发现），但插件改名须在 `marketplace.json` 加 `renames`
 - 项目副本对流程 skill 的专有覆写按「📌 覆写约定」标记（文件头差异清单 + 行内 📌），不散改正文；主干直提、跳过 P4、P8 确认之类的门禁不得被覆写放宽

@@ -13,4 +13,5 @@
 | 修改某个流程 / 规范技能本身 | 该技能的 SKILL.md 全文（`common/skills/` 或 `backend/` / `frontend/`） |
 
 - 目标项目里 Claude Code 仍使用 `.claude/skills/` + `.claude/rules/` + CLAUDE.md（宿主硬约束），由 project-onboarding 从本仓库 `common/` 复制安装；**本仓库内不维护 `.claude/skills/` 副本**，以免双源漂移。
+- 根目录与 `common/`、`backend/`、`frontend/` 下的 `.claude-plugin/` 是 marketplace / 插件清单（本仓库作为 `yzj-skills` marketplace 发布），不是技能副本；维护会话照旧直接读 `common/skills/` 等源文件，不必安装自己的插件。
 - 本文件与 AGENTS.md 中的引用均为相对路径；新增引用时不要写绝对路径。
