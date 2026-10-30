@@ -81,11 +81,11 @@ codex plugin marketplace upgrade yzj-skills
 - **状态外置**：台账「进行中」表增加「阶段」「已过门禁」两列；每个需求一张**恢复卡** `.document/plan/context/{条目名}.md`（P1 建、阶段迁移时更新、P12 删，不记授权）；每阶段出口输出固定格式回执 `[Px ✅ | 依据 … | 下一步 Py]`。进度以磁盘产物为准（dev-session「进度判定、阶段回执与压缩恢复」）。
 - **恢复脚本**：`common/skills/dev-session/scripts/restore_context.py`（纯标准库、只读、fail-open）——按 worktree 路径 / 分支名 / `--task` 定位本需求，输出红线 + 恢复卡 + 台账行 + 需重读文件；并行需求互不混淆。宿主可用 hook 在压缩后自动运行它（批次 C），没有 hook 的宿主按入口文件「上下文压缩后」节手动运行。
 
-- **主文件引导式瘦身**（批次 B，`dev-session` 已试点）：大技能拆为「主文件（约 8–10KB：约束卡 + 路由表 + 进度判定；脚本 8KB 处告警）+ `references/` 按阶段子文件 + `templates/`」，每个子文件开头带自己的门禁行；执行门禁第 1 条相应为"读主文件全文 + 当前阶段子文件"。`reviewer` 例外：P4 兜底门禁全文加载，不拆分，只重排并建议子代理隔离执行。`scripts/check-skill-layout.sh` 校验路由引用、孤立文件、门禁行（阻断）与体积（告警）。
+- **主文件引导式瘦身**（批次 B，已完成：`dev-session` 30.9→9KB、`pre-dev-alignment` 30→12.7KB、`git-commit` 26→13.6KB、`yzj-dev-workflow` 24→13.7KB；前后端 `reviewer` 只重排不拆）：大技能拆为「主文件（约 8–10KB：约束卡 + 路由表 + 进度判定；脚本 8KB 处告警）+ `references/` 按阶段子文件 + `templates/`」，每个子文件开头带自己的门禁行；执行门禁第 1 条相应为"读主文件全文 + 当前阶段子文件"。`reviewer` 例外：P4 兜底门禁全文加载，不拆分，只重排并建议子代理隔离执行。`scripts/check-skill-layout.sh` 校验路由引用、孤立文件、门禁行（阻断）与体积（告警）。
 
 - **机械兜底**（批次 C）：`common/skills/git-commit/scripts/commit_guard.py` 四种模式——git 原生 `commit-msg` hook（`templates/.githooks/commit-msg`，各仓 `git config core.hooksPath .githooks`——本地配置、成员各执行一次，对已启用成员的人和 AI 提交都拦 AI 署名 / 来源尾注 / 模型名 / 进度词；`--no-verify` 可绕过）、`check-text`（MR 文本）、`precheck`（分支判定与授权提醒，任何宿主）、`pretooluse`（Claude Code `PreToolUse`：AI 记号拒绝、主干弹窗确认、开发分支放行）。Claude Code 宿主 hook 两条（压缩后 `restore_context.py` 重注入、`git commit` 前 `commit_guard.py`）：`yzj-flow` 插件自带 `common/hooks/hooks.json`，复制安装合并 `templates/hooks/claude-settings-hooks.json`。全部 fail-open。Codex 等宿主的 hook 待实机核实（方案文档第 7 节清单）。
 
-后续批次：其余大技能拆分（B）、Codex hook 核实与接入（C 补）、小上下文模型实测（D）。
+后续：Codex hook 核实与接入（C 补）、小上下文模型实测（D）、发布新基线。
 
 ### 在本仓库使用
 
