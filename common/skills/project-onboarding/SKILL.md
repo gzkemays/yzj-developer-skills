@@ -94,7 +94,7 @@ description: >
 2. **实例化 AGENTS.md**：以 `templates/AGENTS.md.template` 为骨架——技能位置、规则引用全部写相对路径；「执行门禁」节原样保留；「技能来源」填 framework 来源注记（仅记录，不作加载路径）。会被单独打开的子仓各放一份 AGENTS.md（引用各自根内的技能目录）。
 3. **文档骨架**：同 A-1 第 3 步。
 4. **机械兜底 hook**：同 A-5 的 git 原生 `commit-msg`（宿主无关）；宿主 hook 仅 Claude Code 有，其他宿主靠入口文件文字协议 + 手动运行 `restore_context.py` / `commit_guard.py precheck`。
-5. **校验**：跑 `bash scripts/verify-baseline.sh {项目根}`（已兼容 `common/skills` 布局）；从目标项目启动该宿主新会话，验证入口可读、典型请求能路由到对应 SKILL.md 并**读全文执行**。只做了文件校验时如实说明"自动触发未实测"。
+5. **校验**：跑 `bash scripts/verify-baseline.sh {项目根}`（已兼容 `common/skills` 布局）；从目标项目启动该宿主新会话，验证入口可读、典型请求能路由到对应 SKILL.md 并**读主文件全文、再按路由读子文件执行**。只做了文件校验时如实说明"自动触发未实测"。
 
 ### A-3 多宿主项目
 
@@ -173,7 +173,7 @@ description: >
 |------|-------------|--------------|
 | **入口文件** | CLAUDE.md（项目根 + 各子仓库，按 cwd 自动加载；多宿主时首行 `@AGENTS.md`） | AGENTS.md（项目根 + 会被单独打开的子仓，各自引用根内相对路径） |
 | **常驻规则** | `.claude/rules/`（自动加载，可用 `paths:` 限定触发范围；`red-lines.md` 不加 `paths:`，压缩后才会从磁盘重新注入） | `common/rules/`（AGENTS.md 显式要求读取，不依赖自动扫描） |
-| **技能目录** | `.claude/skills/`（随 cwd 加载：流程在 root，前后端规范在各子仓库）；或 `yzj-*` 插件（各层 `.claude/settings.json` 启用，见 A-4） | `common/skills/`（AGENTS.md 声明位置；用前必读 SKILL.md 全文）；Codex 可改用 `yzj-*` 插件（`.codex/config.toml` 启用） |
+| **技能目录** | `.claude/skills/`（随 cwd 加载：流程在 root，前后端规范在各子仓库）；或 `yzj-*` 插件（各层 `.claude/settings.json` 启用，见 A-4） | `common/skills/`（AGENTS.md 声明位置；用前必读 SKILL.md 主文件全文，再按路由读子文件）；Codex 可改用 `yzj-*` 插件（`.codex/config.toml` 启用） |
 | **共享文档** | `.document/`（台账 / 恢复卡 `plan/context/` / 计划 / 设计 / 沉淀，dev-session 各阶段引用） | 同左（全项目唯一一份，位置写进 AGENTS.md） |
 
 > 四者齐备后，新会话只要"今天做什么 / 开发 XX"即可触发 `iteration-planner` → `dev-session` 全流程。

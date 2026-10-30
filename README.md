@@ -23,7 +23,7 @@ skills/
 └── scripts/
     ├── verify-baseline.sh     # 基线校验（兼容 .claude/skills、common/skills 与 marketplace 插件三种安装）
     ├── check-plugin-manifests.sh  # 发布前校验插件清单与技能源、README 基线一致
-    └── check-skill-layout.sh  # 技能布局校验（路由引用 / 孤立子文件 / 门禁行阻断，体积告警）
+    └── check-skill-layout.sh  # 技能布局校验（路由引用 / 孤立子文件 / 门禁行 / references 互引阻断，体积告警）
 ```
 
 ### marketplace 插件分发（2026-10-29）
@@ -89,7 +89,7 @@ codex plugin marketplace upgrade yzj-skills
 
 ### 在本仓库使用
 
-从 **`skills/` 仓库目录**启动会话：Claude Code 自动加载根 CLAUDE.md（`@AGENTS.md`），其他宿主读 AGENTS.md。本仓库的技能源在 `common/skills/`，**任何宿主都不自动发现**——按入口文件的路由表读取对应 SKILL.md 全文执行。工作目录若是外层 `framework/`，直接指定相应 SKILL.md 读取。
+从 **`skills/` 仓库目录**启动会话：Claude Code 自动加载根 CLAUDE.md（`@AGENTS.md`），其他宿主读 AGENTS.md。本仓库的技能源在 `common/skills/`，**任何宿主都不自动发现**——按入口文件的路由表读取对应 SKILL.md 主文件全文，再按其路由读本次需要的 `references/` 子文件执行。工作目录若是外层 `framework/`，直接指定相应 SKILL.md 读取。
 
 ### 维护与同步
 
@@ -178,7 +178,10 @@ skills/
 5. 拷贝文档骨架 →  {project}/.document/             ← 本仓库 templates/.document/*
 6. 用 templates/CLAUDE.md.template 建项目根 CLAUDE.md，填好占位符；加载引用一律相对路径
    （仓库路径、构建命令、设计系统 token 前缀；契约速查表填在 rules/api-contract.md）
-7. 首次会话验证：说"今天做什么" → 应触发 iteration-planner 读取台账与计划
+7. 机械兜底 →  每个 git 仓 .githooks/commit-msg（← templates/.githooks/）+ .gitattributes（← templates/）
+   并 git config core.hooksPath .githooks；复制安装的 Claude Code 项目把 templates/hooks/claude-settings-hooks.json
+   的 hooks 键合并进 .claude/settings.json（详见 project-onboarding A-5）
+8. 首次会话验证：说"今天做什么" → 应触发 iteration-planner 读取台账与计划
 ```
 
 > **既有项目融入不是无脑覆盖**：流程 skill 按基线对齐；`reviewer` 与项目专有 skill **合并保留**项目沉淀（漏检史、项目注解、设计 token、命名规则）；项目独有 skill 不动。详见 `project-onboarding`「既有项目对比融入」。
@@ -194,17 +197,18 @@ skills/
 
 ```
 - [ ] 项目根入口（CLAUDE.md / AGENTS.md）占位符全部替换，无残留 {xxx}；加载引用全部为相对路径
-- [ ] 根常驻规则层（.claude/rules 或 common/rules）有 collaboration.md + api-contract.md（契约表与入口二选一，不重复维护）
-- [ ] 根技能目录（.claude/skills 或 common/skills）有流程层；后端 / 前端仓库各有技能目录
-- [ ] .document/ 含 plan/STATUS.md、design/、adr/、developer/memory + capability
+- [ ] 根常驻规则层（.claude/rules 或 common/rules）有 red-lines.md + collaboration.md + api-contract.md（契约表与入口二选一，不重复维护）
+- [ ] 根技能目录（.claude/skills 或 common/skills）有流程层（含各技能的 references/ templates/ scripts/ 子目录）；后端 / 前端仓库各有技能目录
+- [ ] .document/ 含 plan/STATUS.md（「进行中」表有「阶段」「已过门禁」两列）、plan/context/、design/、adr/、developer/memory + capability
+- [ ] 各 git 仓有 .githooks/commit-msg（成员已 git config core.hooksPath .githooks）；复制安装的 Claude Code 项目 .claude/settings.json 已合并 hooks
 - [ ] 每个 skill 的 name 与目录名一致（无 code-reviewer vs reviewer 类错位）
 ```
 
 **B. 基线一致（版本）—— 多项目验证核心**
 
 ```
-- [ ] 流程 skill 与本仓库当前版逐字一致：
-      diff --strip-trailing-cr {项目技能目录}/{skill}/SKILL.md {framework}/common/skills/{skill}/SKILL.md  → 空
+- [ ] 流程 skill 与本仓库当前版逐字一致（整个技能目录，含 references/ templates/ scripts/）：
+      diff -r --strip-trailing-cr {项目技能目录}/{skill} {framework}/common/skills/{skill}  → 空
 - [ ] reviewer / 规范 skill = 基线 + 项目专有项（diff 差异仅漏检史 / 项目注解 / 设计 token / 命名规则）
 - [ ] 流程 skill 带项目专有硬约束的，差异仅为「📌 项目覆写」标记段，且文件头有差异清单（`project-onboarding`「📌 覆写约定」）
 - [ ] 项目 CLAUDE.md 顶部记录引入时的 framework 基线（commit 短号或日期），落后于「当前基线」即提示 re-sync
