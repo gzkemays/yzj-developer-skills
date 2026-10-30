@@ -395,5 +395,14 @@ worktree **必须放在项目根内** `{project-root}/.worktree/`，**不放项�
 
 - 提交推送按 2.3 默认流程：在 worktree 内 `commit` → `push -u origin {分支名}` → 交接四项
 - 基线漂移：主干推进较多时**如实告知开发者**，是否 `rebase` 由开发者决定（AI 不自动变基，同 2.3）
-- 收尾由开发者完成：合并分支回主干 → `git worktree remove .worktree/{business}/{repo}` → 删除已合并分支（AI 不删分支，见 2.6；开发者明确要求时 AI 可代执行 `git worktree remove`）
+- 收尾由开发者完成：合并分支回主干 → `git worktree remove .worktree/{business}/{repo}`（先按 8.6 拆掉链接）→ 删除已合并分支（AI 不删分支，见 2.6；开发者明确要求时 AI 可代执行 `git worktree remove`）
 - 迁移既有未提交改动进 / 出 worktree：`git diff -- <file> > x.patch` + `git -C <tree> apply x.patch`，**不要整仓 stash**——stash 会把他人改动一起带走
+
+### 8.6 删除前先拆链接（防连带删主工作区）
+
+worktree 里为了跑构建，常从主工作区借依赖目录（Windows 目录联接 `mklink /J`、Unix 符号链接 `ln -s`，如 `node_modules`）。在 Windows 上，`git worktree remove`、`rm -rf`、`Remove-Item -Recurse` 可能顺着联接递归进**主工作区**删除：源码不受影响，但依赖目录会残缺。实例：删掉了主工作区的 `node_modules/.modules.yaml` 和 `.pnpm` 下的部分包，碰到 workspace 包之间的循环联接报 `Filename too long` 才停下。固定顺序：
+
+1. 列出 worktree 内所有链接，遇到链接只记录、不进入：Windows 用 PowerShell 逐层枚举，条目带 `ReparsePoint` 属性就记录、不再往下递归（不要用会跟随联接的递归命令，循环联接会无限深入）；Unix `find <worktree> -type l`
+2. 逐个只删链接本身：Windows `rmdir <链接>`（不带 `/s`）；Unix `rm <链接>`（不带 `-r`，链接名末尾不加 `/`）
+3. 复查确认已无链接，再执行 `git worktree remove`
+4. 删除中途报 `Filename too long` 时，worktree 可能已从 git 注销、目录还残留：先回到第 1 步确认没有链接，再用 `\\?\<绝对路径>` 前缀删除残留目录；随后检查主工作区依赖目录是否完整（如 pnpm 用 `install --frozen-lockfile --offline` 从本机 store 补回，再跑一次类型检查）
