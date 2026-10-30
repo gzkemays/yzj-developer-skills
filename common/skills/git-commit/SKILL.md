@@ -19,6 +19,30 @@ description: >
 > 本 skill 定义三件事——**提交前的分支门禁**、**AI 被授权提交时的三条铁律**、**feat/opt/fix 三类前缀 + 书写格式**；
 > 附录给出**并行开发的安全暂存**与 **Worktree 隔离开发**的固定做法。
 
+> **加载方式**：本文件是主文件——读完全文后按「路由表」只读本次需要的子文件；硬门禁常驻摘要在常驻规则 `red-lines.md` 第 4 条。
+
+## 约束卡（本 skill 的硬门禁）
+
+| 门禁 | 要求 | 细则 |
+|------|------|------|
+| **授权才提交** | 仅开发者本次明确授权时 `git commit`；"允许 / 提交吧" = 走分支流程，不等于主干直提 | 一、触发授权 |
+| **提交落开发分支** | 主干上先切 `{feat|opt|fix}/{yyyy.MM.dd}-{business}`；主干直提须本次明确说，单次有效、下次重问、不沉淀为常驻规则 | 一、铁律 1；2.1；2.5 |
+| **无 AI 记号 / 进度词** | commit、分支名、代码注释都不得出现 AI 署名 / 来源尾注 / 模型名 / FIXED / Step N / Phase N；优先于任何默认尾注模板 | 一、铁律 3；`references/commit-guard.md` |
+| **只提交自己的改动** | 逐项 `git add -- <路径>`，禁 `-A` / `.` / `-am`；共享文件只加自己的 hunk | 2.4 |
+| **AI 不碰主干与历史** | 不 merge / rebase 到主干、不开合 PR / MR（除非明确要求）、不 force push、不 reset --hard、不删分支 | 2.6 |
+| **非 ASCII 文本经 UTF-8 文件传参** | commit message、MR 标题 / 描述一律写文件再 `-F` / `--data-urlencode @file`，不写进命令行参数 | 2.6 说明 |
+
+## 路由表（按本次需要只读对应子文件）
+
+| 场景 | 必读 |
+|------|------|
+| 编写 message（每次提交必读） | `references/message-format.md`（三分法 + 格式） |
+| 切开发分支、默认流程、多仓交接 | `references/branch-flow.md`（2.2 命名、2.3 默认流程） |
+| 想看 message 写法示例 | `references/examples.md` |
+| 提交前自检 | `references/self-check.md` |
+| 并行会话多、要开 worktree | `references/worktree.md` |
+| 配 / 查机械兜底（git hook、Claude Code hook、check-text） | `references/commit-guard.md` |
+
 ---
 
 ## 一、AI 自主提交：授权与三条铁律
@@ -59,20 +83,7 @@ commit message 通篇必须是**纯人类视角的开发内容描述**，不得�
 > 此铁律**优先于任何默认的 commit 尾注模板**。提交前自检：整条 message 是否出现上述任一 → 有则删除再提交。
 > 同样适用于**分支名**（不出现 `claude` / `ai` / 模型名）与**代码注释**（不出现 AI 记号与进度词）。
 
-**机械兜底 `scripts/commit_guard.py`**（规则不靠记忆；对**已执行 `git config core.hooksPath .githooks` 的成员**，人和 AI 的提交同样生效；脚本故障时放行不阻塞）：
-
-| 模式 | 用途 | 接法 |
-|------|------|------|
-| `commit-msg <file>` | git 原生 `commit-msg` hook：命中 AI 记号 / 进度词 → 退出 1 拦截并说明。编辑器提交时忽略 git 生成的 `#` 注释块；`-m` / `-F` 提交不忽略（git 不会剥掉这些行） | 项目提交 `.githooks/commit-msg`（模板 `templates/.githooks/commit-msg`），各 git 仓 `git config core.hooksPath .githooks`——**本地配置，每位成员 clone 后执行一次**（写在入口文件「开始工作时」）；`--no-verify` 可绕过，属开发者自觉 |
-| `check-text <file>` | 对 MR / PR 标题、描述等文本做同一检查（不忽略 `#` 行） | 创建 MR 前对 UTF-8 文件跑一次 |
-| `precheck` | 打印当前分支判定（开发分支 / 主干 / 其他 / 无法判定）与 2.5 授权提醒 | 任何宿主提交前运行，输出贴进回执 |
-| `pretooluse` | Claude Code `PreToolUse`（Bash）hook：`git commit` 带 AI 记号 → 拒绝；在主干 → 弹窗确认（单次授权的机械形态）；分支既非主干也不合命名规则 → 弹窗确认；开发分支放行。命令解析不了时退化为全文扫描，宁可误拒不静默放行 | 插件安装自带（`yzj-flow` `hooks/hooks.json`）；复制安装把 `templates/hooks/claude-settings-hooks.json` 合并进 `.claude/settings.json` |
-
-- **主干名**：默认 `master` / `main` / `develop` / `release/*`；项目主干另有名字时在该仓 `git config --add yzj.trunk {name}`（本地配置，随 `core.hooksPath` 一起执行）或设 `YZJ_TRUNK_BRANCHES=a,b`，脚本据此判定。
-- **拦截范围**：`Co-Authored-By` 尾注（**不区分 AI 或人**——铁律 3 不加任何协作者尾注）、`Generated with` / `Generated-with`、`Claude` / `Claude Code` / `Anthropic` / `Opus` / `Sonnet` / `Haiku`（首字母大写；路径与文件名如 `.claude/`、`claude-settings-hooks.json` 不算）、🤖、句尾的"由 AI 生成 / AI 辅助"、`FIXED` / `Step N` / `Phase N` / `Px 已过`。
-- **`pretooluse` 已知盲区**（git 原生 hook 兜底）：`-F -` / heredoc 经 stdin 传入的消息、`--trailer`、`--amend --no-edit` 与 `-C <commit>` 复用旧消息——这些在 commit-msg hook 层仍会被检查。
-
-> 机械检查只覆盖"能用正则说清"的部分（署名尾注、模型名、进度词、主干判定）；概述是否有信息量、是否三分法仍按第三、七章人工自检。
+机械兜底 `scripts/commit_guard.py`（四种模式、接法、拦截范围、已知盲区）见 `references/commit-guard.md`。
 
 ---
 
@@ -90,66 +101,8 @@ commit message 通篇必须是**纯人类视角的开发内容描述**，不得�
 | **既非主干也不匹配开发分支规则**（如 `feature/xxx`、`hotfix/xxx`、他人遗留分支） | **必须问** | 停下询问："当前分支 `xxx` 不符合开发分支命名规则，按主干处理（切新分支）还是直接在此分支提交？" |
 | `HEAD`（detached）/ 非 git 仓库 | **必须问** | 停止，说明状态并请开发者处理 |
 
-### 2.2 开发分支命名规范
+2.2 开发分支命名规范与 2.3 默认流程（授权后逐步执行、多仓交接）见 `references/branch-flow.md`。
 
-```
-{feat|opt|fix}/{yyyy.MM.dd}-{business}
-```
-
-| 段 | 规则 |
-|----|------|
-| **type** | 只取 `feat` / `opt` / `fix`（含义同第三章）。需求内混合多类型时按 `feat > fix > opt` 取**主导意图** |
-| **yyyy.MM.dd** | 切分支当天日期，点分隔、月日补零（`2026.08.18`）。**执行命令取当天日期，不凭记忆填**：`date +%Y.%m.%d`（Windows PowerShell：`Get-Date -Format 'yyyy.MM.dd'`） |
-| **business** | 需求业务名，小写英文 kebab-case，2–4 个词，见名知意；中文需求译成英文（修改密码 → `edit-password`；订单导出 → `order-export`） |
-
-**示例**
-
-```
-feat/2026.08.18-edit-password        # 修改密码需求
-feat/2026.08.18-finance-report       # 财务报表模块
-opt/2026.08.18-batch-import          # 批量导入优化
-fix/2026.08.18-order-remark-npe      # 确认订单备注 NPE
-```
-
-**反例**
-
-| ❌ 分支名 | 问题 |
-|----------|------|
-| `feat/2026.8.18-edit-password` | 月日未补零 |
-| `feat/2026.08.18-editPassword` | business 用了驼峰，应 kebab-case |
-| `feat/edit-password` | 缺日期段 |
-| `feature/2026.08.18-edit-password` | 前缀不在 `feat/opt/fix` 三类内 |
-| `feat/2026.08.18-fix-bug` | business 无信息量，看不出改了什么业务 |
-
-> **同一需求延续开发沿用原分支**：不因跨天而按新日期另开分支；也不因某次改动类型不同（在 `feat` 分支上修了个 bug）而改分支名——分支名跟**需求主导意图**，commit 前缀跟**每次改动意图**。
->
-> **同一业务需要重开分支**（原分支已合并 / 已废弃，同一 business 要再开一支）：沿用原分支名**追加序号** `-2`、`-3`（如 `opt/2026.08.03-sub-code-config-2`），日期与 business 都不改——序号让人一眼看出这是同一需求的第几轮，不会误当成新需求。
-
-### 2.3 默认流程（授权后逐步执行）
-
-1. **确认状态**：`git status` + `git diff` 通读本次全部改动；`git rev-parse --abbrev-ref HEAD` 判定当前分支（→ 2.1 决策表）
-2. **切分支**（当前在主干时）：
-   - 可选先 `git fetch`，若当前主干落后远端，**如实告知开发者**，是否 `pull` / `rebase` 由开发者决定——**AI 不自动拉取或变基**（工作区有未提交改动时风险最大）
-   - `git switch -c {分支名}`（工作区未提交改动会随之带到新分支，无需 stash）
-3. **暂存**：按 `git status` **逐项确认后**再 `git add -- <显式路径>`；**禁止 `git add -A` / `git add .` / `git commit -am` 盲加**（避免带入临时文件、他人改动、本地配置）；暂存后 `git diff --cached --name-only` 核对一遍再提交——工作区有他人 / 他任务改动时按 **2.4 安全暂存**执行
-4. **提交**：`git commit` —— message 按第三、四章（三分法 + 格式 + **无 AI 记号**）
-5. **推送**：`git push -u origin {分支名}`
-6. **交接输出**（推送后给开发者的固定四项）：
-   ```
-   分支：feat/2026.08.18-edit-password（自 master 切出）
-   提交：a1b2c3d  feat: 新增修改密码能力
-   推送：已推送到 origin（远端返回的 PR/MR 链接，如有）
-   待办：请自行合并到 master
-   ```
-7. **收尾**：`git status` 确认工作区干净
-
-**多仓库（前后端 / 多服务）**：各仓库独立执行本流程、独立提交；**分支名保持一致**（同一需求同名分支，便于对照合并）；交接输出**逐仓列出**「仓库 ↔ 分支 ↔ 提交」对照，不能只报其中一个仓：
-
-```
-仓库：{backend-repo}   分支：feat/2026.08.18-edit-password   提交：a1b2c3d  已推送
-仓库：{frontend-repo}  分支：feat/2026.08.18-edit-password   提交：d4e5f6a  已推送
-待办：请自行合并两仓分支到 master
-```
 
 ### 2.4 并行开发的安全暂存 ← 硬性
 
@@ -194,130 +147,16 @@ fix/2026.08.18-order-remark-npe      # 确认订单备注 NPE
 
 ---
 
-## 三、前缀规范：feat / opt / fix 三分法
+## 三、前缀规范 / 四、书写格式
 
-按**开发意图**（而非文件类型）三分。**同一套三分法同时用于 commit 前缀与分支前缀**：
-
-| 意图 | 前缀 | 何时使用 |
-|------|------|----------|
-| **新增** | `feat` | 完成某个模块开发、业务的改造、需求的迭代；新增接口 / 页面 / 字段 / 能力 |
-| **改进** | `opt` | 对代码进行优化、调整，或做简要的内容补充（重构、性能、格式、配置 / 依赖、文档与注释） |
-| **修复** | `fix` | 修复某个 BUG / 缺陷 |
-
-### 与既有六类的融合映射
-
-本库过去在 dev-session P11 / README 隐性用过 `feat / fix / refactor / docs / style / chore` 六类。
-现统一收敛到三类，旧类型按下表**逐类归入**——**三分法覆盖全部提交场景，不再使用其余前缀**：
-
-| 旧前缀 | 归入 | 理由 |
-|--------|------|------|
-| feat | **feat** | 新增价值 |
-| fix | **fix** | 补回正确性 |
-| refactor / perf | **opt** | 不改变对外行为地改进内在质量 |
-| style | **opt** | 格式 / 样式属"调整" |
-| chore | **opt** | 构建 / 依赖 / 配置 / 杂务属"调整" |
-| docs | **opt** | 文档 / 注释属"简要的内容补充"（opt 定义即含此） |
-
-> 记忆法：**加东西 → feat，修东西 → fix，其余一切"让现状更好" → opt。**
-
----
-
-## 四、书写格式
-
-### 结构
-
-```
-<type>[(<scope>)]: <概述>[ & <概述2> …]
-
-* <要点1>
-* <要点2>
-```
-
-- **type**：`feat` / `opt` / `fix`
-- **scope（可选）**：改动范围 / 模块，如 `(skills)`、`(capability)`、`(订单)`。
-  本库自身提交与反哺提交带 scope；日常业务提交可省略。
-- **概述**：一句话说清做了什么；一次提交含多件相关事项时用 ` & ` 连接。
-- **body（`*` 要点，按需）**：解释关键实现决策 / 为什么这么改 / 影响面；无必要可省。
-
-### 多类型合并
-
-一次改动同时涉及新增、优化、修复时，按 `feat → opt → fix` 顺序分段，段间空行：
-
-```
-feat: <概述>
-
-* <要点>
-
-opt: <概述>
-
-* <要点>
-
-fix: <概述>
-
-* <要点>
-```
+见 `references/message-format.md`：feat / opt / fix 三分法（含旧六类融合映射）、`<type>[(<scope>)]: <概述>` 结构与多类型合并写法。编写 message 时必读。
 
 ---
 
 ## 五、示例
 
-**feat**
+见 `references/examples.md`（feat / opt / fix / 合并 / 带 scope / 分支 + 提交配套）。
 
-```
-feat: 新增财务报表的导出接口 & 资金科目模块新增门店维度统计
-
-* 统一导出工具类，支持读库自定义
-```
-
-**opt**
-
-```
-opt: 数据上报通知由同步改为异步 & 优化批量导入的逻辑
-
-* 批量导入由 for 循环 saveOrUpdate 改为批量 saveOrUpdateBatch
-```
-
-**fix**
-
-```
-fix: 确认订单当没填写备注时出现 NPE & 商品导出表头没有国际化
-
-* 确认订单要对 remark 字段做空判断
-* 商品导出补充 commodity.name, commodity.price 国际化文案
-```
-
-**合并（feat + opt + fix）**
-
-```
-feat: 新增 XXX
-
-* XXX
-
-opt: 优化 XXX
-
-* XXX
-
-fix: 修复 XXX
-
-* XXX
-```
-
-**带 scope（本库 / 反哺）**
-
-```
-feat(capability): 反哺 verify-baseline 校验脚本 from YAPD
-```
-
-**分支 + 提交配套（修改密码需求）**
-
-```
-分支：feat/2026.08.18-edit-password
-提交：feat: 新增用户修改密码能力
-
-* 旧密码校验走统一 PasswordEncoder，失败次数计入风控
-```
-
----
 
 ## 六、提交流程（对接 dev-session P11）
 
@@ -332,92 +171,12 @@ feat(capability): 反哺 verify-baseline 校验脚本 from YAPD
 
 ---
 
-## 七、质量自检（提交前逐条过）
-
-**分支**
-
-- [ ] 已获开发者提交授权
-- [ ] 已用 `git rev-parse --abbrev-ref HEAD` 确认当前分支，而非凭印象
-- [ ] 当前不在主干；若在主干，已切出开发分支（**主干直提仅凭本次明确授权，且不沿用上次**）
-- [ ] 分支名合规：`{feat|opt|fix}/{yyyy.MM.dd}-{business}`，日期取自系统当天且补零，business 为小写 kebab-case 且有信息量
-- [ ] 前后端仓库分支名一致
-- [ ] 未做任何合并主干 / PR / force push / 删分支动作
-
-**暂存**
-
-- [ ] 逐项 `git add -- <路径>`，未用 `-A` / `.` / `-am` 盲加
-- [ ] `git diff --cached --name-only` 已核对：未夹带他人改动、构建产物、本地配置
-
-**提交信息**
-
-- [ ] 前缀 ∈ {`feat`, `opt`, `fix`}，与本次意图一致
-- [ ] 概述具体、有信息量，不是 `update` / `修改代码` 这类空话
-- [ ] 多事项用 ` & ` 连接；多类型按 `feat → opt → fix` 分段
-- [ ] 关键决策已在 `*` 要点说明（如有必要）
-- [ ] **message 与分支名中无任何 AI 记号**（`Co-Authored-By` / `Generated with` / 模型名 / AI 水印）
-- [ ] **message 与代码注释中无进度词**（`FIXED` / `Step N` / `Phase N`）
-- [ ] 含中文的 message / PR / MR 文本经 UTF-8 文件传入，未直接写进命令行参数；PR / MR 创建后已读回核对无乱码
-
-**收尾**
-
-- [ ] 已 `push -u origin {分支名}`，并向开发者输出交接四项（分支 / 提交 / 推送 / 待办：请自行合并主干）；多仓时逐仓列出「仓库 ↔ 分支 ↔ 提交」对照
-- [ ] `git status` 工作区干净
-
 ---
 
-## 八、附录：Worktree 隔离开发（并行迭代防冲突 / 防进度脱节）
+## 七、质量自检
 
-> 同一仓库有另一会话 / 另一需求在并行改动时，三类事故反复发生：他人切分支清掉本需求**未提交**的 tracked 改动；每次提交都要在污染的工作区里逐文件甄别（2.4）；本需求改动混进他人分支。把本需求隔离到独立 `git worktree` 可以从根上避免。以下是实战踩坑后的固定做法。
+提交前逐条过 `references/self-check.md`（分支 / 暂存 / 提交信息 / 收尾四组）。
 
-### 8.1 何时用
+## 八、附录：Worktree 隔离开发
 
-- 共享工作区有活跃并行会话，且本需求是**多文件、多任务、会累积较多未提交改动**的特性
-- 单文件 / 快速改动不开 worktree，按 2.4 安全暂存即可
-
-### 8.2 放置位置与目录结构（强制）
-
-worktree **必须放在项目根内** `{project-root}/.worktree/`，**不放项目外**——放外面会让项目根的入口与技能层（Claude Code：`.claude/` 流程 skill + rules；其他宿主：AGENTS.md 及其引用的技能目录）与 `.document/`（台账 / 沉淀）脱离祖先链，规则和 skill 加载 / 引用不到。
-
-按「**任务目录镜像根结构**」组织：每个需求一个任务目录，内含该需求用到的各仓 worktree，**子目录名与项目根下的仓库目录名一致**：
-
-```
-{project-root}/.worktree/
-└── {business}/                 ← 一个需求一个目录，与分支的 business 段同名（如 edit-password）
-    ├── {backend-repo}/         ← 后端仓 worktree，检出 feat/2026.08.18-edit-password
-    └── {frontend-repo}/        ← 前端仓 worktree，同名分支（按需）
-```
-
-- 建树命令：`git -C {repo} worktree add {project-root}/.worktree/{business}/{repo} -b {feat|opt|fix}/{yyyy.MM.dd}-{business}`（自当前主干切出，分支名按 2.2）
-- worktree 是**单仓**检出：纯后端 / 纯前端只建对应那一个；全栈各建各的，互不影响
-- 编辑任一仓文件时祖先链含：该仓技能层（前 / 后端规范）+ 根技能层（流程）+ 根 `.document/`（Claude Code 下技能层即各级 `.claude/`；其他宿主为入口文件声明的技能目录）→ 规则与技能全识别
-- `.worktree/` 必须进项目根 `.gitignore`（单仓项目尤其注意，否则整棵树会被当成未跟踪文件）
-- 多需求并行各用各的任务目录与分支（同一仓同一分支只能在一个 worktree 检出）
-- **树内一切命令以树内仓目录为 cwd**：构建 / 测试 / 校验命令不用项目根相对路径——项目入口文件里 `cd {backend-repo} && mvn …` 这类命令在 worktree 会话里要按 `{project-root}/.worktree/{business}/{repo}` 解析，否则编译 / 测试的是主工作区那棵树；跨仓引用写 `../{repo}`，镜像结构保证它在根与树内都指向同一需求的另一棵树
-
-### 8.3 Windows 路径上限（260）——后端仓必做
-
-后端 Java 包路径深，嵌套一层任务目录后最深文件容易超过 Windows MAX_PATH。**建树前对该仓执行一次 `git config core.longpaths true`**，否则 `git worktree add` 报 `Could not reset index file to revision 'HEAD'`。开启后 git 与读写 / 编辑工具均能正常处理深路径文件。
-
-### 8.4 进度与沉淀只写一份（关键）
-
-- `.document/` 全项目只有项目根这一份：台账 `STATUS.md`、恢复卡 `plan/context/{条目名}.md`、plan / design / 用例文档、memory、能力登记**一律写项目根**，**绝不写进 worktree 内的副本**——单仓项目的 worktree 会自带一份 `.document/` 副本，最容易写错地方 → 进度永不在多棵树间分叉（`dev-session/scripts/restore_context.py` 在 `.worktree/` 内运行时也按此取项目根）
-- 每完成一个任务**即时**按 `progress-tracker` 回填，并在 worktree 内**分段提交**（每个可独立 review 的语义单元一次），不长期囤大量未提交改动
-- 开树时在台账该条目「最近动态」记一行：worktree 路径 + 分支名 + 所属仓，避免跨会话丢失上下文
-- **个人 memory 不跨树**：个人 memory（Claude Code：`~/.claude/projects/`；其他宿主：用户配置的位置）按 cwd 路径分桶，worktree 会话与主工作区会话读到的不是同一份——需求上下文、纠正、踩坑一律按 `team-memory` 写根 `.document/developer/memory/`，不要靠个人 memory 在树之间传递
-- **多会话同写根 `.document/`**（台账、索引、能力登记）→ 按 `progress-tracker`「并行开发的文档冲突约定」：写前重读、只改自己的行、写完即提交；追加型文件冲突双方保留；结构化文档单一写者
-
-### 8.5 提交、合并与收尾
-
-- 提交推送按 2.3 默认流程：在 worktree 内 `commit` → `push -u origin {分支名}` → 交接四项
-- 基线漂移：主干推进较多时**如实告知开发者**，是否 `rebase` 由开发者决定（AI 不自动变基，同 2.3）
-- 收尾由开发者完成：合并分支回主干 → `git worktree remove .worktree/{business}/{repo}`（先按 8.6 拆掉链接）→ 删除已合并分支（AI 不删分支，见 2.6；开发者明确要求时 AI 可代执行 `git worktree remove`）
-- 迁移既有未提交改动进 / 出 worktree：`git diff -- <file> > x.patch` + `git -C <tree> apply x.patch`，**不要整仓 stash**——stash 会把他人改动一起带走
-
-### 8.6 删除前先拆链接（防连带删主工作区）
-
-worktree 里为了跑构建，常从主工作区借依赖目录（Windows 目录联接 `mklink /J`、Unix 符号链接 `ln -s`，如 `node_modules`）。在 Windows 上，`git worktree remove`、`rm -rf`、`Remove-Item -Recurse` 可能顺着联接递归进**主工作区**删除：源码不受影响，但依赖目录会残缺。实例：删掉了主工作区的 `node_modules/.modules.yaml` 和 `.pnpm` 下的部分包，碰到 workspace 包之间的循环联接报 `Filename too long` 才停下。固定顺序：
-
-1. 列出 worktree 内所有链接，遇到链接只记录、不进入：Windows 用 PowerShell 逐层枚举，条目带 `ReparsePoint` 属性就记录、不再往下递归（不要用会跟随联接的递归命令，循环联接会无限深入）；Unix `find <worktree> -type l`
-2. 逐个只删链接本身：Windows `rmdir <链接>`（不带 `/s`）；Unix `rm <链接>`（不带 `-r`，链接名末尾不加 `/`）
-3. 复查确认已无链接，再执行 `git worktree remove`
-4. 删除中途报 `Filename too long` 时，worktree 可能已从 git 注销、目录还残留：先回到第 1 步确认没有链接，再用 `\\?\<绝对路径>` 前缀删除残留目录；随后检查主工作区依赖目录是否完整（如 pnpm 用 `install --frozen-lockfile --offline` 从本机 store 补回，再跑一次类型检查）
+见 `references/worktree.md`（何时用、放置位置、Windows 路径上限、进度只写一份、提交与收尾、删除前拆链接）。
