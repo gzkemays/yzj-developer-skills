@@ -60,8 +60,11 @@ for p in $PLUGINS; do
   # 插件 hooks（可选）：hooks/hooks.json 须是合法 JSON，命令里引用的插件内脚本必须存在
   hj="$dir/hooks/hooks.json"
   if [ -f "$hj" ]; then
-    if command -v python >/dev/null 2>&1 && python -c "import sys" >/dev/null 2>&1; then
-      python -c "import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$hj" 2>/dev/null || fail "$hj 不是合法 JSON"
+    PY=""; for c in python3 python py; do "$c" -c "import sys" >/dev/null 2>&1 && { PY="$c"; break; }; done
+    if [ -n "$PY" ]; then
+      "$PY" -c "import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$hj" 2>/dev/null || fail "$hj 不是合法 JSON"
+    else
+      echo "  ℹ 未找到可运行的 python，跳过 $hj 的 JSON 合法性检查"
     fi
     for s in $(grep -oE 'CLAUDE_PLUGIN_ROOT\}?/[A-Za-z0-9_./-]+\.(py|sh)' "$hj" | sed -E 's/^CLAUDE_PLUGIN_ROOT\}?\///' | sort -u); do
       [ -f "$dir/$s" ] || fail "$hj 引用的脚本 $dir/$s 不存在"

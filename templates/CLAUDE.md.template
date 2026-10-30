@@ -57,6 +57,7 @@ P1 分析需求(台账+定级) → P2 加载沉淀 → P3 开发(对齐落档) �
 > 授权提交默认**从当前主干切开发分支** `{feat|opt|fix}/{yyyy.MM.dd}-{business}`（如 `feat/2026.08.18-edit-password`）
 > → 提交 → `push -u origin` → **由开发者自行合并主干**；主干直提须开发者本次明确授权，**单次有效、下次重问、不可自主判断**。
 > 暂存只加自己的改动（逐项 `git add -- <路径>` + `git diff --cached --name-only` 核对）；并行会话多时按 `git-commit` 附录开 Worktree（项目根 `.worktree/`，进度只写根 `.document/`）。
+> 首次 clone 后在每个 git 仓执行一次 `git config core.hooksPath .githooks`（提交信息机械检查；主干名非 master / main / develop 时再 `git config --add yzj.trunk {主干名}`）。
 
 **全程规则与硬门禁**：常驻摘要见 `.claude/rules/red-lines.md`（纠正即沉淀 / 修复必回溯 / 进度实时更新 / P4 不可跳过 / 修复后重走 P4–P7 / P8–P9 硬门禁 / Git 授权与无 AI 记号 / 编码前文档评审），每条带原章节指针，执行前按指针重读 `dev-session` 等原文；本文件不重复展开。
 

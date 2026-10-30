@@ -11,12 +11,19 @@ guard=""
 if [ -n "${YZJ_COMMIT_GUARD:-}" ] && [ -f "$YZJ_COMMIT_GUARD" ]; then
   guard="$YZJ_COMMIT_GUARD"
 else
-  # 复制安装：仓库根 / 项目根（分仓时为上一级或上两级）的技能目录；插件安装：由 onboarding 拷到 .githooks/ 旁
-  for base in "$root" "$root/.." "$root/../.." "$hookdir"; do
-    for rel in .claude/skills/git-commit/scripts/commit_guard.py common/skills/git-commit/scripts/commit_guard.py commit_guard.py; do
-      if [ -f "$base/$rel" ]; then guard="$base/$rel"; break 2; fi
-    done
+  # 查找顺序：本仓库技能目录 → .githooks/ 旁的拷贝（插件安装）→ 项目根（分仓时为上一级 / 上两级）的技能目录。
+  # 仓库内的优先于仓库外：同一父目录常并存多个项目，不能让他项目 / 旧基线的脚本压过本项目自带的。
+  for rel in .claude/skills/git-commit/scripts/commit_guard.py common/skills/git-commit/scripts/commit_guard.py; do
+    if [ -f "$root/$rel" ]; then guard="$root/$rel"; break; fi
   done
+  [ -n "$guard" ] || { [ -f "$hookdir/commit_guard.py" ] && guard="$hookdir/commit_guard.py"; }
+  if [ -z "$guard" ]; then
+    for base in "$root/.." "$root/../.."; do
+      for rel in .claude/skills/git-commit/scripts/commit_guard.py common/skills/git-commit/scripts/commit_guard.py; do
+        if [ -f "$base/$rel" ]; then guard="$base/$rel"; break 2; fi
+      done
+    done
+  fi
 fi
 [ -n "$guard" ] || { echo "commit-msg: 未找到 commit_guard.py，跳过 AI 记号检查（可设 YZJ_COMMIT_GUARD 指向脚本）" >&2; exit 0; }
 

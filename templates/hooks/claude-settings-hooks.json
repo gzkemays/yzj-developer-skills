@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$CLAUDE_PROJECT_DIR/.claude/skills/dev-session/scripts/restore_context.py\"; done; exit 0",
+            "command": "for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$CLAUDE_PROJECT_DIR/.claude/skills/dev-session/scripts/restore_context.py\"; done; echo \"yzj hook: 未找到可运行的 python，跳过压缩恢复注入\" >&2; exit 0",
             "timeout": 20
           }
         ]
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$CLAUDE_PROJECT_DIR/.claude/skills/git-commit/scripts/commit_guard.py\" pretooluse; done; exit 0",
+            "command": "for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$CLAUDE_PROJECT_DIR/.claude/skills/git-commit/scripts/commit_guard.py\" pretooluse; done; echo \"yzj hook: 未找到可运行的 python，跳过 git commit 检查\" >&2; exit 0",
             "timeout": 10
           }
         ]
