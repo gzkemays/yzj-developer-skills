@@ -36,7 +36,7 @@ worktree **必须放在项目根内** `{project-root}/.worktree/`，**不放项�
 ### 8.4 进度与沉淀只写一份（关键）
 
 - `.document/` 全项目只有项目根这一份：台账 `STATUS.md`、恢复卡 `plan/context/{条目名}.md`、plan / design / 用例文档、memory、能力登记**一律写项目根**，**绝不写进 worktree 内的副本**——单仓项目的 worktree 会自带一份 `.document/` 副本，最容易写错地方 → 进度永不在多棵树间分叉（`dev-session/scripts/restore_context.py` 在 `.worktree/` 内运行时也按此取项目根）
-- 每完成一个任务**即时**按 `progress-tracker` 回填，并在 worktree 内**分段提交**（每个可独立 review 的语义单元一次），不长期囤大量未提交改动
+- 每完成一个任务**即时**按 `progress-tracker` 回填，并在 worktree 内**分段提交**（每个可独立 review 的语义单元一次；每段仍须在开发者授权范围内——开发者可一次明确说"本需求按语义单元分段提交"），不长期囤大量未提交改动
 - 开树时在台账该条目「最近动态」记一行：worktree 路径 + 分支名 + 所属仓，避免跨会话丢失上下文
 - **个人 memory 不跨树**：个人 memory（Claude Code：`~/.claude/projects/`；其他宿主：用户配置的位置）按 cwd 路径分桶，worktree 会话与主工作区会话读到的不是同一份——需求上下文、纠正、踩坑一律按 `team-memory` 写根 `.document/developer/memory/`，不要靠个人 memory 在树之间传递
 - **多会话同写根 `.document/`**（台账、索引、能力登记）→ 按 `progress-tracker`「并行开发的文档冲突约定」：写前重读、只改自己的行、写完即提交；追加型文件冲突双方保留；结构化文档单一写者

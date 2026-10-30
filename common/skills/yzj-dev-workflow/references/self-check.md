@@ -4,7 +4,7 @@
 
 ## 5. 编码质量自检（编码后）
 
-编码完成后，在提交前执行以下自检（详细规则参考 `reviewer` skill）：
+编码完成后、进入 dev-session P4 Review 前执行以下自检（详细规则参考 `reviewer` skill）：
 
 ### 5.1 命名规范自检
 

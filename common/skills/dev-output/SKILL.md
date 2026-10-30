@@ -25,7 +25,7 @@ description: >
 | `stage` | 迭代阶段（从 `00-plan-overview.md` 读取） | `MVP` / `p1` / `P4` |
 | `business` | 业务域英文短名（kebab-case） | `workitem-crud` / `ai-doc-auto-index` |
 
-同一天同一业务多次输出时追加序号：`..._-2.md`。
+同一条目只有一份报告（与台账条目同名）；同一天同一业务再次输出属于重开的新条目（条目名按 `progress-tracker` 规则 8 带 `-2` 序号），报告随条目名 `{条目名}-2.md`。
 
 ---
 

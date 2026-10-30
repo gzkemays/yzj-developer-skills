@@ -6,7 +6,7 @@
 #                   带约束卡的技能，其 references/*.md 前 5 行缺 "> 门禁" 行；references/*.md 引用同技能的另一个 references/ 文件
 # 阈值只是提醒：规则会随能力累积增长，不做硬限制（见 reports/2026-10-30-context-compaction-resilience-plan.md 决策 13）。
 # 用法：bash scripts/check-skill-layout.sh [技能根...]   默认扫 common/skills backend frontend；
-#       也可传目标项目的技能目录（绝对路径或相对当前目录），目录名为 skills 的按流程技能阈值
+#       也可传目标项目的技能目录（绝对路径或相对当前目录）；含 dev-session / git-commit 的根按流程技能阈值（8KB），其余 16KB
 set -u
 ORIG_PWD=$PWD
 cd "$(dirname "$0")/.." || exit 1
@@ -23,12 +23,15 @@ refs_in() { grep -oE '(^|[^/A-Za-z0-9_.-])(references|templates)/[A-Za-z0-9._-]+
 
 for root in "${ROOTS[@]}"; do
   root=${root%/}
-  # 参数相对于调用者当前目录解析（脚本已 cd 到仓库根）；不存在的根明确报失败，不静默通过
-  case "$root" in /*|[A-Za-z]:*) ;; *) [ -d "$root" ] || root="$ORIG_PWD/$root";; esac
+  # 显式传入的相对路径先按调用者当前目录解析，再回退仓库根（默认根已是仓库相对路径）；不存在的根明确报失败，不静默通过
+  case "$root" in
+    /*|[A-Za-z]:*) ;;
+    *) if [ $# -gt 0 ] && [ -d "$ORIG_PWD/$root" ]; then root="$ORIG_PWD/$root"; fi;;
+  esac
   root=${root#./}
   [ -d "$root" ] || { fail "技能根不存在：$root"; continue; }
-  # 流程技能根（目录名 skills）用 8KB 阈值，规范技能根（backend / frontend）用 16KB；不依赖参数怎么拼写
-  limit=$MAIN_LIMIT; [ "$(basename "$root")" = skills ] || limit=$SPEC_LIMIT
+  # 含流程技能（dev-session / git-commit）的根用 8KB 阈值，纯规范技能根（backend / frontend 及其目标项目拷贝）用 16KB
+  limit=$SPEC_LIMIT; { [ -d "$root/dev-session" ] || [ -d "$root/git-commit" ]; } && limit=$MAIN_LIMIT
   for dir in "$root"/*/; do
     dir=${dir%/}; main="$dir/SKILL.md"
     [ -f "$main" ] || continue
