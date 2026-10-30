@@ -130,7 +130,7 @@ description: >
 
 1. **先备份**：目标根若非 git，先把现有技能目录（root + 各子仓库，含 `.claude/skills` 与 `common/skills`）整体复制到 `{root}/.bak-skills-{date}/`；记录各子仓库是否 git（git 的可经其回滚）。
 2. **清点**：`find` 出所有现有 skill 副本（root + 子仓库各级、两种布局）、`.document/`、各级入口文件（CLAUDE.md / AGENTS.md）。
-3. **逐 skill 对比基线**（`diff --strip-trailing-cr 现有副本 framework当前版`，忽略行尾差异）：
+3. **逐 skill 对比基线**（`diff -r --strip-trailing-cr 现有副本目录 framework当前版目录`，整个技能目录含 `references/` `templates/` `scripts/`，忽略行尾差异）：
 
    | 类别 | 处理 |
    |------|------|

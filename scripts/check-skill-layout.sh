@@ -3,7 +3,7 @@
 #   告警（不阻断）：流程技能 SKILL.md > 8KB（规范技能 > 16KB）且无「## 约束卡」；带约束卡的主文件 > 8KB；
 #                   references/ templates/ 子文件 > 12KB
 #   失败（阻断）  ：主文件引用的技能内 references/*.md、templates/*.md 不存在；references/ templates/ 下存在主文件未引用的孤立文件；
-#                   带约束卡的技能，其 references/*.md 前 5 行缺 "> 门禁" 行
+#                   带约束卡的技能，其 references/*.md 前 5 行缺 "> 门禁" 行；references/*.md 引用同技能的另一个 references/ 文件
 # 阈值只是提醒：规则会随能力累积增长，不做硬限制（见 reports/2026-10-30-context-compaction-resilience-plan.md 决策 13）。
 # 用法：bash scripts/check-skill-layout.sh [技能根...]   默认扫 common/skills backend frontend
 set -u
@@ -43,6 +43,13 @@ for root in "${ROOTS[@]}"; do
         grep -qF "$rel" "$main" || fail "$name/$rel 未被主文件引用（孤立文件：在主文件路由表加引用，或删除）"
         if [ $has_card -eq 1 ] && [ "$sub" = references ] && ! head -n 5 "$f" | grep -q '^> 门禁'; then
           fail "$name/$rel 前 5 行缺「> 门禁」行（子文件被单独读到时也须带自己的门禁）"
+        fi
+        # references/ 之间不互引，只由主文件路由（templates 与其所属阶段子文件互指门禁行允许）
+        if [ "$sub" = references ]; then
+          for other in $(grep -oE 'references/[A-Za-z0-9._-]+\.md' "$f" | sort -u); do
+            [ "$other" = "$rel" ] && continue
+            [ -f "$dir/$other" ] && fail "$name/$rel 引用了同级 $other（references 之间不互引，改为经主文件路由）"
+          done
         fi
       done
     done

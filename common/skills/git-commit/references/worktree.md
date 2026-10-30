@@ -22,7 +22,7 @@ worktree **必须放在项目根内** `{project-root}/.worktree/`，**不放项�
     └── {frontend-repo}/        ← 前端仓 worktree，同名分支（按需）
 ```
 
-- 建树命令：`git -C {repo} worktree add {project-root}/.worktree/{business}/{repo} -b {feat|opt|fix}/{yyyy.MM.dd}-{business}`（自当前主干切出，分支名按 2.2）
+- 建树命令：`git -C {repo} worktree add {project-root}/.worktree/{business}/{repo} -b {feat|opt|fix}/{yyyy.MM.dd}-{business}`（自当前主干切出，分支名按 2.2——主文件路由表「切开发分支」）
 - worktree 是**单仓**检出：纯后端 / 纯前端只建对应那一个；全栈各建各的，互不影响
 - 编辑任一仓文件时祖先链含：该仓技能层（前 / 后端规范）+ 根技能层（流程）+ 根 `.document/`（Claude Code 下技能层即各级 `.claude/`；其他宿主为入口文件声明的技能目录）→ 规则与技能全识别
 - `.worktree/` 必须进项目根 `.gitignore`（单仓项目尤其注意，否则整棵树会被当成未跟踪文件）
@@ -43,8 +43,8 @@ worktree **必须放在项目根内** `{project-root}/.worktree/`，**不放项�
 
 ### 8.5 提交、合并与收尾
 
-- 提交推送按 2.3 默认流程：在 worktree 内 `commit` → `push -u origin {分支名}` → 交接四项
-- 基线漂移：主干推进较多时**如实告知开发者**，是否 `rebase` 由开发者决定（AI 不自动变基，同 2.3）
+- 提交推送按 2.3 默认流程（主文件路由表「切开发分支」）：在 worktree 内 `commit` → `push -u origin {分支名}` → 交接四项
+- 基线漂移：主干推进较多时**如实告知开发者**，是否 `rebase` 由开发者决定（AI 不自动变基，同 2.3 默认流程）
 - 收尾由开发者完成：合并分支回主干 → `git worktree remove .worktree/{business}/{repo}`（先按 8.6 拆掉链接）→ 删除已合并分支（AI 不删分支，见 2.6；开发者明确要求时 AI 可代执行 `git worktree remove`）
 - 迁移既有未提交改动进 / 出 worktree：`git diff -- <file> > x.patch` + `git -C <tree> apply x.patch`，**不要整仓 stash**——stash 会把他人改动一起带走
 

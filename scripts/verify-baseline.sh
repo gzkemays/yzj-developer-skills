@@ -18,6 +18,9 @@
 #     --show-diff            打印每个差异 skill 的具体 diff
 #     --strict               流程 skill 出现漂移即非零退出（默认仅结构错误才非零）
 #
+# 比对整个技能目录：SKILL.md 主文件之外，基线侧 references/ templates/ scripts/ 下每个子文件都须在项目内存在且一致
+# （主文件引导式拆分后大半正文在子文件里）；缺失计 ✗ 结构错误，漂移与主文件同规则计 Δ / ℹ，项目多出的子文件只提示 ℹ。
+#
 # 流程 skill 在 frontmatter 结束后 20 行内带「本文件 = framework 基线」引用块声明（project-onboarding
 # 「📌 项目覆写约定」的文件头差异清单）时报 📌 而非 Δ，--strict 下不算漂移；只有正文 📌、声明在
 # frontmatter 内或无声明的，一律按普通漂移处理。frontmatter 做轻量检查（块内 name/description 非空），
@@ -229,6 +232,31 @@ for SD in "${SKILLDIRS[@]}"; do
       fi
       [ "$SHOW_DIFF" -eq 1 ] && diff --strip-trailing-cr "$ff" "$pf" | sed 's/^/        /'
     fi
+    # 子文件（references/ templates/ scripts/）：主文件引导式拆分后大半正文在子文件里，基线侧每个子文件都须在项目内
+    # 存在且一致——缺失计结构错误（主文件路由指向它，整目录重拷），漂移按主文件同规则计 Δ / ℹ；项目多出的子文件只提示
+    fwdir="$(dirname "$ff")"
+    for sub in references templates scripts; do
+      [ -d "$fwdir/$sub" ] || continue
+      for sf in "$fwdir/$sub"/*; do
+        [ -f "$sf" ] || continue
+        rel="$sub/$(basename "$sf")"; psf="${SKILL}${rel}"
+        if [ ! -f "$psf" ]; then
+          echo "      ✗  $name/$rel  项目内缺失（主文件路由指向它；整个技能目录重拷）"; ERRORS=$((ERRORS+1))
+        elif ! diff --strip-trailing-cr -q "$sf" "$psf" >/dev/null 2>&1; then
+          n=$(diff --strip-trailing-cr "$sf" "$psf" | grep -c '^[<>]' || true)
+          if is_flow "$name"; then
+            echo "      Δ  $name/$rel  与基线差 ${n} 行  ⚠需确认是否有意"; DRIFT=$((DRIFT+1))
+          else
+            echo "      ℹ  $name/$rel  与基线差 ${n} 行"; SPECIFIC=$((SPECIFIC+1))
+          fi
+          [ "$SHOW_DIFF" -eq 1 ] && diff --strip-trailing-cr "$sf" "$psf" | sed 's/^/        /'
+        fi
+      done
+      for psf in "${SKILL}${sub}"/*; do
+        [ -f "$psf" ] && [ ! -f "$fwdir/$sub/$(basename "$psf")" ] \
+          && echo "      ℹ  $name/$sub/$(basename "$psf")  基线无（项目专有子文件）"
+      done
+    done
   done
   # 同一技能目录同时命中前后端基线技能 → 混装（两端 reviewer 同名互相覆盖的前兆），计结构错误
   if [ "$B_HIT" -eq 1 ] && [ "$F_HIT" -eq 1 ]; then

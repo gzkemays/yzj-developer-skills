@@ -29,7 +29,7 @@
 
 ### 第 0 步：输出测试用例文档（自测开始前，前后端通用，不可跳过）
 
-自测**开始前**先产出测试用例 Markdown，落档 `design/{yyyy-MM-dd}_{slug}-testcases.md`（与技术设计文档同 slug；轻量任务见 `references/flow-control.md`「轻量任务简化」）——让开发者在 P6 能确认"这次要测什么、要回归什么"，P7 据此验收 / E2E。文档骨架见 `templates/testcases.md`。
+自测**开始前**先产出测试用例 Markdown，落档 `design/{yyyy-MM-dd}_{slug}-testcases.md`（与技术设计文档同 slug；轻量任务见主文件「回退规则」所指流程控制细则的「轻量任务简化」）——让开发者在 P6 能确认"这次要测什么、要回归什么"，P7 据此验收 / E2E。文档骨架见 `templates/testcases.md`。
 
 **用例拟定原则**（先于模板）：
 
