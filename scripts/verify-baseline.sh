@@ -310,6 +310,19 @@ if [ -n "$RULES" ]; then
 else
   echo "ℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 red-lines.md / collaboration.md / api-contract.md"
 fi
+# 机械兜底 hook 为软检查：每个 git 仓应有 .githooks/commit-msg；.githooks/ 旁的 commit_guard.py 拷贝须与基线一致
+GUARD_SRC="$FW/common/skills/git-commit/scripts/commit_guard.py"
+for repo in "$PROJECT" "$PROJECT"/*/; do
+  repo="${repo%/}"; [ -e "$repo/.git" ] || continue
+  rel="${repo#$PROJECT}"; rel="${rel#/}"; [ -n "$rel" ] || rel="."
+  if [ -f "$repo/.githooks/commit-msg" ]; then
+    if [ -f "$repo/.githooks/commit_guard.py" ] && [ -f "$GUARD_SRC" ] && ! cmp -s "$repo/.githooks/commit_guard.py" "$GUARD_SRC"; then
+      echo "ℹ $rel/.githooks/commit_guard.py 与基线不一致（插件安装层的拷贝，re-sync 时从 common/skills/git-commit/scripts 覆盖）"
+    fi
+  else
+    echo "ℹ $rel 缺 .githooks/commit-msg（templates/.githooks/commit-msg；成员需 git config core.hooksPath .githooks，见 project-onboarding A-5）"
+  fi
+done
 # 恢复卡目录与台账两列为软检查：缺失只提示（既有项目由 project-onboarding B-4 补）
 if [ -f "$PROJECT/.document/plan/STATUS.md" ]; then
   grep -q '^| 需求 | 状态 | 阶段 | 已过门禁 |' "$PROJECT/.document/plan/STATUS.md" \

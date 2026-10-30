@@ -112,13 +112,13 @@ description: >
 3. **成员前提**：私有仓库需本机 git 已存凭据且拉取时不会弹窗（HTTPS 凭据助手已登录 Gitee，或 SSH key 已加载）；Gitee 必须用完整 URL（`owner/repo` 简写只指 GitHub）。凭据缺失时后台更新静默失败、沿用旧版本。
 4. **更新**：本仓库发布新基线即提升插件版本；Claude Code 开启 `autoUpdate` 后会话启动时后台拉取，或手动 `claude plugin marketplace update yzj-skills`；Codex 用 `codex plugin marketplace upgrade yzj-skills`。项目侧无需 re-sync。
 5. **校验**：`bash scripts/verify-baseline.sh {项目根}`——插件层报 🧩，并检查端插件放置、前后端混装、插件与本地副本双装；从该层启动新会话，用"今天做什么"、真实开发与审查请求验证路由，未实测如实说明。
-6. **hook**：`yzj-flow` 插件自带 `hooks/hooks.json`（压缩后重注入、`git commit` 前检查），启用插件即生效，项目内不再配 hooks；git 原生 `commit-msg` 仍按 A-5 装（脚本在插件缓存里，路径不固定，所以把 `commit_guard.py` 拷一份到 `.githooks/` 旁，hook 会就近找到；re-sync 时随基线更新这份拷贝）。
+6. **hook**：`yzj-flow` 插件自带 `hooks/hooks.json`（压缩后重注入、`git commit` 前检查），启用插件即生效，项目内不再配 hooks；git 原生 `commit-msg` 仍按 A-5 装（脚本在插件缓存里，路径不固定，所以把 `commit_guard.py` 拷一份到 `.githooks/` 旁，hook 在本仓库技能目录找不到时取这份；`verify-baseline.sh` 会比对这份拷贝与基线，re-sync 时覆盖）。
 
 ### A-5 机械兜底（所有安装模式）
 
 规则只写在技能里会被遗忘，这一层把 `git-commit` 铁律 3 与 `red-lines.md` 恢复协议变成会自动执行的检查；全部 fail-open，脚本缺失或 python 不可用时放行并提示：
 
-1. **git 原生 `commit-msg` hook**（宿主无关、人和 AI 的提交都生效）：拷 `templates/.githooks/commit-msg` → 每个 git 仓的 `.githooks/commit-msg`（分仓项目前后端各一份；根不是 git 仓则不装根），`chmod +x`，并在该仓执行 `git config core.hooksPath .githooks`（本地配置，每位成员 clone 后要执行一次——写进该仓入口文件「开始工作时」）。hook 自动在仓库根 / 上一级 / 上两级的技能目录找 `commit_guard.py`；插件安装的层把脚本拷到 `.githooks/commit_guard.py`。拦截范围：AI 署名尾注、来源尾注、模型名、进度词。**对人提交同样生效**——dry-run 报告里列明，经开发者确认。
+1. **git 原生 `commit-msg` hook**（宿主无关）：拷 `templates/.githooks/commit-msg` → 每个 git 仓的 `.githooks/commit-msg`（分仓项目前后端各一份；根不是 git 仓则不装根），`chmod +x`，并在该仓执行 `git config core.hooksPath .githooks`；项目主干不叫 master / main / develop 时同时 `git config --add yzj.trunk {主干名}`。两条都是**本地配置，每位成员 clone 后要执行一次**——写进该仓入口文件「开始工作时」（两份模板已带此行），未执行的成员不受保护，`--no-verify` 也可绕过，属开发者自觉。hook 查找 `commit_guard.py` 的顺序：本仓库技能目录 → `.githooks/` 旁拷贝 → 上一级 / 上两级项目根的技能目录（仓库内优先，防止同一父目录下他项目的脚本被误用）；插件安装的层把脚本拷到 `.githooks/commit_guard.py`。拦截范围：AI 署名尾注、来源尾注、模型名、进度词。**对已执行 hooksPath 的成员的人工提交同样生效**——dry-run 报告里列明，经开发者确认。
 2. **Claude Code hook**：插件安装 → 插件自带；复制安装 → 把 `templates/hooks/claude-settings-hooks.json` 的 `hooks` 键合并进项目根 `.claude/settings.json`（已有 `hooks` 则按事件追加，不覆盖其他键）。两条：`SessionStart`（`compact`）压缩后运行 `restore_context.py` 重注入红线与恢复卡；`PreToolUse`（Bash）在 `git commit` 前运行 `commit_guard.py pretooluse`——AI 记号拒绝、主干弹窗确认（单次授权的机械形态）、开发分支放行。
 3. **其他宿主**（Codex 等）：hook 机制未核实前不配；靠入口文件「上下文压缩后」节与 `git-commit` 的 `precheck` 手动运行。
 
