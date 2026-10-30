@@ -9,6 +9,8 @@ description: 后端代码审查 skill。当用户要求 review 代码、审查�
 
 > **为什么是硬流程**：历史教训表明，依赖"维度表 + 被动检查"会反复漏检（`this.` 前缀、私有方法 Javadoc、布尔 is 前缀均多次漏检后才被开发者捕获），且"改动小/有把握"常被用作跳过 Review 的理由导致返工。因此本 skill 把审查定义为**不可跳过、不可抽查**的步骤序列。
 
+> **章节顺序说明**：本 skill 进入 P4 时必须全文加载；章节按"压缩后开头优先保留"的重要度排列——七步硬流程与放行门禁 → 漏检史 → 禁止事项清单 → 报告格式 → 各维度审查要点 → 流程总览。章节编号是稳定锚点（其他技能按编号引用），**不随顺序重排**。
+
 ---
 
 ## 〇、七步硬流程（任何 Review 必须按此执行）
@@ -93,6 +95,183 @@ python <reviewer 目录>/scripts/review-scan.py --repo <仓库根> --base <基�
 ### 同类违规回溯（与 `similar-issue-sweep` 联动）
 
 Step 2-6 中**每发现一处违规**，立即在**本次变更的全部文件**中扫描同一模式（同一开发批次极易复现同一错误）；若该违规属于历史漏检清单中的条目，扩大到**所在业务域全量文件**扫描，结果并入报告。
+
+---
+
+## 十七、漏检史清单（每次 Review 必须主动核对）
+
+> 这里登记**曾被开发者捕获的 AI 漏检项**。每次 Review 把本清单作为必查项过一遍；
+> 项目中新发生的漏检按 `team-memory` 升级机制**当场追加**到项目级清单（项目 memory 或本文件项目副本）。
+
+| Rule | 出处 | 教训来源 |
+|------|------|----------|
+| 审查结论默认通过（矩阵按文件路径填 ✓，扫描没覆盖行长等规则仍判通过） | #63 / #64 / Step 2、6 | 外部项目教训（2026-10-30）：会话审计显示 reviewer 已读、也声明了“全维度矩阵审查”，但矩阵由脚本按路径填 ✓，验收提交仍有 19 处超长行等违规；用 review-scan 回扫该提交得到 176 条 HIT。读过规则不等于审过 |
+| 排版与注释不符样板（单行 if、全限定名、Javadoc 无空行 / 无标题、字段无注释、长方法无分段） | #59~#62 / 第三、五节 | 外部项目教训（2026-10-30）：另一模型的实现通过了 P4，开发者 review 才发现；原因是第三、五节只有类注释示例、Step 2 没有排版扫描，审查只看“有没有注释”，没看排版与内容是否说清作用 |
+| 转换默认使用 BeanUtils.copyProperties | #56 / model-conventions 第四节 | 2026-10-28 开发者 review：同域已有显式映射示例仍未复用；不能靠转换类命名判断合规 |
+| 类 author/since 与方法参数说明缺失 | #58 / 第五节 | 2026-10-28 开发者 review：规则已存在但未逐声明核对，文档精简不等于省略契约 |
+| 业务 provider 码硬编码 | #57 / common 第二节 | 2026-10-28 开发者 review：已有枚举仍用 Objects.equals(code, 数字)，应优先使用枚举比较 API |
+| `this.` 前缀缺失 | #35 / OOP 第四节 | 多次漏检，包括代码已提交后才被发现——必须 Grep 扫描而非目测 |
+| 私有方法 Javadoc 缺失 | #37 / 注释第五节 | 多次漏检 |
+| Javadoc `@param + @return` 不完整 | 第五节 | 曾漏检 |
+| `@SuperBuilder`（有继承时） | #8 | 偶发 |
+| Operate 动词在前（AddXxxOperate） | #17 | 偶发 |
+| 布尔 is 前缀 | #4 🔴 | 曾漏检（isAuto） |
+| TableDef 用局部变量而非 TableDefCollect | 第八节 | 曾漏检 |
+| Controller 手动 stream.map | #34 | 曾漏检 |
+| DTO 字段与列名不一致未加 `.as(DTO::getter)` | Step 4 | 曾漏检 |
+| `@Column(isLarge=true)` 字段读取未 select ALL_COLUMNS | Step 3 | 曾漏检 |
+| Flow 缺 `@Validated` | #38 | 曾漏检 |
+| **整段跳过 Review**（编码后直接进自测/提交） | dev-session 规则 4 | 曾以"小修复"为由两次跳过，结果漏检且已 commit 后才补查 |
+| 框架 `LoggerFilter` 打全量请求 / 响应体 | 第十二节 / logging 第九节 | 外部项目教训（2026-08）：业务代码未打敏感日志，整份敏感 payload 仍在日志里；且下游配了上游没配、验证也只验了一层 |
+| 资金写操作无幂等、余额读-减-覆盖 | 第十三节 | 金融规则此前不在 reviewer 维度内，属结构性缺口，2026-10 补入——首批命中请在项目副本追加具体案例 |
+| 对外接口改了实现未同步对接文档 | #48 | 外部项目教训：先改接口后补文档拆成两次提交，中间窗口第三方按旧文档对接 |
+
+---
+
+## 十五、禁止事项清单
+
+| # | 禁止事项 | 严重程度 |
+|---|----------|----------|
+| 1 | Controller 中写业务逻辑 | 🔴 严重 |
+| 2 | Service 跨域直接操作其他域的 Mapper | 🔴 严重 |
+| 3 | domain 层依赖 interfaces 层 | 🔴 严重 |
+| 4 | 布尔变量以 is 开头（新代码） | 🔴 严重 |
+| 5 | POJO 中存在无对应变量的 get/set | 🔴 严重 |
+| 6 | proto 字段编号复用 | 🔴 严重 |
+| 7 | GrpcServiceImpl 中 `builder.setXxx(null)` | 🔴 严重 |
+| 8 | 使用 `@Builder` 替代 `@SuperBuilder`（有继承时） | 🟡 警告 |
+| 9 | 域专属枚举放在 common 中 | 🟡 警告 |
+| 10 | 新增 Entity 未同步创建 TableDef 或未注册到 TableDefCollect | 🔴 严重 |
+| 11 | support 包中放业务逻辑 | 🟡 警告 |
+| 12 | Controller 使用 record 但需要类级 AOP → 应改 class | 🟡 警告 |
+| 13 | API 路径无版本号 | 🟡 警告 |
+| 14 | 自行创建 Page 类而非使用 MyBatis-Flex 的 `Page` | 🔴 严重 |
+| 15 | CommonEnum 子类重复标注 `@EnumValue` | 🟡 警告 |
+| 16 | DTO/VO 直接放在 `model/` 而非 `model/dto/` 或 `model/vo/` | 🟡 警告 |
+| 17 | Operate 命名为 `{业务}{操作}Operate`（动词在后） | 🟡 警告 |
+| 18 | 参数 > 3 或含数组类型时仍用 `@GetMapping`（应改 POST + CommonQuery） | 🟡 警告 |
+| 19 | 写操作仅用 POST，未合理使用 PUT / DELETE | 🟡 警告 |
+| 20 | 事务内调用写操作型外部 RPC/HTTP（应用 `TransactionUtils.asyncExecuteAfterCommit`） | 🔴 严重 |
+| 21 | 事务内发送业务驱动型 MQ（下游会写库的，应用 `TransactionUtils.asyncExecuteAfterCommit`） | 🔴 严重 |
+| 22 | 直接 `throw new RuntimeException(...)` 而非 `ApiException` | 🟡 警告 |
+| 23 | 手动 `new CommonPage<>()` 而非 `CommonResult.successPage(page)` | 🟡 警告 |
+| 24 | Service 方法返回 VO（应返回 DTO，VO 转换在 Controller 层） | 🔴 严重 |
+| 25 | 反直觉设计决策未在 Javadoc 标注 | 🔴 严重（可能被后人"优化"掉） |
+| 26 | Javadoc 复述代码本身能看出的东西 | 🟡 警告 |
+| 27 | Javadoc 写 commit message 风格 | 🟡 警告 |
+| 28 | Javadoc 包含实现关系论证 | 🟡 警告 |
+| 29 | Javadoc 过度结构化（短文档像论文） | 🟢 提示 |
+| 30 | 类 Javadoc 超过 30 行 | 🟢 提示 |
+| 31 | 装饰性 emoji 出现在 Javadoc 中 | 🟢 提示 |
+| 32 | 已用 `@link` 引用过的类又加 `@see` | 🟢 提示 |
+| 33 | Controller 内联鉴权检查 → 应用注解 + AOP | 🔴 严重 |
+| 34 | Controller 手动遍历 DTO→VO 转换 → 应用 `CommonResult` 转换系列 | 🟡 警告 |
+| 35 | 调用自身实例方法未加 `this.` 前缀 | 🟡 警告（必须全文件扫描） |
+| 36 | 类成员排序违规：public/private 交叉、私有方法穿插 | 🟡 警告 |
+| 37 | 私有静态工具方法（如 `nz`、`isBlank`、断言等）无 Javadoc | 🟡 警告（所有方法均须 Javadoc） |
+| 38 | Flow 类缺 `@Validated` | 🟡 警告 |
+| 39 | `updateById`/`deleteById` 前无存在性校验（详见 `api-contract-checker` 规则 5） | 🟡 警告 |
+| 40 | 写操作 Controller 返回 `CommonResult<Void>`（详见 `api-contract-checker` 规则 1） | 🔴 严重 |
+| 41 | MyBatis XML 使用 `${}` 拼接 / 字符串拼接 SQL | 🔴 严重 |
+| 42 | CVV / PIN 以任何形式存储、记录；完整 PAN 出现在日志 / 响应 / 非加密存储 | 🔴 严重 |
+| 43 | 金额用 `float` / `double`，`new BigDecimal(double)`，`equals` / `==` 比较，`divide` 不带舍入 | 🔴 严重 |
+| 44 | 资金写操作无幂等（无唯一索引 + 先查后写），或只靠 `@ApiLock` / 前端防抖 | 🔴 严重 |
+| 45 | 密码 MD5 / SHA-1 / 可逆加密；`Math.random` / `new Random` 生成 token、验证码、盐 | 🔴 严重 |
+| 46 | 被编排方法 `REQUIRES_NEW` 绕开主事务；事务内吞异常；`@Transactional` 缺 `rollbackFor` | 🔴 严重 |
+| 47 | 硬编码密钥 / secret / 密码 / 测试账号（含 `@Encryption(key = "…")` 字面量） | 🔴 严重 |
+| 48 | 对外接口 / SDK / proto 变更未在同一次提交更新对接文档 | 🔴 严重 |
+| 49 | 余额"读-减-整行覆盖"；扣减 SQL 无余额条件或不校验 affected rows；资金变动不写流水 | 🔴 严重 |
+| 50 | 含敏感 payload 的接口未进 `yzj.logger.ignore-request-url` / `ignore-response-url` | 🔴 严重 |
+| 51 | 用户输入直接作为外部请求 URL（SSRF）；外部请求无超时 | 🔴 严重 |
+| 52 | 手写 SQL / XML 查询未带租户 / 用户隔离条件（水平越权） | 🔴 严重 |
+| 53 | 单元测试连真实 DB / Redis，或 `@SpringBootTest` 跑单测 | 🟡 警告 |
+| 54 | 测试无断言 / 方法名无法表达意图 / 为测试改生产可见性 | 🟡 警告 |
+| 55 | 新增 Service 方法名不符命名规约（存量不合规只 🟢 提示） | 🟡 警告 |
+| 56 | 转换默认反射复制属性，未核对输出字段/null/敏感边界且无保留依据 | 🟡 警告；发生敏感字段泄露按安全项升级 |
+| 57 | 已有业务枚举/常量仍硬编码比较、查询或赋值，或重复定义同义常量 | 🟡 警告 |
+| 58 | 类缺真实 author/since，方法缺参数/返回契约，或无上游依据豁免覆写方法文档 | 🟡 警告 |
+| 59 | 控制语句不带花括号（`if (x) throw …;`）或一行多条语句 | 🟡 警告 |
+| 60 | 无重名仍用全限定名；通配 import | 🟡 警告 |
+| 61 | Javadoc 排版不符第五节：缺标题、标题与标签之间无空行、方法用单行注释、类 / 任务注释没写清作用 | 🟡 警告 |
+| 62 | 常量 / 配置 / 实体字段缺注释；长方法无空行分段或无 `//` 说明 | 🟡 警告 |
+| 63 | 维度结论或审查矩阵没有依据：默认填 ✅、按文件路径 / 类型 / 模板生成，或把未检查写成通过 | 🔴 严重（审查结论不成立，须重审） |
+| 64 | review-scan 的 HIT 未处理、CANDIDATE 未判定，或未跑脚本且未写明原因 | 🟡 警告 |
+
+---
+
+## 十六、审查报告格式
+
+### 通过
+
+```markdown
+## 后端代码审查报告
+
+### 协议确认
+已 Read reviewer SKILL 全文 + 漏检史清单（{日期}），按 {N} 文件 × 全维度矩阵审查。
+
+### 审查范围
+[文件清单]
+
+### 逐维度结论
+| 维度 | 结论 | 依据（一句话） |
+|------|------|------|
+| 命名规范 | ✅ | 逐文件人工核对 N 个文件 |
+| 代码格式 | ✅ | review-scan：line-length / single-line-control / multi-statement / wildcard-import 均为 0 |
+| OOP（含 this. 扫描 / 成员排序） | ✅ | review-scan this-prefix 为 0；继承方法调用与成员排序人工核对 |
+| 注释（author/since、逐参数/返回契约、覆写依据） | ✅ | review-scan javadoc-* / type-doc 为 0；field-doc 候选 N 条已逐条判定 |
+| 转换映射（输出字段、null、反射复制保留依据） | N/A | 本次无转换 |
+| 枚举/常量复用（比较、查询、赋值、测试） | ✅ | XxxEnum 定义与使用位置：A.java:12、B.java:30 |
+| 结构 / TableDef 同步 | ✅ | Step 3：XxxTableDef 已注册 TableDefCollect |
+| Model / Service / Controller / Integration | ✅ | Step 4、5 逐文件核对 |
+| 安全编码（输入与注入 / 敏感数据每次必查；命中关键词全组） | ✅ | 两组已过，关键词扫描未命中 |
+| 金融 / 资金（命中时） | N/A | 关键词未命中 |
+| 单元测试 | ✅ | XxxTest 覆盖成功 / 失败 / 边界，专项用例 12/12 通过 |
+| 漏检史专项核对 | ✅ | 第十七节逐项核对 |
+
+### Step 2 扫描输出
+（review-scan 输出原样粘贴；CANDIDATE 逐条写判定；未用脚本时写明原因）
+
+### 审查结果：✅ 通过
+```
+
+### 不通过
+
+```markdown
+## 后端代码审查报告
+
+### 协议确认 / 审查范围（同上）
+
+### 问题汇总
+| 序号 | 严重程度 | 问题类型 | 文件位置 | 问题描述 |
+|------|----------|----------|----------|----------|
+| 1 | 🔴 严重 | 命名规范 | UserService.java:23 | 布尔变量 isEnabled 违反命名规范 |
+
+### 问题详情
+#### 问题 1：布尔变量命名违规
+**文件位置**：`UserService.java` 第 23 行
+**违规代码**：`private Boolean isEnabled;`
+**规范要求**：布尔类型变量不允许以 is 开头（禁止 #4）
+**修改建议**：`private Boolean enabled;`
+**同类扫描**：[本次变更其余文件中同模式命中情况]
+
+### 审查结果：❌ 不通过 → 自修后重跑 Step 2-6
+```
+
+### 严重程度与判定
+
+- 🔴 **严重**：运行时异常、序列化问题、架构违规、安全 / 资金红线 | 🟡 **警告**：可读性/维护性/团队规范 | 🟢 **提示**：建议优化
+- ✅ 通过 = 无严重/警告级问题；❌ 不通过 = 存在 ≥1 个严重/警告级问题
+- **HIGH RISK 升级**：本次变更命中金融 / 安全关键词（Step 5+）→ 所有 🟡 视同 🔴，报告末尾追加「涉及资金 / 安全核心链路，合并前需双人审批」，dev-session 按 ARCH 走 P6
+
+### 复查模式（ARCH 级或多轮 Review 时）
+
+Review 报告一律落档 `design/{yyyy-MM-dd}_{slug}-review.md`（与技术设计文档同 slug；NORMAL 级可精简为逐维度结论表 + Step 2 扫描输出，但必须落盘——dev-session 以它判定 P4 是否完成）；ARCH 级之后每一轮都在同一份上**追加**：
+
+- 文件头维护「评审历史」表：`| 次数 | 时间 | 🔴 | 🟡 | 🟢 | 结论 |`，本次为第 N+1 次
+- 历史问题逐条验证并追加状态：✅ 已修复（追加修复记录块）/ ⚠️ 部分修复（追加残留说明）/ ❌ 未修复（保留原条目）
+- 新问题编号**续排**（#N+1 …），**禁止删线、删除历史条目、改写已有修复记录**——历史是开发者判断"反复漏什么"的依据
+- 报告保留「做得好的地方」一小节：值得保留与推广的模式，复查时同样只追加
+- NORMAL 级不落档，报告内联在 P6 知会摘要中
 
 ---
 
@@ -479,183 +658,6 @@ DOC 不是 README 也不是 ADR。只回答三件事：
 
 ---
 
-## 十五、禁止事项清单
-
-| # | 禁止事项 | 严重程度 |
-|---|----------|----------|
-| 1 | Controller 中写业务逻辑 | 🔴 严重 |
-| 2 | Service 跨域直接操作其他域的 Mapper | 🔴 严重 |
-| 3 | domain 层依赖 interfaces 层 | 🔴 严重 |
-| 4 | 布尔变量以 is 开头（新代码） | 🔴 严重 |
-| 5 | POJO 中存在无对应变量的 get/set | 🔴 严重 |
-| 6 | proto 字段编号复用 | 🔴 严重 |
-| 7 | GrpcServiceImpl 中 `builder.setXxx(null)` | 🔴 严重 |
-| 8 | 使用 `@Builder` 替代 `@SuperBuilder`（有继承时） | 🟡 警告 |
-| 9 | 域专属枚举放在 common 中 | 🟡 警告 |
-| 10 | 新增 Entity 未同步创建 TableDef 或未注册到 TableDefCollect | 🔴 严重 |
-| 11 | support 包中放业务逻辑 | 🟡 警告 |
-| 12 | Controller 使用 record 但需要类级 AOP → 应改 class | 🟡 警告 |
-| 13 | API 路径无版本号 | 🟡 警告 |
-| 14 | 自行创建 Page 类而非使用 MyBatis-Flex 的 `Page` | 🔴 严重 |
-| 15 | CommonEnum 子类重复标注 `@EnumValue` | 🟡 警告 |
-| 16 | DTO/VO 直接放在 `model/` 而非 `model/dto/` 或 `model/vo/` | 🟡 警告 |
-| 17 | Operate 命名为 `{业务}{操作}Operate`（动词在后） | 🟡 警告 |
-| 18 | 参数 > 3 或含数组类型时仍用 `@GetMapping`（应改 POST + CommonQuery） | 🟡 警告 |
-| 19 | 写操作仅用 POST，未合理使用 PUT / DELETE | 🟡 警告 |
-| 20 | 事务内调用写操作型外部 RPC/HTTP（应用 `TransactionUtils.asyncExecuteAfterCommit`） | 🔴 严重 |
-| 21 | 事务内发送业务驱动型 MQ（下游会写库的，应用 `TransactionUtils.asyncExecuteAfterCommit`） | 🔴 严重 |
-| 22 | 直接 `throw new RuntimeException(...)` 而非 `ApiException` | 🟡 警告 |
-| 23 | 手动 `new CommonPage<>()` 而非 `CommonResult.successPage(page)` | 🟡 警告 |
-| 24 | Service 方法返回 VO（应返回 DTO，VO 转换在 Controller 层） | 🔴 严重 |
-| 25 | 反直觉设计决策未在 Javadoc 标注 | 🔴 严重（可能被后人"优化"掉） |
-| 26 | Javadoc 复述代码本身能看出的东西 | 🟡 警告 |
-| 27 | Javadoc 写 commit message 风格 | 🟡 警告 |
-| 28 | Javadoc 包含实现关系论证 | 🟡 警告 |
-| 29 | Javadoc 过度结构化（短文档像论文） | 🟢 提示 |
-| 30 | 类 Javadoc 超过 30 行 | 🟢 提示 |
-| 31 | 装饰性 emoji 出现在 Javadoc 中 | 🟢 提示 |
-| 32 | 已用 `@link` 引用过的类又加 `@see` | 🟢 提示 |
-| 33 | Controller 内联鉴权检查 → 应用注解 + AOP | 🔴 严重 |
-| 34 | Controller 手动遍历 DTO→VO 转换 → 应用 `CommonResult` 转换系列 | 🟡 警告 |
-| 35 | 调用自身实例方法未加 `this.` 前缀 | 🟡 警告（必须全文件扫描） |
-| 36 | 类成员排序违规：public/private 交叉、私有方法穿插 | 🟡 警告 |
-| 37 | 私有静态工具方法（如 `nz`、`isBlank`、断言等）无 Javadoc | 🟡 警告（所有方法均须 Javadoc） |
-| 38 | Flow 类缺 `@Validated` | 🟡 警告 |
-| 39 | `updateById`/`deleteById` 前无存在性校验（详见 `api-contract-checker` 规则 5） | 🟡 警告 |
-| 40 | 写操作 Controller 返回 `CommonResult<Void>`（详见 `api-contract-checker` 规则 1） | 🔴 严重 |
-| 41 | MyBatis XML 使用 `${}` 拼接 / 字符串拼接 SQL | 🔴 严重 |
-| 42 | CVV / PIN 以任何形式存储、记录；完整 PAN 出现在日志 / 响应 / 非加密存储 | 🔴 严重 |
-| 43 | 金额用 `float` / `double`，`new BigDecimal(double)`，`equals` / `==` 比较，`divide` 不带舍入 | 🔴 严重 |
-| 44 | 资金写操作无幂等（无唯一索引 + 先查后写），或只靠 `@ApiLock` / 前端防抖 | 🔴 严重 |
-| 45 | 密码 MD5 / SHA-1 / 可逆加密；`Math.random` / `new Random` 生成 token、验证码、盐 | 🔴 严重 |
-| 46 | 被编排方法 `REQUIRES_NEW` 绕开主事务；事务内吞异常；`@Transactional` 缺 `rollbackFor` | 🔴 严重 |
-| 47 | 硬编码密钥 / secret / 密码 / 测试账号（含 `@Encryption(key = "…")` 字面量） | 🔴 严重 |
-| 48 | 对外接口 / SDK / proto 变更未在同一次提交更新对接文档 | 🔴 严重 |
-| 49 | 余额"读-减-整行覆盖"；扣减 SQL 无余额条件或不校验 affected rows；资金变动不写流水 | 🔴 严重 |
-| 50 | 含敏感 payload 的接口未进 `yzj.logger.ignore-request-url` / `ignore-response-url` | 🔴 严重 |
-| 51 | 用户输入直接作为外部请求 URL（SSRF）；外部请求无超时 | 🔴 严重 |
-| 52 | 手写 SQL / XML 查询未带租户 / 用户隔离条件（水平越权） | 🔴 严重 |
-| 53 | 单元测试连真实 DB / Redis，或 `@SpringBootTest` 跑单测 | 🟡 警告 |
-| 54 | 测试无断言 / 方法名无法表达意图 / 为测试改生产可见性 | 🟡 警告 |
-| 55 | 新增 Service 方法名不符命名规约（存量不合规只 🟢 提示） | 🟡 警告 |
-| 56 | 转换默认反射复制属性，未核对输出字段/null/敏感边界且无保留依据 | 🟡 警告；发生敏感字段泄露按安全项升级 |
-| 57 | 已有业务枚举/常量仍硬编码比较、查询或赋值，或重复定义同义常量 | 🟡 警告 |
-| 58 | 类缺真实 author/since，方法缺参数/返回契约，或无上游依据豁免覆写方法文档 | 🟡 警告 |
-| 59 | 控制语句不带花括号（`if (x) throw …;`）或一行多条语句 | 🟡 警告 |
-| 60 | 无重名仍用全限定名；通配 import | 🟡 警告 |
-| 61 | Javadoc 排版不符第五节：缺标题、标题与标签之间无空行、方法用单行注释、类 / 任务注释没写清作用 | 🟡 警告 |
-| 62 | 常量 / 配置 / 实体字段缺注释；长方法无空行分段或无 `//` 说明 | 🟡 警告 |
-| 63 | 维度结论或审查矩阵没有依据：默认填 ✅、按文件路径 / 类型 / 模板生成，或把未检查写成通过 | 🔴 严重（审查结论不成立，须重审） |
-| 64 | review-scan 的 HIT 未处理、CANDIDATE 未判定，或未跑脚本且未写明原因 | 🟡 警告 |
-
----
-
-## 十六、审查报告格式
-
-### 通过
-
-```markdown
-## 后端代码审查报告
-
-### 协议确认
-已 Read reviewer SKILL 全文 + 漏检史清单（{日期}），按 {N} 文件 × 全维度矩阵审查。
-
-### 审查范围
-[文件清单]
-
-### 逐维度结论
-| 维度 | 结论 | 依据（一句话） |
-|------|------|------|
-| 命名规范 | ✅ | 逐文件人工核对 N 个文件 |
-| 代码格式 | ✅ | review-scan：line-length / single-line-control / multi-statement / wildcard-import 均为 0 |
-| OOP（含 this. 扫描 / 成员排序） | ✅ | review-scan this-prefix 为 0；继承方法调用与成员排序人工核对 |
-| 注释（author/since、逐参数/返回契约、覆写依据） | ✅ | review-scan javadoc-* / type-doc 为 0；field-doc 候选 N 条已逐条判定 |
-| 转换映射（输出字段、null、反射复制保留依据） | N/A | 本次无转换 |
-| 枚举/常量复用（比较、查询、赋值、测试） | ✅ | XxxEnum 定义与使用位置：A.java:12、B.java:30 |
-| 结构 / TableDef 同步 | ✅ | Step 3：XxxTableDef 已注册 TableDefCollect |
-| Model / Service / Controller / Integration | ✅ | Step 4、5 逐文件核对 |
-| 安全编码（输入与注入 / 敏感数据每次必查；命中关键词全组） | ✅ | 两组已过，关键词扫描未命中 |
-| 金融 / 资金（命中时） | N/A | 关键词未命中 |
-| 单元测试 | ✅ | XxxTest 覆盖成功 / 失败 / 边界，专项用例 12/12 通过 |
-| 漏检史专项核对 | ✅ | 第十七节逐项核对 |
-
-### Step 2 扫描输出
-（review-scan 输出原样粘贴；CANDIDATE 逐条写判定；未用脚本时写明原因）
-
-### 审查结果：✅ 通过
-```
-
-### 不通过
-
-```markdown
-## 后端代码审查报告
-
-### 协议确认 / 审查范围（同上）
-
-### 问题汇总
-| 序号 | 严重程度 | 问题类型 | 文件位置 | 问题描述 |
-|------|----------|----------|----------|----------|
-| 1 | 🔴 严重 | 命名规范 | UserService.java:23 | 布尔变量 isEnabled 违反命名规范 |
-
-### 问题详情
-#### 问题 1：布尔变量命名违规
-**文件位置**：`UserService.java` 第 23 行
-**违规代码**：`private Boolean isEnabled;`
-**规范要求**：布尔类型变量不允许以 is 开头（禁止 #4）
-**修改建议**：`private Boolean enabled;`
-**同类扫描**：[本次变更其余文件中同模式命中情况]
-
-### 审查结果：❌ 不通过 → 自修后重跑 Step 2-6
-```
-
-### 严重程度与判定
-
-- 🔴 **严重**：运行时异常、序列化问题、架构违规、安全 / 资金红线 | 🟡 **警告**：可读性/维护性/团队规范 | 🟢 **提示**：建议优化
-- ✅ 通过 = 无严重/警告级问题；❌ 不通过 = 存在 ≥1 个严重/警告级问题
-- **HIGH RISK 升级**：本次变更命中金融 / 安全关键词（Step 5+）→ 所有 🟡 视同 🔴，报告末尾追加「涉及资金 / 安全核心链路，合并前需双人审批」，dev-session 按 ARCH 走 P6
-
-### 复查模式（ARCH 级或多轮 Review 时）
-
-Review 报告一律落档 `design/{yyyy-MM-dd}_{slug}-review.md`（与技术设计文档同 slug；NORMAL 级可精简为逐维度结论表 + Step 2 扫描输出，但必须落盘——dev-session 以它判定 P4 是否完成）；ARCH 级之后每一轮都在同一份上**追加**：
-
-- 文件头维护「评审历史」表：`| 次数 | 时间 | 🔴 | 🟡 | 🟢 | 结论 |`，本次为第 N+1 次
-- 历史问题逐条验证并追加状态：✅ 已修复（追加修复记录块）/ ⚠️ 部分修复（追加残留说明）/ ❌ 未修复（保留原条目）
-- 新问题编号**续排**（#N+1 …），**禁止删线、删除历史条目、改写已有修复记录**——历史是开发者判断"反复漏什么"的依据
-- 报告保留「做得好的地方」一小节：值得保留与推广的模式，复查时同样只追加
-- NORMAL 级不落档，报告内联在 P6 知会摘要中
-
----
-
-## 十七、漏检史清单（每次 Review 必须主动核对）
-
-> 这里登记**曾被开发者捕获的 AI 漏检项**。每次 Review 把本清单作为必查项过一遍；
-> 项目中新发生的漏检按 `team-memory` 升级机制**当场追加**到项目级清单（项目 memory 或本文件项目副本）。
-
-| Rule | 出处 | 教训来源 |
-|------|------|----------|
-| 审查结论默认通过（矩阵按文件路径填 ✓，扫描没覆盖行长等规则仍判通过） | #63 / #64 / Step 2、6 | 外部项目教训（2026-10-30）：会话审计显示 reviewer 已读、也声明了“全维度矩阵审查”，但矩阵由脚本按路径填 ✓，验收提交仍有 19 处超长行等违规；用 review-scan 回扫该提交得到 176 条 HIT。读过规则不等于审过 |
-| 排版与注释不符样板（单行 if、全限定名、Javadoc 无空行 / 无标题、字段无注释、长方法无分段） | #59~#62 / 第三、五节 | 外部项目教训（2026-10-30）：另一模型的实现通过了 P4，开发者 review 才发现；原因是第三、五节只有类注释示例、Step 2 没有排版扫描，审查只看“有没有注释”，没看排版与内容是否说清作用 |
-| 转换默认使用 BeanUtils.copyProperties | #56 / model-conventions 第四节 | 2026-10-28 开发者 review：同域已有显式映射示例仍未复用；不能靠转换类命名判断合规 |
-| 类 author/since 与方法参数说明缺失 | #58 / 第五节 | 2026-10-28 开发者 review：规则已存在但未逐声明核对，文档精简不等于省略契约 |
-| 业务 provider 码硬编码 | #57 / common 第二节 | 2026-10-28 开发者 review：已有枚举仍用 Objects.equals(code, 数字)，应优先使用枚举比较 API |
-| `this.` 前缀缺失 | #35 / OOP 第四节 | 多次漏检，包括代码已提交后才被发现——必须 Grep 扫描而非目测 |
-| 私有方法 Javadoc 缺失 | #37 / 注释第五节 | 多次漏检 |
-| Javadoc `@param + @return` 不完整 | 第五节 | 曾漏检 |
-| `@SuperBuilder`（有继承时） | #8 | 偶发 |
-| Operate 动词在前（AddXxxOperate） | #17 | 偶发 |
-| 布尔 is 前缀 | #4 🔴 | 曾漏检（isAuto） |
-| TableDef 用局部变量而非 TableDefCollect | 第八节 | 曾漏检 |
-| Controller 手动 stream.map | #34 | 曾漏检 |
-| DTO 字段与列名不一致未加 `.as(DTO::getter)` | Step 4 | 曾漏检 |
-| `@Column(isLarge=true)` 字段读取未 select ALL_COLUMNS | Step 3 | 曾漏检 |
-| Flow 缺 `@Validated` | #38 | 曾漏检 |
-| **整段跳过 Review**（编码后直接进自测/提交） | dev-session 规则 4 | 曾以"小修复"为由两次跳过，结果漏检且已 commit 后才补查 |
-| 框架 `LoggerFilter` 打全量请求 / 响应体 | 第十二节 / logging 第九节 | 外部项目教训（2026-08）：业务代码未打敏感日志，整份敏感 payload 仍在日志里；且下游配了上游没配、验证也只验了一层 |
-| 资金写操作无幂等、余额读-减-覆盖 | 第十三节 | 金融规则此前不在 reviewer 维度内，属结构性缺口，2026-10 补入——首批命中请在项目副本追加具体案例 |
-| 对外接口改了实现未同步对接文档 | #48 | 外部项目教训：先改接口后补文档拆成两次提交，中间窗口第三方按旧文档对接 |
-
----
-
 ## 十八、审查流程总览
 
 ```
@@ -663,3 +665,5 @@ Review 报告一律落档 `design/{yyyy-MM-dd}_{slug}-review.md`（与技术设�
 → Step 2 强制 Grep 扫描 → Step 3-5 分层检查 → Step 5+ 安全 / 金融 / 测试专项 → 漏检史专项核对
 →（发现违规 → 同模式回溯扫描）→ Step 6 报告 → 自修 → Step 7 复检
 ```
+
+---

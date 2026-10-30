@@ -29,6 +29,8 @@ for root in "${ROOTS[@]}"; do
     has_card=0; grep -q '^## 约束卡' "$main" && has_card=1
     if [ $has_card -eq 1 ]; then
       [ "$sz" -gt "$MAIN_LIMIT" ] && warn "$name/SKILL.md ${sz}B > ${MAIN_LIMIT}B（主文件偏大，考虑把细则移到 references/）"
+    elif grep -q '必须全文加载' "$main"; then
+      :  # 声明"必须全文加载"的兜底技能（reviewer）不拆分，只重排，不提示拆
     elif [ "$sz" -gt "$limit" ]; then
       warn "$name/SKILL.md ${sz}B > ${limit}B 且无「## 约束卡」——压缩后只保留开头，建议拆为主文件 + references/ 子文件"
     fi
