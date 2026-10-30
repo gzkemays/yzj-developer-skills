@@ -154,6 +154,7 @@ description: >
 **执行者**：AI | **关联 skill**：backend `reviewer`、frontend `reviewer`、`api-contract-checker`、`similar-issue-sweep`
 
 1. **后端**：按 backend `reviewer` 的**七步硬流程**执行（含进入前的 echo 协议、强制 Grep 扫描、漏检史核对），逐维度 × 逐文件全覆盖，**禁止选择性抽查**
+   - 后端仓与基线不同栈、没有自身 reviewer 时：框架专属规则（Controller 形态、TableDef、Operate 继承等）不套用，以该仓现有写法为准；但**代码格式与注释排版**仍按 backend `reviewer` 第三、五节与 Step 2 排版四项审——“以现有风格为准”不是跳过排版审查的理由。存量文件只审本次改动行，新增文件全文审
 2. **前端**：按 frontend `reviewer` 的七步硬流程执行，同样全覆盖
 3. **跨端**：涉及接口的变更运行 `api-contract-checker`
 4. **同类问题回溯**：本次变更若属于修复/纠正类，按 `similar-issue-sweep` 扫描全库同类问题（规则 2）
