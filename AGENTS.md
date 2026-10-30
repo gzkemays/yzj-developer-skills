@@ -52,7 +52,7 @@
 - **单一源**：修改规范直接改 `common/skills/`、`backend/`、`frontend/` 下的源文件，无同步脚本、无生成物。宿主差异一律写成行内映射「（Claude Code：X；其他宿主：Y）」，不复制出宿主专属副本。
 - 每个技能 `name` 与目录名一致；frontmatter 以 Agent Skills 开放标准字段为主（`name`/`description` 等）。宿主扩展字段（如 `disable-model-invocation`、`user-invocable`）仅对支持的宿主生效——凡影响触发行为的，必须同时在 description / 正文写明等效文字约束（如"仅在用户显式要求时执行"），让不识别该字段的宿主也按文字执行。
 - 修改流程类 skill（dev-session / reviewer / progress-tracker）需团队过目；重大流程变更更新 `README.md`「当前基线」日期。
-- **大技能按主文件引导式组织**：`SKILL.md` 主文件放约束卡、路由表与进度判定，细则按阶段 / 场景放 `references/`，文档骨架放 `templates/`，每个 `references/` 子文件开头一行自己的门禁；子文件之间不互相引用，只由主文件路由。`reviewer` 例外不拆（P4 全文加载）。`bash scripts/check-skill-layout.sh` 校验。
+- **大技能按主文件引导式组织**：`SKILL.md` 主文件放约束卡、路由表与进度判定，细则按阶段 / 场景放 `references/`，文档骨架放 `templates/`，每个 `references/` 子文件开头一行自己的门禁；`references/` 之间不互相引用，只由主文件路由（`templates/` 与其所属阶段子文件可互指门禁行）；搬入子文件的正文里"见下文 / 主文件第 N 章"一类指针须改成目标文件路径。`reviewer` 例外不拆（P4 全文加载）。`bash scripts/check-skill-layout.sh` 校验。
 - 插件可带 `hooks/hooks.json`（插件根下，与 `skills/` 平级，不是技能）：命令里只引用插件内脚本（`${CLAUDE_PLUGIN_ROOT}/skills/...`），python 用"逐个试跑 python3 / python / py"的写法（Windows 的 `python3` 可能是商店占位符），全部 fail-open。`check-plugin-manifests.sh` 校验 JSON 与脚本路径。
 - 插件清单只是元数据，不复制技能：插件根就是技能源目录。发布新基线时六份 `plugin.json` 的 `version` 同步为基线日期去前导零（`2026-10-29` → `2026.10.29`），跑 `bash scripts/check-plugin-manifests.sh` 与 `claude plugin validate .`；不改 version 的提交不会推送给已安装成员。插件技能目录下只放技能（每个子目录须有 SKILL.md）。
 - 不把个人 settings、凭据写入仓库；适配宿主不意味着新增业务规则或假装工具存在。

@@ -10,7 +10,7 @@
 
 | 段 | 规则 |
 |----|------|
-| **type** | 只取 `feat` / `opt` / `fix`（含义同第三章）。需求内混合多类型时按 `feat > fix > opt` 取**主导意图** |
+| **type** | 只取 `feat` / `opt` / `fix`（含义同第三章，主文件路由表「编写 message」）。需求内混合多类型时按 `feat > fix > opt` 取**主导意图** |
 | **yyyy.MM.dd** | 切分支当天日期，点分隔、月日补零（`2026.08.18`）。**执行命令取当天日期，不凭记忆填**：`date +%Y.%m.%d`（Windows PowerShell：`Get-Date -Format 'yyyy.MM.dd'`） |
 | **business** | 需求业务名，小写英文 kebab-case，2–4 个词，见名知意；中文需求译成英文（修改密码 → `edit-password`；订单导出 → `order-export`） |
 
@@ -44,7 +44,7 @@ fix/2026.08.18-order-remark-npe      # 确认订单备注 NPE
    - 可选先 `git fetch`，若当前主干落后远端，**如实告知开发者**，是否 `pull` / `rebase` 由开发者决定——**AI 不自动拉取或变基**（工作区有未提交改动时风险最大）
    - `git switch -c {分支名}`（工作区未提交改动会随之带到新分支，无需 stash）
 3. **暂存**：按 `git status` **逐项确认后**再 `git add -- <显式路径>`；**禁止 `git add -A` / `git add .` / `git commit -am` 盲加**（避免带入临时文件、他人改动、本地配置）；暂存后 `git diff --cached --name-only` 核对一遍再提交——工作区有他人 / 他任务改动时按 **2.4 安全暂存**执行
-4. **提交**：`git commit` —— message 按第三、四章（三分法 + 格式 + **无 AI 记号**）
+4. **提交**：`git commit` —— message 按第三、四章（主文件路由表「编写 message」：三分法 + 格式 + **无 AI 记号**）
 5. **推送**：`git push -u origin {分支名}`
 6. **交接输出**（推送后给开发者的固定四项）：
    ```

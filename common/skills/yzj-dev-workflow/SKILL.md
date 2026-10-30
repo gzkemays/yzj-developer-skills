@@ -10,7 +10,7 @@ description: >
 
 本 skill 是 YZJ Framework 后端开发的总入口。它**不重复**各个 backend 子 skill 的细节规范，而是负责：
 1. 编码前的前置门禁
-2. 完整研发流程的串联
+2. 对接 `dev-session` 研发流程的后端编码路径（完整流程由 dev-session 串联）
 3. 引导用户在恰当的时机使用对应的 backend skill
 4. 编码后的自检与提交规范
 

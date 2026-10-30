@@ -103,7 +103,6 @@ commit message 通篇必须是**纯人类视角的开发内容描述**，不得�
 
 2.2 开发分支命名规范与 2.3 默认流程（授权后逐步执行、多仓交接）见 `references/branch-flow.md`。
 
-
 ### 2.4 并行开发的安全暂存 ← 硬性
 
 工作区可能含**他人 / 他任务 / 他会话的未提交改动**（共享工作区、多会话并行、未开 worktree）时，**只提交自己的改动**：
@@ -157,7 +156,6 @@ commit message 通篇必须是**纯人类视角的开发内容描述**，不得�
 
 见 `references/examples.md`（feat / opt / fix / 合并 / 带 scope / 分支 + 提交配套）。
 
-
 ## 六、提交流程（对接 dev-session P11）
 
 1. `git status` + `git diff` 通读本次全部改动
@@ -168,8 +166,6 @@ commit message 通篇必须是**纯人类视角的开发内容描述**，不得�
 6. 逐项 `git add -- <显式路径>`（不盲加）→ `git diff --cached --name-only` 核对暂存区（并行开发按 2.4 只暂存自己的改动）→ `git commit`
 7. `git push -u origin {分支名}` → 输出交接四项（分支 / 提交 / 推送 / 待办：请自行合并主干；多仓逐仓列对照）
 8. `git status` 确认工作区干净
-
----
 
 ---
 
