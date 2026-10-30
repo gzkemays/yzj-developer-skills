@@ -55,7 +55,7 @@ codex plugin marketplace upgrade yzj-skills
 - **模型 ≠ 宿主**：DeepSeek 等模型经 Claude Code 接入时与 Claude Code 完全一致；经其他无 marketplace 的宿主接入时走复制安装。
 - **与复制安装二选一（按层）**：需要 📌 项目覆写或 reviewer 回注的层继续复制安装；同一层插件与本地副本并存会加载两份，`verify-baseline.sh` 报错。
 - **插件分发技能与 hooks**（`yzj-flow` 自带 `common/hooks/hooks.json`）：入口文件、常驻规则、`.document/` 骨架、git 原生 `.githooks/` 仍由 `project-onboarding` 落地。
-- **版本 = 基线日期**：插件 `version` 取 README「当前基线」去前导零（`2026-10-29` → `2026.10.29`），只有发布新基线才推送给成员；同一天只发布一次，当日后续改动随下次基线发布。
+- **版本 = 基线日期**：插件 `version` 取 README「当前基线」去前导零（`2026-10-29` → `2026.10.29`），只有发布新基线才推送给成员（成员更新只认版本串**是否变化**，不比大小）；同日再次发布在基线后加序号（`2026-10-30.1` → `2026.10.30.1`），一般当日改动随下次基线发布，确需当天推送才加序号。
 
 **发布流程**：改技能源 → 更新 README「当前基线」→ 六份 `plugin.json` 的 `version` 同步改为新基线 → `bash scripts/check-plugin-manifests.sh` 与 `bash scripts/check-skill-layout.sh` 通过 → `claude plugin validate .` 通过 → 提交推送 master。
 
@@ -104,7 +104,7 @@ codex plugin marketplace upgrade yzj-skills
 > 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
 > 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
 >
-> **当前基线**：`2026-10-30`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
+> **当前基线**：`2026-10-30.1`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
 > **适用宿主**：任意 AI 编码宿主——Claude Code 按 `.claude/` 自动加载，其他宿主经 AGENTS.md 显式加载 `common/`。流程方法论 skill **与技术栈无关**
 > （dev-session / pre-dev-alignment / progress-tracker / team-memory / capability-registry /
 > similar-issue-sweep / dev-output / iteration-planner / project-onboarding / git-commit），任意项目可直接用；
