@@ -59,6 +59,17 @@ commit message 通篇必须是**纯人类视角的开发内容描述**，不得�
 > 此铁律**优先于任何默认的 commit 尾注模板**。提交前自检：整条 message 是否出现上述任一 → 有则删除再提交。
 > 同样适用于**分支名**（不出现 `claude` / `ai` / 模型名）与**代码注释**（不出现 AI 记号与进度词）。
 
+**机械兜底 `scripts/commit_guard.py`**（规则不靠记忆；任何宿主、人或 AI 提交都生效，脚本故障时放行不阻塞）：
+
+| 模式 | 用途 | 接法 |
+|------|------|------|
+| `commit-msg <file>` | git 原生 `commit-msg` hook：命中 AI 记号 / 进度词 → 退出 1 拦截并说明 | 项目提交 `.githooks/commit-msg`（模板 `templates/.githooks/commit-msg`），各 git 仓 `git config core.hooksPath .githooks`（project-onboarding 接入时设置） |
+| `check-text <file>` | 对 MR / PR 标题、描述等文本做同一检查 | 创建 MR 前对 UTF-8 文件跑一次 |
+| `precheck` | 打印当前分支判定（开发分支 / 主干 / 其他）与 2.5 授权提醒 | 任何宿主提交前运行，输出贴进回执 |
+| `pretooluse` | Claude Code `PreToolUse`（Bash）hook：`git commit` 带 AI 记号 → 拒绝；在主干 → 弹窗确认（单次授权的机械形态）；开发分支放行 | 插件安装自带（`yzj-flow` `hooks/hooks.json`）；复制安装把 `templates/hooks/claude-settings-hooks.json` 合并进 `.claude/settings.json` |
+
+> 机械检查只覆盖"能用正则说清"的部分（署名尾注、模型名、进度词、主干判定）；概述是否有信息量、是否三分法仍按第三、七章人工自检。
+
 ---
 
 ## 二、分支策略（授权后的默认行为）

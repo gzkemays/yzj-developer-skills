@@ -1,0 +1,29 @@
+{
+  "_comment": "复制安装（技能在 .claude/skills/）的 Claude Code 项目：把 hooks 键合并进项目根 .claude/settings.json（已有 hooks 则按事件追加，不覆盖其他键）。插件安装的层不需要——yzj-flow 插件自带 common/hooks/hooks.json。脚本 fail-open。模板来源：framework/skills/templates/hooks/claude-settings-hooks.json",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$CLAUDE_PROJECT_DIR/.claude/skills/dev-session/scripts/restore_context.py\"; done; exit 0",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$CLAUDE_PROJECT_DIR/.claude/skills/git-commit/scripts/commit_guard.py\" pretooluse; done; exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -56,6 +56,18 @@ for p in $PLUGINS; do
     seen="$seen$n "
   done
   echo "  $name ($dir): $(echo $seen | wc -w) 个技能"
+
+  # 插件 hooks（可选）：hooks/hooks.json 须是合法 JSON，命令里引用的插件内脚本必须存在
+  hj="$dir/hooks/hooks.json"
+  if [ -f "$hj" ]; then
+    if command -v python >/dev/null 2>&1 && python -c "import sys" >/dev/null 2>&1; then
+      python -c "import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$hj" 2>/dev/null || fail "$hj 不是合法 JSON"
+    fi
+    for s in $(grep -oE 'CLAUDE_PLUGIN_ROOT\}?/[A-Za-z0-9_./-]+\.(py|sh)' "$hj" | sed -E 's/^CLAUDE_PLUGIN_ROOT\}?\///' | sort -u); do
+      [ -f "$dir/$s" ] || fail "$hj 引用的脚本 $dir/$s 不存在"
+    done
+    echo "  $name hooks: $(grep -oE '"(SessionStart|PreToolUse|PostToolUse|Stop|PreCompact|PostCompact|UserPromptSubmit)"' "$hj" | tr -d '"' | sort -u | tr '\n' ' ')"
+  fi
 done
 
 # 目录清单：恰好三个插件，source 指向对应目录

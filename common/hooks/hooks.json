@@ -1,0 +1,29 @@
+{
+  "description": "yzj-flow 机械兜底：上下文压缩后自动重注入红线与本需求恢复卡；git commit 前检查 AI 记号（拒绝）与主干直提（弹窗确认，单次授权）。脚本随技能源分发，fail-open。",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"${CLAUDE_PLUGIN_ROOT}/skills/dev-session/scripts/restore_context.py\"; done; exit 0",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"${CLAUDE_PLUGIN_ROOT}/skills/git-commit/scripts/commit_guard.py\" pretooluse; done; exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

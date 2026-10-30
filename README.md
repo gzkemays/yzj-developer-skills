@@ -17,6 +17,8 @@ skills/
 │   ├── CLAUDE.md.template     # Claude Code 项目入口模板
 │   ├── AGENTS.md.template     # 其他宿主项目入口模板（含不可删减的「执行门禁」）
 │   ├── common/rules/          # 常驻规则模板（红线 red-lines / 协作原则 / 契约速查，宿主无关）
+│   ├── .githooks/commit-msg   # git 原生 hook 模板（调用 commit_guard.py，宿主无关）
+│   ├── hooks/                 # 复制安装的 Claude Code hooks 片段（插件安装由 common/hooks/hooks.json 自带）
 │   └── .document/             # 项目文档骨架（含 plan/context/ 恢复卡）
 └── scripts/
     ├── verify-baseline.sh     # 基线校验（兼容 .claude/skills、common/skills 与 marketplace 插件三种安装）
@@ -52,7 +54,7 @@ codex plugin marketplace upgrade yzj-skills
 
 - **模型 ≠ 宿主**：DeepSeek 等模型经 Claude Code 接入时与 Claude Code 完全一致；经其他无 marketplace 的宿主接入时走复制安装。
 - **与复制安装二选一（按层）**：需要 📌 项目覆写或 reviewer 回注的层继续复制安装；同一层插件与本地副本并存会加载两份，`verify-baseline.sh` 报错。
-- **插件只分发技能**：入口文件、常驻规则、`.document/` 骨架仍由 `project-onboarding` 落地。
+- **插件分发技能与 hooks**（`yzj-flow` 自带 `common/hooks/hooks.json`）：入口文件、常驻规则、`.document/` 骨架、git 原生 `.githooks/` 仍由 `project-onboarding` 落地。
 - **版本 = 基线日期**：插件 `version` 取 README「当前基线」去前导零（`2026-10-29` → `2026.10.29`），只有发布新基线才推送给成员；同一天只发布一次，当日后续改动随下次基线发布。
 
 **发布流程**：改技能源 → 更新 README「当前基线」→ 六份 `plugin.json` 的 `version` 同步改为新基线 → `bash scripts/check-plugin-manifests.sh` 与 `bash scripts/check-skill-layout.sh` 通过 → `claude plugin validate .` 通过 → 提交推送 master。
@@ -81,7 +83,9 @@ codex plugin marketplace upgrade yzj-skills
 
 - **主文件引导式瘦身**（批次 B，`dev-session` 已试点）：大技能拆为「主文件（约 8–10KB：约束卡 + 路由表 + 进度判定；脚本 8KB 处告警）+ `references/` 按阶段子文件 + `templates/`」，每个子文件开头带自己的门禁行；执行门禁第 1 条相应为"读主文件全文 + 当前阶段子文件"。`reviewer` 例外：P4 兜底门禁全文加载，不拆分，只重排并建议子代理隔离执行。`scripts/check-skill-layout.sh` 校验路由引用、孤立文件、门禁行（阻断）与体积（告警）。
 
-后续批次：其余大技能拆分（B）、git / 宿主 hook 机械兜底（C）、小上下文模型实测（D）。
+- **机械兜底**（批次 C）：`common/skills/git-commit/scripts/commit_guard.py` 四种模式——git 原生 `commit-msg` hook（`templates/.githooks/commit-msg`，各仓 `git config core.hooksPath .githooks`，对人和 AI 的提交都拦 AI 署名 / 来源尾注 / 模型名 / 进度词）、`check-text`（MR 文本）、`precheck`（分支判定与授权提醒，任何宿主）、`pretooluse`（Claude Code `PreToolUse`：AI 记号拒绝、主干弹窗确认、开发分支放行）。Claude Code 宿主 hook 两条（压缩后 `restore_context.py` 重注入、`git commit` 前 `commit_guard.py`）：`yzj-flow` 插件自带 `common/hooks/hooks.json`，复制安装合并 `templates/hooks/claude-settings-hooks.json`。全部 fail-open。Codex 等宿主的 hook 待实机核实（方案文档第 7 节清单）。
+
+后续批次：其余大技能拆分（B）、Codex hook 核实与接入（C 补）、小上下文模型实测（D）。
 
 ### 在本仓库使用
 
