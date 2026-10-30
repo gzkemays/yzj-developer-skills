@@ -9,11 +9,12 @@
 - `common/skills/<name>/SKILL.md` — 通用流程技能（研发生命周期、对齐、进度、记忆、提交等），目标项目**根目录**层使用；个别根级路由入口为同栈专用（如 `yzj-dev-workflow` 仅后端同栈项目安装）。
 - `backend/<name>/SKILL.md` — 后端规范技能（YZJ 四层 + MyBatis-Flex 同栈适用）。
 - `frontend/<name>/SKILL.md` — 前端规范技能（Vue 3 + Naive UI 同栈适用）。
-- `templates/` — 目标项目入口与文档骨架模板（`CLAUDE.md.template`、`AGENTS.md.template`、`common/rules/`、`.document/`）。
+- `templates/` — 目标项目入口与文档骨架模板（`CLAUDE.md.template`、`AGENTS.md.template`、`common/rules/`（协作原则 / 契约速查 / **红线** `red-lines.md`）、`.document/`（含 `plan/context/` 恢复卡））。
 - `scripts/verify-baseline.sh` — 校验目标项目技能与本仓库基线对齐（兼容 `.claude/skills`、`common/skills` 与 marketplace 插件三种安装）。
+- `scripts/check-skill-layout.sh` — 校验本仓库技能布局：主文件对 `references/` `templates/` 的引用存在、无孤立子文件、带约束卡的技能其子文件带门禁行（阻断）；体积超阈值只告警。拆分技能后、发布前运行。
 - marketplace 清单（元数据，非技能副本）：`.claude-plugin/marketplace.json`（Claude Code）、`.agents/plugins/marketplace.json`（Codex）；插件根 `common/`、`backend/`、`frontend/` 各有 `.claude-plugin/plugin.json` + `plugin.json`，对应插件 `yzj-flow` / `yzj-backend` / `yzj-frontend`。`scripts/check-plugin-manifests.sh` 校验清单与技能源、README 基线一致。
 
-加载方式：按各 SKILL.md frontmatter 的 `description` 路由；**使用前读取 SKILL.md 全文**，入口引用 `references/` 或其他技能时继续读完再执行。不要把所有规范一次性塞入上下文。
+加载方式：按各 SKILL.md frontmatter 的 `description` 路由；**使用前读取 SKILL.md 主文件全文**，再按主文件路由读取当前阶段 / 场景对应的 `references/` 子文件与关联技能。不要把所有规范一次性塞入上下文，也不为省事一次读完所有子文件。
 
 ## 技能路由
 
@@ -38,7 +39,8 @@
 
 ## 执行门禁（任何宿主不得跳过）
 
-1. 执行技能前**读完其 SKILL.md 全文**；禁止仅凭 description 行事。
+1. 执行技能前**读完其 SKILL.md 主文件全文**，再读主文件路由指向当前阶段 / 场景的子文件；禁止仅凭 description 行事。
+   上下文被压缩后，按 `templates/common/rules/red-lines.md`「压缩恢复协议」先恢复定位，进入硬门禁前按其指针重读原章节。
 2. dev-session 的 P4 审查、P8 开发者确认、P9 台账更新、编码前文档评审等硬门禁，不得以"改动小 / 很有把握"跳过。
 3. 审查 / 自测结论必须附文件级依据；grep 零命中**不等于**语义检查通过。
 4. 未实际运行命令、未读过文件，不得声称已验证 / 已完成；未覆盖项如实列出。
@@ -49,6 +51,7 @@
 - **单一源**：修改规范直接改 `common/skills/`、`backend/`、`frontend/` 下的源文件，无同步脚本、无生成物。宿主差异一律写成行内映射「（Claude Code：X；其他宿主：Y）」，不复制出宿主专属副本。
 - 每个技能 `name` 与目录名一致；frontmatter 以 Agent Skills 开放标准字段为主（`name`/`description` 等）。宿主扩展字段（如 `disable-model-invocation`、`user-invocable`）仅对支持的宿主生效——凡影响触发行为的，必须同时在 description / 正文写明等效文字约束（如"仅在用户显式要求时执行"），让不识别该字段的宿主也按文字执行。
 - 修改流程类 skill（dev-session / reviewer / progress-tracker）需团队过目；重大流程变更更新 `README.md`「当前基线」日期。
+- **大技能按主文件引导式组织**：`SKILL.md` 主文件放约束卡、路由表与进度判定，细则按阶段 / 场景放 `references/`，文档骨架放 `templates/`，每个 `references/` 子文件开头一行自己的门禁；子文件之间不互相引用，只由主文件路由。`reviewer` 例外不拆（P4 全文加载）。`bash scripts/check-skill-layout.sh` 校验。
 - 插件清单只是元数据，不复制技能：插件根就是技能源目录。发布新基线时六份 `plugin.json` 的 `version` 同步为基线日期去前导零（`2026-10-29` → `2026.10.29`），跑 `bash scripts/check-plugin-manifests.sh` 与 `claude plugin validate .`；不改 version 的提交不会推送给已安装成员。插件技能目录下只放技能（每个子目录须有 SKILL.md）。
 - 不把个人 settings、凭据写入仓库；适配宿主不意味着新增业务规则或假装工具存在。
 
@@ -57,6 +60,7 @@
 ```text
 bash scripts/verify-baseline.sh <目标项目根> [--show-diff] [--strict]
 bash scripts/check-plugin-manifests.sh
+bash scripts/check-skill-layout.sh
 ```
 
 文件校验通过不等于自动触发已实测：从目标项目启动新会话，用"今天做什么"、真实开发与审查请求验证路由。

@@ -76,19 +76,19 @@ description: >
 ### A-1 Claude Code 项目（四件套）
 
 1. **拷贝 skill 与常驻规则**（按 cwd 分层放置）：
-   - `templates/common/rules/*` → `{root}/.claude/rules/`（协作原则 + 契约速查；Claude Code 自动加载，契约占位符按项目填）
-   - `common/skills/*` → `{root}/.claude/skills/`
+   - `templates/common/rules/*` → `{root}/.claude/rules/`（红线 + 协作原则 + 契约速查；Claude Code 自动加载，契约占位符按项目填；`red-lines.md` 不加 `paths:`、不删条目）
+   - `common/skills/*` → `{root}/.claude/skills/`（含 `dev-session/scripts/restore_context.py`，随目录一起拷）
    - `backend/*/` → `{backend-repo}/.claude/skills/`（只拷技能目录；`backend/plugin.json` 与 `.claude-plugin/` 是插件清单，不拷）
    - `frontend/*/` → `{frontend-repo}/.claude/skills/`
 2. **实例化 CLAUDE.md**：以 `templates/CLAUDE.md.template` 为骨架，用第一步发现填占位符；**推断不出的列出来问用户，不臆造**。契约速查表只填在 `rules/api-contract.md`，CLAUDE.md 不重复。
-3. **文档骨架**：拷 `templates/.document/*`（`plan/STATUS.md`、`design/`、`adr/`、`developer/memory`+`capability`）。
+3. **文档骨架**：拷 `templates/.document/*`（`plan/STATUS.md`（含「阶段」「已过门禁」两列）、`plan/context/README.md`（恢复卡模板）、`design/`、`adr/`、`developer/memory`+`capability`）。
 4. **校验**：列落地清单；跑 `bash scripts/verify-baseline.sh {项目根}` 过结构 + 基线（见 README「引入后验证」）；说"今天做什么"应触发 `iteration-planner` 读 STATUS.md（识别成功的信号）。
 
 ### A-2 其他模型宿主项目（AGENTS.md 入口）
 
 1. **拷贝技能与规则**（内容与 Claude 侧完全同源，无需任何适配）：
    - `common/skills/*` → `{root}/common/skills/`
-   - `templates/common/rules/*` → `{root}/common/rules/`（契约占位符按项目填）
+   - `templates/common/rules/*` → `{root}/common/rules/`（含 `red-lines.md`，AGENTS.md「开始工作时」显式引用；契约占位符按项目填）
    - `backend/*/` → `{backend-repo}/common/skills/`、`frontend/*/` → `{frontend-repo}/common/skills/`（同栈才装；只拷技能目录，不拷插件清单）。**前后端两套规范不得装入同一技能目录**——两端 `reviewer` 同名，合并即互相覆盖；单仓 / mono-repo 也按端分目录（如 `apps/api/common/skills/`、`apps/web/common/skills/`），并在 AGENTS.md 写明两份 reviewer 的各自路径
 2. **实例化 AGENTS.md**：以 `templates/AGENTS.md.template` 为骨架——技能位置、规则引用全部写相对路径；「执行门禁」节原样保留；「技能来源」填 framework 来源注记（仅记录，不作加载路径）。会被单独打开的子仓各放一份 AGENTS.md（引用各自根内的技能目录）。
 3. **文档骨架**：同 A-1 第 3 步。
@@ -127,8 +127,8 @@ description: >
    | **reviewer（前 / 后端）** | **合并不覆盖**（见下「reviewer 合并标准动作」） |
    | 各域规范 skill（backend / frontend 各 skill） | 同流程 skill；留意项目对示例 / 关键词的本地增补，按"只增不删"保留 |
    | 项目专有 skill（项目独有业务约定，如 `auth-conventions` / `notification-conventions`） | **不动** |
-4. **补骨架**：缺 `.document/design/` → 建 + 拷 `templates/.document/design/README.md`；缺 `.document/plan/STATUS.md` → 建；缺常驻规则层 → 按宿主拷 `templates/common/rules/*`（Claude Code 放 `.claude/rules/`，其他宿主放 `common/rules/` 并在 AGENTS.md 显式引用；项目入口已有契约表的，搬进 `rules/api-contract.md` 或留在原处二选一，不重复维护）。
-5. **对齐入口文件**：更新「Project Structure」（补 `design/` + STATUS.md）与「Session Workflow」（12 阶段 + 4 全程规则 + ARCH/NORMAL 分级 + P3 编码前文档分层），**保留项目专有段**（契约、多租户、权限、设计系统）；AGENTS.md 的「执行门禁」节缺失则补回。检查并**替换入口中的绝对路径为相对路径**（两条硬约定）。
+4. **补骨架**：缺 `.document/design/` → 建 + 拷 `templates/.document/design/README.md`；缺 `.document/plan/STATUS.md` → 建，已有但缺「阶段」「已过门禁」两列 → 只补表头（各行留空，由各需求负责人在下次迁移时填，不改别人的行）；缺 `.document/plan/context/` → 建 + 拷 `README.md`；缺常驻规则层 → 按宿主拷 `templates/common/rules/*`（Claude Code 放 `.claude/rules/`，其他宿主放 `common/rules/` 并在 AGENTS.md 显式引用；项目入口已有契约表的，搬进 `rules/api-contract.md` 或留在原处二选一，不重复维护）；规则层已有但缺 `red-lines.md` → 补。
+5. **对齐入口文件**：更新「Project Structure」（补 `design/` + STATUS.md + `plan/context/`）与「Session Workflow」（12 阶段 + 全程规则指向 red-lines + ARCH/NORMAL 分级 + P3 编码前文档分层 + 「上下文压缩后」恢复协议），**保留项目专有段**（契约、多租户、权限、设计系统）；AGENTS.md 的「执行门禁」「上下文压缩后」节缺失则补回。检查并**替换入口中的绝对路径为相对路径**（两条硬约定）。
 6. **修常见问题**：
    - skill `name` 与目录名不一致（如 `name: code-reviewer` 而目录是 `reviewer`）→ 改 `name` 对齐目录
    - 路由：入口声明在 root 触发的 skill（如 P1 `iteration-planner`、P9 `progress-tracker`）必须在 root 技能目录有副本
@@ -161,9 +161,9 @@ description: >
 | 产物 | Claude Code | 其他模型宿主 |
 |------|-------------|--------------|
 | **入口文件** | CLAUDE.md（项目根 + 各子仓库，按 cwd 自动加载；多宿主时首行 `@AGENTS.md`） | AGENTS.md（项目根 + 会被单独打开的子仓，各自引用根内相对路径） |
-| **常驻规则** | `.claude/rules/`（自动加载，可用 `paths:` 限定触发范围） | `common/rules/`（AGENTS.md 显式要求读取，不依赖自动扫描） |
+| **常驻规则** | `.claude/rules/`（自动加载，可用 `paths:` 限定触发范围；`red-lines.md` 不加 `paths:`，压缩后才会从磁盘重新注入） | `common/rules/`（AGENTS.md 显式要求读取，不依赖自动扫描） |
 | **技能目录** | `.claude/skills/`（随 cwd 加载：流程在 root，前后端规范在各子仓库）；或 `yzj-*` 插件（各层 `.claude/settings.json` 启用，见 A-4） | `common/skills/`（AGENTS.md 声明位置；用前必读 SKILL.md 全文）；Codex 可改用 `yzj-*` 插件（`.codex/config.toml` 启用） |
-| **共享文档** | `.document/`（台账 / 计划 / 设计 / 沉淀，dev-session 各阶段引用） | 同左（全项目唯一一份，位置写进 AGENTS.md） |
+| **共享文档** | `.document/`（台账 / 恢复卡 `plan/context/` / 计划 / 设计 / 沉淀，dev-session 各阶段引用） | 同左（全项目唯一一份，位置写进 AGENTS.md） |
 
 > 四者齐备后，新会话只要"今天做什么 / 开发 XX"即可触发 `iteration-planner` → `dev-session` 全流程。
 > 不复制个人 settings、凭据、`settings.local.json` 到目标项目；接入授权不包含 commit / push——提交另按 `git-commit` 取得授权。
