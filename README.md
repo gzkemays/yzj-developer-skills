@@ -16,8 +16,8 @@ skills/
 ├── templates/
 │   ├── CLAUDE.md.template     # Claude Code 项目入口模板
 │   ├── AGENTS.md.template     # 其他宿主项目入口模板（含不可删减的「执行门禁」）
-│   ├── common/rules/          # 常驻规则模板（协作原则 / 契约速查，宿主无关）
-│   └── .document/             # 项目文档骨架
+│   ├── common/rules/          # 常驻规则模板（红线 red-lines / 协作原则 / 契约速查，宿主无关）
+│   └── .document/             # 项目文档骨架（含 plan/context/ 恢复卡）
 └── scripts/
     ├── verify-baseline.sh     # 基线校验（兼容 .claude/skills、common/skills 与 marketplace 插件三种安装）
     └── check-plugin-manifests.sh  # 发布前校验插件清单与技能源、README 基线一致
@@ -68,7 +68,17 @@ codex plugin marketplace upgrade yzj-skills
 **两条硬约定**贯穿所有入口与模板（详见 `common/skills/project-onboarding`）：
 
 1. **相对路径**：入口文件中的加载引用一律相对入口文件所在目录，**禁止绝对路径**——同一父目录常并存多个项目，且项目会迁移 / 改名；验收口径是"项目整体移动后引用仍成立"。
-2. **执行门禁不得删减**：AGENTS.md 模板的「执行门禁」节是防接入宿主偷懒的兜底（必读全文 / 不跳审查 / 自证产出 / 不虚报验证 / 批准须显式）。
+2. **执行门禁不得删减**：AGENTS.md 模板的「执行门禁」节是防接入宿主偷懒的兜底（读主文件全文 + 当前阶段子文件 / 不跳审查 / 自证产出 / 不虚报验证 / 批准须显式）。
+
+### 上下文压缩后的约束恢复（2026-10-30，所有宿主）
+
+小上下文模型压缩后，会话中途读入的技能正文会被概括，门禁细节随之丢失。对策不依赖模型记忆，分三层（方案与核实依据见 `reports/2026-10-30-context-compaction-resilience-plan.md`）：
+
+- **红线常驻**：`templates/common/rules/red-lines.md`——硬门禁最小集合，每条带原章节指针（结论 + → 指针，不替代原规则），由宿主常驻规则机制加载（Claude Code `.claude/rules/`、不加 `paths:`；其他宿主 AGENTS.md 显式引用）；进入 P4 / P8 / P9 / P11 前按指针重读原文。
+- **状态外置**：台账「进行中」表增加「阶段」「已过门禁」两列；每个需求一张**恢复卡** `.document/plan/context/{条目名}.md`（P1 建、阶段迁移时更新、P12 删，不记授权）；每阶段出口输出固定格式回执 `[Px ✅ | 依据 … | 下一步 Py]`。进度以磁盘产物为准（dev-session「进度判定、阶段回执与压缩恢复」）。
+- **恢复脚本**：`common/skills/dev-session/scripts/restore_context.py`（纯标准库、只读、fail-open）——按 worktree 路径 / 分支名 / `--task` 定位本需求，输出红线 + 恢复卡 + 台账行 + 需重读文件；并行需求互不混淆。宿主可用 hook 在压缩后自动运行它（批次 C），没有 hook 的宿主按入口文件「上下文压缩后」节手动运行。
+
+后续批次：主文件引导式瘦身（B）、git / 宿主 hook 机械兜底（C）、小上下文模型实测（D）。
 
 ### 在本仓库使用
 
@@ -101,10 +111,10 @@ codex plugin marketplace upgrade yzj-skills
 ```
 skills/
 ├── common/skills/           # 通用能力（装到目标项目根的技能目录）
-│   ├── dev-session/         #   研发生命周期编排（12 阶段 + 门禁 + 全程规则）★ 总入口
+│   ├── dev-session/         #   研发生命周期编排（12 阶段 + 门禁 + 全程规则 + 恢复卡 / 阶段回执；scripts/restore_context.py）★ 总入口
 │   ├── pre-dev-alignment/   #   开发前对齐（前后端统一版 + 结论落档）
-│   ├── iteration-planner/   #   迭代规划（session 开局对齐上下文）
-│   ├── progress-tracker/    #   进度维护（STATUS.md 台账 + 任务清单回填 DoD + backlog 落档）
+│   ├── iteration-planner/   #   迭代规划（session 开局对齐上下文；续作先跑 restore_context）
+│   ├── progress-tracker/    #   进度维护（STATUS.md 台账含阶段 / 已过门禁两列 + 任务清单回填 DoD + backlog 落档）
 │   ├── team-memory/         #   团队记忆体系（纠正即沉淀硬规则）
 │   ├── capability-registry/ #   能力登记册（复用前查册、沉淀后登记、反哺）
 │   ├── similar-issue-sweep/ #   同类问题回溯扫描（修复必回溯）
@@ -131,8 +141,8 @@ skills/
 ├── templates/               # 新项目引入模板
 │   ├── CLAUDE.md.template   #   Claude Code 项目根入口骨架
 │   ├── AGENTS.md.template   #   其他宿主项目入口骨架（含「执行门禁」）
-│   ├── common/rules/        #   常驻规则模板（collaboration 协作原则 / api-contract 契约速查）
-│   └── .document/           #   项目文档目录骨架（plan/STATUS.md + backlog、design、memory、capability、adr）
+│   ├── common/rules/        #   常驻规则模板（red-lines 红线 / collaboration 协作原则 / api-contract 契约速查）
+│   └── .document/           #   项目文档目录骨架（plan/STATUS.md + context/ 恢复卡 + backlog、design、memory、capability、adr）
 └── scripts/                 # 工具脚本
     └── verify-baseline.sh   #   校验项目 skill 与基线对齐（布局无关，自动识别前/后端与两种技能布局）
 ```

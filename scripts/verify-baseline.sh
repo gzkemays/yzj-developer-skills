@@ -300,11 +300,22 @@ RULES=""
 [ -d "$PROJECT/.claude/rules" ] && RULES="$PROJECT/.claude/rules"
 [ -z "$RULES" ] && [ -d "$PROJECT/common/rules" ] && RULES="$PROJECT/common/rules"
 if [ -n "$RULES" ]; then
-  for f in collaboration.md api-contract.md; do
+  for f in red-lines.md collaboration.md api-contract.md; do
     [ -f "$RULES/$f" ] || echo "ℹ ${RULES#$PROJECT/} 缺 $f（可从 templates/common/rules 补；契约表留在入口文件亦可）"
   done
+  # red-lines 带 paths: 时压缩后不会重新注入，失去常驻意义
+  if [ -f "$RULES/red-lines.md" ] && head -n 10 "$RULES/red-lines.md" | grep -q '^paths:'; then
+    echo "ℹ ${RULES#$PROJECT/}/red-lines.md 带 paths: frontmatter——红线须无条件常驻，请去掉 paths:"
+  fi
 else
-  echo "ℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md"
+  echo "ℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 red-lines.md / collaboration.md / api-contract.md"
+fi
+# 恢复卡目录与台账两列为软检查：缺失只提示（既有项目由 project-onboarding B-4 补）
+if [ -f "$PROJECT/.document/plan/STATUS.md" ]; then
+  grep -q '^| 需求 | 状态 | 阶段 | 已过门禁 |' "$PROJECT/.document/plan/STATUS.md" \
+    || echo "ℹ .document/plan/STATUS.md「进行中」表缺「阶段」「已过门禁」两列（templates/.document/plan/STATUS.md；只补表头，不改既有行）"
+  [ -d "$PROJECT/.document/plan/context" ] \
+    || echo "ℹ 缺 .document/plan/context/（恢复卡目录，拷 templates/.document/plan/context/README.md）"
 fi
 
 echo "──────── 小结 ────────"
