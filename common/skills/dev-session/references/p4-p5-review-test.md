@@ -6,7 +6,7 @@
 
 **执行者**：AI | **关联 skill**：backend `reviewer`、frontend `reviewer`、`api-contract-checker`、`similar-issue-sweep`
 
-**加载方式**：reviewer 是兜底硬门禁，进入 P4 必须**全文加载**（不按维度抽读）。有子代理 / 多会话能力的宿主（Claude Code：`Agent`；Codex：子代理）优先在**新的子代理**中执行——只加载 reviewer 全文 + 本次 diff + 恢复卡，结论写回 review 报告，主会话只读报告，避免主会话上下文峰值；无子代理能力时主会话执行，P4 前先完成 P3 收尾与恢复卡更新。
+**加载方式**：reviewer 是兜底硬门禁，进入 P4 必须**全文加载**（不按维度抽读）。有子代理 / 多会话能力的宿主（Claude Code：`Agent`；其他宿主：确认其子代理 / 多会话能力可用后再用，未核实前按无子代理处理）优先在**新的子代理**中执行——只加载 reviewer 全文 + 本次 diff + 恢复卡，结论写回 review 报告，主会话只读报告，避免主会话上下文峰值；无子代理能力时主会话执行，P4 前先完成 P3 收尾与恢复卡更新。
 
 **报告落档（任何级别）**：`design/{yyyy-MM-dd}_{slug}-review.md`（与技术设计文档同 slug）。ARCH 按 reviewer「审查报告格式」全量、多轮在同一份追加；NORMAL 可精简为逐维度结论表 + Step 2 扫描输出，但必须落盘——它是「进度判定」表的磁盘信号，也是 P6 知会的依据。
 
@@ -29,7 +29,7 @@
 
 ### 第 0 步：输出测试用例文档（自测开始前，前后端通用，不可跳过）
 
-自测**开始前**先产出测试用例 Markdown，落档 `design/{yyyy-MM-dd}_{slug}-testcases.md`（与技术设计文档同 slug；轻量任务见主文件「回退规则」所指流程控制细则的「轻量任务简化」）——让开发者在 P6 能确认"这次要测什么、要回归什么"，P7 据此验收 / E2E。文档骨架见 `templates/testcases.md`。
+自测**开始前**先产出测试用例 Markdown，落档 `design/{yyyy-MM-dd}_{slug}-testcases.md`（与技术设计文档同 slug；轻量任务见主文件阶段路由表下「细则」所指流程控制细则的「轻量任务简化」）——让开发者在 P6 能确认"这次要测什么、要回归什么"，P7 据此验收 / E2E。文档骨架见 `templates/testcases.md`。
 
 **用例拟定原则**（先于模板）：
 

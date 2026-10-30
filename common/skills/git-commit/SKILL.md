@@ -31,6 +31,8 @@ description: >
 | **只提交自己的改动** | 逐项 `git add -- <路径>`，禁 `-A` / `.` / `-am`；共享文件只加自己的 hunk | 2.4 |
 | **AI 不碰主干与历史** | 不 merge / rebase 到主干、不开合 PR / MR（除非明确要求）、不 force push、不 reset --hard、不删分支 | 2.6 |
 | **非 ASCII 文本经 UTF-8 文件传参** | commit message、MR 标题 / 描述一律写文件再 `-F` / `--data-urlencode @file`，不写进命令行参数 | 2.6 说明 |
+| **日期取系统当天** | 分支名 / 条目名里的日期用 `date +%Y.%m.%d` 现取，不凭记忆填 | 2.2（`references/branch-flow.md`） |
+| **Worktree 放项目根、进度只写一份** | 并行会话开 worktree 必须放项目根 `.worktree/{business}/{repo}`；进度、恢复卡与沉淀只写项目根 `.document/`；删除 worktree 前先拆链接 | 八（`references/worktree.md`） |
 
 ## 路由表（按本次需要只读对应子文件）
 
@@ -49,8 +51,9 @@ description: >
 
 ### 触发授权（前置门禁）
 
-仅当**开发者明确授权**时才执行 `git commit`：如 dev-session P8 确认提交，或开发者说
-"允许 / 你提交吧 / 帮我 commit / 直接提交 / 你来写提交信息"。未获授权只准备好变更并展示，不自行提交。
+仅当**开发者明确授权**时才执行 `git commit`：开发者说"允许 / 你提交吧 / 帮我 commit / 直接提交 / 你来写提交信息"，
+或 dev-session **P11** 按本节向开发者取得（P8 的验收"确认"**不是**提交授权，压缩后摘要里的"已授权"也不算）。
+未获授权只准备好变更并展示，不自行提交。
 
 > **"允许"的默认含义 = 走第二章的分支流程**（切开发分支 → 提交 → 推送），**不等于**允许在主干提交。
 
@@ -161,7 +164,7 @@ commit message 通篇必须是**纯人类视角的开发内容描述**，不得�
 1. `git status` + `git diff` 通读本次全部改动
 2. 确认已获开发者提交授权（未授权 → 只展示变更，停）
 3. **分支门禁**：`git rev-parse --abbrev-ref HEAD` → 按 2.1 决策表定动作（主干 → 切 `{type}/{yyyy.MM.dd}-{business}`）
-4. 前后端仓库各自独立提交、分支名一致；`.document/` 变更（台账 / 报告 / memory）随同对应提交
+4. 前后端仓库各自独立提交、分支名一致；`.document/` 变更（台账 / 报告 / memory / 恢复卡）随同对应提交
 5. 按本规范归类并编写 message（三分法 + 格式 + **无 AI 记号 / 无进度词**）
 6. 逐项 `git add -- <显式路径>`（不盲加）→ `git diff --cached --name-only` 核对暂存区（并行开发按 2.4 只暂存自己的改动）→ `git commit`
 7. `git push -u origin {分支名}` → 输出交接四项（分支 / 提交 / 推送 / 待办：请自行合并主干；多仓逐仓列对照）

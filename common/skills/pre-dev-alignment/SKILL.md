@@ -98,7 +98,7 @@ description: >
 | 视觉交互 DEMO（按需） | `.document/design/{slug}-demo.html` | 用户要求视觉方案 / 全新无参照视觉时产出；定稿后判断是否抽为复用组件并登记 `CAPABILITY.md` |
 | 砍范围 / 推迟的功能点（按需） | `.document/plan/backlog-{topic}.md` | 对齐中主动砍掉或推迟的 Phase / 功能点，按 `progress-tracker`「backlog 文档」格式当场落档，台账与需求文档只放指针——推迟不落档 = 遗忘 |
 | 测试用例文档（dev-session P5 产出） | `.document/design/{yyyy-MM-dd}_{slug}-testcases.md` | P5 自测前产出（TC 正常/边界/异常/回归范围 + 执行记录），P6 随 Review 材料确认，P7 据此验收 / AI E2E；轻量任务可内联在知会摘要 |
-| 需求台账条目 | `.document/plan/STATUS.md` | 按 `progress-tracker` 登记，状态 `开发中` |
+| 需求台账条目 | `.document/plan/STATUS.md` | 按 `progress-tracker` 由 `规划中` 迁 `开发中`（P1 未登记的先登记） |
 | 重大架构决策（L3 / 不可逆变更） | `.document/adr/adr-{NNN}-{slug}.md` | ADR 格式：背景 / 选项与权衡 / 决定 / 后果 |
 | 开发中的需求变更与中途决策 | 同上对应文档 | **当场更新**，并在 P12 报告「需求变动」维度记录 |
 

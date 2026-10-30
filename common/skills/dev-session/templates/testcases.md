@@ -6,7 +6,7 @@
 # 测试用例：{需求名称}
 
 > 台账条目：{yyyy-MM-dd}_{stage}_{slug} ｜ P6 随 Review 材料确认，P7 据此验收 / E2E
-> 来源：design/{slug}.md「验收标准」「契约」；回归来源：P4 影响面分析 + similar-issue-sweep
+> 来源：design/{yyyy-MM-dd}_{slug}-design.md「验收标准」「契约」；回归来源：P4 影响面分析 + similar-issue-sweep
 
 ## 环境前置
 [需启动的服务 / 账号与 Token / 测试数据 / 真机（如需）]
