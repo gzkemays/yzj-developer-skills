@@ -8,7 +8,7 @@
     python restore_context.py --root <path>  # 显式指定项目根（含 .document/）
 
 只读、纯标准库、Python 3.8+；任何情况下退出码为 0（fail-open），缺文件时输出手动恢复提示。
-不输出、不记录任何授权状态——授权按 red-lines.md 第 5 条一律重新确认。
+不输出、不记录任何授权状态——授权按 red-lines.md「压缩恢复协议」第 5 步一律重新确认。
 """
 import argparse
 import os

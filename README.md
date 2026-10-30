@@ -83,7 +83,7 @@ codex plugin marketplace upgrade yzj-skills
 
 - **主文件引导式瘦身**（批次 B，已完成：`dev-session` 30.9→9KB、`pre-dev-alignment` 30→12.7KB、`git-commit` 26→13.6KB、`yzj-dev-workflow` 24→13.7KB；前后端 `reviewer` 只重排不拆）：大技能拆为「主文件（约 8–10KB：约束卡 + 路由表 + 进度判定；脚本 8KB 处告警）+ `references/` 按阶段子文件 + `templates/`」，每个子文件开头带自己的门禁行；执行门禁第 1 条相应为"读主文件全文 + 当前阶段子文件"。`reviewer` 例外：P4 兜底门禁全文加载，不拆分，只重排并建议子代理隔离执行。`scripts/check-skill-layout.sh` 校验路由引用、孤立文件、门禁行（阻断）与体积（告警）。
 
-- **机械兜底**（批次 C）：`common/skills/git-commit/scripts/commit_guard.py` 四种模式——git 原生 `commit-msg` hook（`templates/.githooks/commit-msg`，各仓 `git config core.hooksPath .githooks`——本地配置、成员各执行一次，对已启用成员的人和 AI 提交都拦 AI 署名 / 来源尾注 / 模型名 / 进度词；`--no-verify` 可绕过）、`check-text`（MR 文本）、`precheck`（分支判定与授权提醒，任何宿主）、`pretooluse`（Claude Code `PreToolUse`：AI 记号拒绝、主干弹窗确认、开发分支放行）。Claude Code 宿主 hook 两条（压缩后 `restore_context.py` 重注入、`git commit` 前 `commit_guard.py`）：`yzj-flow` 插件自带 `common/hooks/hooks.json`，复制安装合并 `templates/hooks/claude-settings-hooks.json`。全部 fail-open。Codex 等宿主的 hook 待实机核实（方案文档第 7 节清单）。
+- **机械兜底**（批次 C）：`common/skills/git-commit/scripts/commit_guard.py` 四种模式——git 原生 `commit-msg` hook（`templates/.githooks/commit-msg`，各仓 `git config core.hooksPath .githooks`——本地配置、成员各执行一次，对已启用成员的人和 AI 提交都拦 AI 署名 / 来源尾注 / 模型名 / 进度词；`--no-verify` 可绕过）、`check-text`（MR 文本）、`precheck`（分支判定与授权提醒，任何宿主）、`pretooluse`（Claude Code `PreToolUse`：AI 记号拒绝，主干 / 非规范分支 / 无法判定分支弹窗确认，开发分支放行；按命令实际作用目录判分支，覆盖 commit / merge / cherry-pick / revert）。Claude Code 宿主 hook 两条（压缩后 `restore_context.py` 重注入、`git commit` 前 `commit_guard.py`）：`yzj-flow` 插件自带 `common/hooks/hooks.json`，复制安装合并 `templates/hooks/claude-settings-hooks.json`。全部 fail-open。Codex 等宿主的 hook 待实机核实（方案文档第 7 节清单）。
 
 后续：Codex hook 核实与接入（C 补）、小上下文模型实测（D）、发布新基线。
 

@@ -1,0 +1,6 @@
+# 目标项目模板（project-onboarding A-5 拷到每个装了 .githooks/ 的 git 仓根；已有 .gitattributes 则只追加缺的行）。
+# hook 与脚本固定 LF：git 以 sh 直接执行 .githooks/*，CRLF 可能报 "\r: command not found"；
+# Windows 成员 core.autocrlf=true 时若不固定，检出即变 CRLF。只约束 hook 目录与脚本，不改项目其他文件的策略。
+.githooks/*     text eol=lf
+*.sh            text eol=lf
+*.py            text eol=lf

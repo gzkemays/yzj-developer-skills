@@ -1,5 +1,5 @@
 {
-  "description": "yzj-flow 机械兜底：上下文压缩后自动重注入红线与本需求恢复卡；git commit 前检查 AI 记号（拒绝）与主干直提（弹窗确认，单次授权）。脚本随技能源分发，fail-open。",
+  "description": "yzj-flow 机械兜底：上下文压缩后自动重注入红线与本需求恢复卡；git commit 前检查 AI 记号（拒绝）与主干直提（弹窗确认，单次授权）。脚本随技能源分发；脚本缺失 / 无 python 时打印提示并退出 0（fail-open），不阻塞任何工具调用。",
   "hooks": {
     "SessionStart": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"${CLAUDE_PLUGIN_ROOT}/skills/dev-session/scripts/restore_context.py\"; done; echo \"yzj hook: 未找到可运行的 python，跳过压缩恢复注入\" >&2; exit 0",
+            "command": "S=\"${CLAUDE_PLUGIN_ROOT}/skills/dev-session/scripts/restore_context.py\"; [ -f \"$S\" ] || { echo \"yzj hook: 未找到 $S，跳过压缩恢复注入\" >&2; exit 0; }; for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$S\"; done; echo \"yzj hook: 未找到可运行的 python，跳过压缩恢复注入\" >&2; exit 0",
             "timeout": 20
           }
         ]
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"${CLAUDE_PLUGIN_ROOT}/skills/git-commit/scripts/commit_guard.py\" pretooluse; done; echo \"yzj hook: 未找到可运行的 python，跳过 git commit 检查\" >&2; exit 0",
+            "command": "S=\"${CLAUDE_PLUGIN_ROOT}/skills/git-commit/scripts/commit_guard.py\"; [ -f \"$S\" ] || { echo \"yzj hook: 未找到 $S，跳过 git commit 检查\" >&2; exit 0; }; for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$S\" pretooluse; done; echo \"yzj hook: 未找到可运行的 python，跳过 git commit 检查\" >&2; exit 0",
             "timeout": 10
           }
         ]
