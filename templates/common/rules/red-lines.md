@@ -6,17 +6,17 @@
 
 ## 硬门禁（任何阶段、任何改动量都不得跳过）
 
-1. 编码后必过 P4 AI Review，"改动小 / 有把握"不是理由。→ `dev-session`「规则 4」「P4」；前 / 后端 `reviewer`「七步硬流程」与放行门禁
+1. 编码后必过 P4 AI Review，"改动小 / 有把握"不是理由。→ `dev-session`「规则 4」「P4」；前 / 后端 `reviewer`「七步硬流程」「放行门禁」
 2. P6 / P7 发现问题后的修复同样是编码：修复 → P4 → P5 → P6 → P7 完整重走，禁止只复测失败用例。→ `dev-session`「P7」「流程控制 · 回退规则」
 3. P8 开发者确认、P9 台账更新是硬门禁：台账未更新不得宣布"完成"。→ `dev-session`「P8」「P9」；`progress-tracker`「模式 B」
-4. 未获本次明确授权不 commit / push；commit 与分支名不留任何 AI 记号与进度词；主干直提授权单次有效、下次重问。→ `git-commit`「一、授权与三条铁律」「2.5」「2.6」
+4. 未获本次明确授权不 commit / push；commit 与分支名不留任何 AI 记号与进度词；主干直提授权单次有效、下次重问。→ `git-commit`「一、AI 自主提交：授权与三条铁律」「2.5 主干直提」「2.6 禁止动作清单」
 5. 开发者纠正 → 立即沉淀 feedback memory；修复一处 → 全库回溯同类。→ `dev-session`「规则 1」「规则 2」；`team-memory`；`similar-issue-sweep`
-6. 审查 / 自测结论附文件级依据；未跑过的命令不得称"已验证"。→ 入口文件「执行门禁」3、4
+6. 审查 / 自测结论附文件级依据；未跑过的命令不得称"已验证"。→ `collaboration.md`「执行自证」；其他宿主另见 AGENTS.md「执行门禁」3、4
 7. 编码前文档评审门禁（L2 技术设计 / L3 需求 + 技术设计）未通过不得编码。→ `pre-dev-alignment`「任务分级」「Review 门禁机制」；`dev-session`「P3」
 
 ## 压缩恢复协议（发现上下文被压缩 / 看到摘要 / 想不起当前阶段门禁细节时）
 
-1. 先恢复定位：运行 `dev-session/scripts/restore_context.py`（技能目录内；无 Python 时手动）——读本需求的恢复卡 `.document/plan/context/{slug}.md` 与 STATUS 对应行，确认当前阶段、已过门禁、下一步。
+1. 先恢复定位：运行 `dev-session/scripts/restore_context.py`（技能目录内；无 Python 时手动）——读本需求的恢复卡 `.document/plan/context/{条目名}.md`（条目名 = `{yyyy-MM-dd}_{stage}_{slug}`，与台账一致）与 STATUS 对应行，确认当前阶段、已过门禁、下一步。
 2. 按恢复卡「需重读」清单重读：当前阶段技能的主文件 + 路由指向的子文件；P4 阶段重读 reviewer 全文。
 3. 输出一行定位回执 `[恢复 | 需求 … | 阶段 Px | 已过 … | 下一步 …]`，再继续。
 4. 不凭记忆推进门禁：进入 P4 / P8 / P9 / P11 前，按本文件 → 指针重读原章节全文。

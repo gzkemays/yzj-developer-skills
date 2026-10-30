@@ -17,7 +17,7 @@ description: >
 
 ### Step 0：恢复定位（续作 / 压缩后必做）
 
-接着做某个进行中的需求、或上下文刚被压缩时，先运行 `dev-session/scripts/restore_context.py`（技能目录内，从项目根或 worktree 内任意目录；多需求并行用 `--task {slug}`；无 Python 时手动读 `plan/context/{slug}.md`）：它输出红线、本需求恢复卡、台账对应行与需重读清单。按 dev-session「进度判定、阶段回执与压缩恢复」对照磁盘产物核对阶段后，从对应阶段继续，不重头走流程。全新需求跳到 Step 1。
+接着做某个进行中的需求、或上下文刚被压缩时，先运行 `dev-session/scripts/restore_context.py`（技能目录内，从项目根或 worktree 内任意目录；多需求并行用 `--task {slug}`；无 Python 时手动读 `plan/context/{条目名}.md`）：它输出红线、本需求恢复卡、台账对应行与需重读清单。按 dev-session「进度判定、阶段回执与压缩恢复」对照磁盘产物核对阶段后，从对应阶段继续，不重头走流程。全新需求跳到 Step 1。
 
 ### Step 1：读取需求台账（必做第一步）
 

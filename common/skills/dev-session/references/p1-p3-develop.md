@@ -11,7 +11,7 @@
 3. 若用户未指定任务，列出当前阶段未完成模块供选择
 4. **并行冲突检查**：若本任务与台账中其他进行中需求涉及相同模块/文件，明确提示开发者潜在冲突
 5. 判定变更级别（ARCH / NORMAL，判定标准见主文件「变更分级」），连同开发范围一句话向开发者确认
-6. 在台账登记/更新本需求条目为 `开发中`（命名 `{yyyy-MM-dd}_{stage}_{slug}`，与 output 报告同名），「阶段」填 `P1`
+6. 在台账登记/更新本需求条目为 `开发中`（命名 `{yyyy-MM-dd}_{stage}_{slug}`，与 output 报告同名；**slug 取将来分支名的 business 段**——小写 kebab-case、2–4 词，同 `git-commit` 2.2——并与 worktree 目录 `.worktree/{business}/` 同名，否则 `restore_context.py` 无法按分支 / 路径自动定位恢复卡），「阶段」填 `P1`
 7. **建立恢复卡** `.document/plan/context/{条目名}.md`（模板见 `templates/.document/plan/context/README.md`，项目内为 `plan/context/README.md`）：需求一句话、分级、当前阶段、下一步、工作位置（分支 / worktree / 涉及仓）、需重读清单；**不写任何授权状态**。续作已有条目 → 读卡而不是重建
 8. 输出阶段回执 `[P1 ✅ | 范围 … | 分级 … | 下一步 P2]`
 

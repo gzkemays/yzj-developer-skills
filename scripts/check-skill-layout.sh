@@ -18,6 +18,7 @@ size() { wc -c < "$1" | tr -d ' '; }
 refs_in() { grep -oE '(references|templates)/[A-Za-z0-9._-]+\.md([^A-Za-z0-9._-]|$)' "$1" | sed -E 's/[^A-Za-z0-9._-]$//' | sort -u; }
 
 for root in "${ROOTS[@]}"; do
+  root=${root%/}; root=${root#./}
   [ -d "$root" ] || continue
   limit=$MAIN_LIMIT; [ "$root" = common/skills ] || limit=$SPEC_LIMIT
   for dir in "$root"/*/; do
@@ -42,10 +43,11 @@ for root in "${ROOTS[@]}"; do
           fail "$name/$rel 前 5 行缺「> 门禁」行（子文件被单独读到时也须带自己的门禁）"
         fi
       done
-      # 主文件引用的本技能子文件必须存在（只在该子目录存在时检查，避免误判对仓库级 templates/ 的引用）
-      for ref in $(refs_in "$main" | grep "^$sub/"); do
-        [ -f "$dir/$ref" ] || fail "$name/SKILL.md 引用的 $ref 不存在"
-      done
+    done
+    # 主文件引用的本技能子文件必须存在——无论子目录是否存在（删目录忘改路由表正是要拦的错误）。
+    # 仓库级 templates/ 的引用形如 templates/AGENTS.md.template、templates/.document/…，不被 refs_in 的正则命中。
+    for ref in $(refs_in "$main"); do
+      [ -f "$dir/$ref" ] || fail "$name/SKILL.md 引用的 $ref 不存在"
     done
   done
 done

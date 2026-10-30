@@ -18,7 +18,7 @@
   .claude/skills/          # ← 通用流程 SKILL（引自 framework/skills/common/skills）
   .document/
     plan/                  # 迭代计划 + STATUS.md 台账（L3 需求/调整文档）+ backlog-*.md 待立项
-    plan/context/          # 每需求一张恢复卡（压缩后按它恢复定位，P12 删）
+    plan/context/          # 每需求一张恢复卡（与台账条目同名；压缩后按它恢复定位，完成后删、搁置保留）
     design/                # 技术设计文档（L2/L3 编码前评审）+ 视觉交互 DEMO
     adr/                   # 架构决策记录
     developer/memory/      # 团队共享技术沉淀（MEMORY.md 索引）
@@ -62,7 +62,7 @@ P1 分析需求(台账+定级) → P2 加载沉淀 → P3 开发(对齐落档) �
 
 **变更分级**：ARCH（架构/数据模型/安全/跨域/契约/不可逆）→ 开发者深度评审；NORMAL（常规迭代）→ 知会式确认。拿不准按 ARCH。
 
-**上下文压缩后**：按 `red-lines.md`「压缩恢复协议」——先运行 `.claude/skills/dev-session/scripts/restore_context.py`（插件安装的层按插件内路径）读本需求恢复卡 `.document/plan/context/{slug}.md` 与 STATUS 行，按「需重读」重读当前阶段技能，输出 `[恢复 | …]` 回执再继续；授权不从摘要继承。
+**上下文压缩后**：按 `red-lines.md`「压缩恢复协议」——① 先运行 `.claude/skills/dev-session/scripts/restore_context.py`（插件安装的层按插件内路径）读本需求恢复卡 `.document/plan/context/{条目名}.md` 与 STATUS 行；② 按「需重读」重读当前阶段技能的主文件与子文件；③ 输出 `[恢复 | …]` 回执再继续；④ 进入 P4 / P8 / P9 / P11 前按红线指针重读原章节，授权不从摘要继承、一律重新确认。
 
 ## Rules（常驻规则，自动加载）
 
