@@ -1,0 +1,28 @@
+#!/bin/sh
+# git 原生 commit-msg hook：调用 git-commit 技能的 commit_guard.py 检查提交信息（AI 记号 / 进度词，铁律 3）。
+# 对人和 AI 的提交同样生效。启用：在该仓库执行 `git config core.hooksPath .githooks`（project-onboarding 接入时设置）。
+# fail-open：找不到脚本或 python 时放行并提示，不阻塞提交。
+# 模板来源：framework/skills/templates/.githooks/commit-msg
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+hookdir=$(cd "$(dirname "$0")" && pwd)
+
+guard=""
+if [ -n "${YZJ_COMMIT_GUARD:-}" ] && [ -f "$YZJ_COMMIT_GUARD" ]; then
+  guard="$YZJ_COMMIT_GUARD"
+else
+  # 复制安装：仓库根 / 项目根（分仓时为上一级或上两级）的技能目录；插件安装：由 onboarding 拷到 .githooks/ 旁
+  for base in "$root" "$root/.." "$root/../.." "$hookdir"; do
+    for rel in .claude/skills/git-commit/scripts/commit_guard.py common/skills/git-commit/scripts/commit_guard.py commit_guard.py; do
+      if [ -f "$base/$rel" ]; then guard="$base/$rel"; break 2; fi
+    done
+  done
+fi
+[ -n "$guard" ] || { echo "commit-msg: 未找到 commit_guard.py，跳过 AI 记号检查（可设 YZJ_COMMIT_GUARD 指向脚本）" >&2; exit 0; }
+
+# 逐个试跑而不是只看 command -v：Windows 的 python3 可能是应用商店占位符（存在但退出码 49）
+for py in python3 python py; do
+  if "$py" -c "import sys" >/dev/null 2>&1; then exec "$py" "$guard" commit-msg "$1"; fi
+done
+echo "commit-msg: 未找到可运行的 python，跳过 AI 记号检查" >&2
+exit 0
