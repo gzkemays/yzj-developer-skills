@@ -78,7 +78,9 @@ codex plugin marketplace upgrade yzj-skills
 - **状态外置**：台账「进行中」表增加「阶段」「已过门禁」两列；每个需求一张**恢复卡** `.document/plan/context/{条目名}.md`（P1 建、阶段迁移时更新、P12 删，不记授权）；每阶段出口输出固定格式回执 `[Px ✅ | 依据 … | 下一步 Py]`。进度以磁盘产物为准（dev-session「进度判定、阶段回执与压缩恢复」）。
 - **恢复脚本**：`common/skills/dev-session/scripts/restore_context.py`（纯标准库、只读、fail-open）——按 worktree 路径 / 分支名 / `--task` 定位本需求，输出红线 + 恢复卡 + 台账行 + 需重读文件；并行需求互不混淆。宿主可用 hook 在压缩后自动运行它（批次 C），没有 hook 的宿主按入口文件「上下文压缩后」节手动运行。
 
-后续批次：主文件引导式瘦身（B）、git / 宿主 hook 机械兜底（C）、小上下文模型实测（D）。
+- **主文件引导式瘦身**（批次 B，`dev-session` 已试点）：大技能拆为「主文件（≤ 8KB：约束卡 + 路由表 + 进度判定）+ `references/` 按阶段子文件 + `templates/`」，每个子文件开头带自己的门禁行；执行门禁第 1 条相应为"读主文件全文 + 当前阶段子文件"。`reviewer` 例外：P4 兜底门禁全文加载，不拆分，只重排并建议子代理隔离执行。`scripts/check-skill-layout.sh` 校验路由引用、孤立文件、门禁行（阻断）与体积（告警）。
+
+后续批次：其余大技能拆分（B）、git / 宿主 hook 机械兜底（C）、小上下文模型实测（D）。
 
 ### 在本仓库使用
 
@@ -111,7 +113,7 @@ codex plugin marketplace upgrade yzj-skills
 ```
 skills/
 ├── common/skills/           # 通用能力（装到目标项目根的技能目录）
-│   ├── dev-session/         #   研发生命周期编排（12 阶段 + 门禁 + 全程规则 + 恢复卡 / 阶段回执；scripts/restore_context.py）★ 总入口
+│   ├── dev-session/         #   研发生命周期编排 ★ 总入口——主文件（约束卡 + 分级 + 阶段路由表 + 进度判定）+ references/ 按阶段子文件 + templates/；scripts/restore_context.py
 │   ├── pre-dev-alignment/   #   开发前对齐（前后端统一版 + 结论落档）
 │   ├── iteration-planner/   #   迭代规划（session 开局对齐上下文；续作先跑 restore_context）
 │   ├── progress-tracker/    #   进度维护（STATUS.md 台账含阶段 / 已过门禁两列 + 任务清单回填 DoD + backlog 落档）
