@@ -344,7 +344,8 @@ for repo in "$PROJECT" "$PROJECT"/*/; do
   repo="${repo%/}"; [ -e "$repo/.git" ] || continue
   rel="${repo#$PROJECT}"; rel="${rel#/}"; [ -n "$rel" ] || rel="."
   if [ -f "$repo/.githooks/commit-msg" ]; then
-    if [ -f "$repo/.githooks/commit_guard.py" ] && [ -f "$GUARD_SRC" ] && ! cmp -s "$repo/.githooks/commit_guard.py" "$GUARD_SRC"; then
+    # 忽略行尾差异：Windows 成员 autocrlf=true 检出的拷贝是 CRLF，内容仍与基线一致
+    if [ -f "$repo/.githooks/commit_guard.py" ] && [ -f "$GUARD_SRC" ] && ! diff --strip-trailing-cr -q "$repo/.githooks/commit_guard.py" "$GUARD_SRC" >/dev/null 2>&1; then
       echo "ℹ $rel/.githooks/commit_guard.py 与基线不一致（插件安装层的拷贝，re-sync 时从 common/skills/git-commit/scripts 覆盖）"
     fi
   else

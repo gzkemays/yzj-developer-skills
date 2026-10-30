@@ -82,7 +82,7 @@ description: >
    - `frontend/*/` → `{frontend-repo}/.claude/skills/`
 2. **实例化 CLAUDE.md**：以 `templates/CLAUDE.md.template` 为骨架，用第一步发现填占位符；**推断不出的列出来问用户，不臆造**。契约速查表只填在 `rules/api-contract.md`，CLAUDE.md 不重复。
 3. **文档骨架**：拷 `templates/.document/*`（`plan/STATUS.md`（含「阶段」「已过门禁」两列）、`plan/context/README.md`（恢复卡模板）、`design/`、`adr/`、`developer/memory`+`capability`）。
-4. **机械兜底 hook**（见下「A-5 机械兜底」）：各 git 仓装 `.githooks/commit-msg` 并设 `core.hooksPath`；复制安装的 Claude Code 项目把 `templates/hooks/claude-settings-hooks.json` 的 `hooks` 键合并进根 `.claude/settings.json`。
+4. **机械兜底 hook**（见下「A-5 机械兜底」）：各 git 仓装 `.githooks/commit-msg` + `.gitattributes` 并设 `core.hooksPath`；复制安装的 Claude Code 项目把 `templates/hooks/claude-settings-hooks.json` 的 `hooks` 键合并进根 `.claude/settings.json`。
 5. **校验**：列落地清单；跑 `bash scripts/verify-baseline.sh {项目根}` 过结构 + 基线（见 README「引入后验证」）；说"今天做什么"应触发 `iteration-planner` 读 STATUS.md（识别成功的信号）。
 
 ### A-2 其他模型宿主项目（AGENTS.md 入口）
@@ -94,7 +94,7 @@ description: >
 2. **实例化 AGENTS.md**：以 `templates/AGENTS.md.template` 为骨架——技能位置、规则引用全部写相对路径；「执行门禁」节原样保留；「技能来源」填 framework 来源注记（仅记录，不作加载路径）。会被单独打开的子仓各放一份 AGENTS.md（引用各自根内的技能目录）。
 3. **文档骨架**：同 A-1 第 3 步。
 4. **机械兜底 hook**：同 A-5 的 git 原生 `commit-msg`（宿主无关）；宿主 hook 仅 Claude Code 有，其他宿主靠入口文件文字协议 + 手动运行 `restore_context.py` / `commit_guard.py precheck`。
-5. **校验**：跑 `bash scripts/verify-baseline.sh {项目根}`（已兼容 `common/skills` 布局）；从目标项目启动该宿主新会话，验证入口可读、典型请求能路由到对应 SKILL.md 并**读全文执行**。只做了文件校验时如实说明"自动触发未实测"。
+5. **校验**：跑 `bash scripts/verify-baseline.sh {项目根}`（已兼容 `common/skills` 布局）；从目标项目启动该宿主新会话，验证入口可读、典型请求能路由到对应 SKILL.md 并**读主文件全文、再按路由读子文件执行**。只做了文件校验时如实说明"自动触发未实测"。
 
 ### A-3 多宿主项目
 
@@ -112,14 +112,14 @@ description: >
 3. **成员前提**：私有仓库需本机 git 已存凭据且拉取时不会弹窗（HTTPS 凭据助手已登录 Gitee，或 SSH key 已加载）；Gitee 必须用完整 URL（`owner/repo` 简写只指 GitHub）。凭据缺失时后台更新静默失败、沿用旧版本。
 4. **更新**：本仓库发布新基线即提升插件版本；Claude Code 开启 `autoUpdate` 后会话启动时后台拉取，或手动 `claude plugin marketplace update yzj-skills`；Codex 用 `codex plugin marketplace upgrade yzj-skills`。项目侧无需 re-sync。
 5. **校验**：`bash scripts/verify-baseline.sh {项目根}`——插件层报 🧩，并检查端插件放置、前后端混装、插件与本地副本双装；从该层启动新会话，用"今天做什么"、真实开发与审查请求验证路由，未实测如实说明。
-6. **hook**：`yzj-flow` 插件自带 `hooks/hooks.json`（压缩后重注入、`git commit` 前检查），启用插件即生效，项目内不再配 hooks；git 原生 `commit-msg` 仍按 A-5 装（脚本在插件缓存里，路径不固定，所以把 `commit_guard.py` 拷一份到 `.githooks/` 旁，hook 在本仓库技能目录找不到时取这份；`verify-baseline.sh` 会比对这份拷贝与基线，re-sync 时覆盖）。
+6. **hook**：`yzj-flow` 插件自带 `hooks/hooks.json`（压缩后重注入、`git commit` / `merge` / `cherry-pick` / `revert` 前检查），启用插件即生效，项目内不再配 hooks；git 原生 `commit-msg` 仍按 A-5 装（脚本在插件缓存里，路径不固定，所以把 `commit_guard.py` 拷一份到 `.githooks/` 旁，hook 在本仓库技能目录找不到时取这份；`verify-baseline.sh` 会比对这份拷贝与基线，re-sync 时覆盖）。
 
 ### A-5 机械兜底（所有安装模式）
 
 规则只写在技能里会被遗忘，这一层把 `git-commit` 铁律 3 与 `red-lines.md` 恢复协议变成会自动执行的检查；全部 fail-open，脚本缺失或 python 不可用时放行并提示：
 
-1. **git 原生 `commit-msg` hook**（宿主无关）：拷 `templates/.githooks/commit-msg` → 每个 git 仓的 `.githooks/commit-msg`（分仓项目前后端各一份；根不是 git 仓则不装根），`chmod +x`，并在该仓执行 `git config core.hooksPath .githooks`；项目主干不叫 master / main / develop 时同时 `git config --add yzj.trunk {主干名}`。两条都是**本地配置，每位成员 clone 后要执行一次**——写进该仓入口文件「开始工作时」（两份模板已带此行），未执行的成员不受保护，`--no-verify` 也可绕过，属开发者自觉。hook 查找 `commit_guard.py` 的顺序：本仓库技能目录 → `.githooks/` 旁拷贝 → 上一级 / 上两级项目根的技能目录（仓库内优先，防止同一父目录下他项目的脚本被误用）；插件安装的层把脚本拷到 `.githooks/commit_guard.py`。拦截范围：AI 署名尾注、来源尾注、模型名、进度词。**对已执行 hooksPath 的成员的人工提交同样生效**——dry-run 报告里列明，经开发者确认。
-2. **Claude Code hook**：插件安装 → 插件自带；复制安装 → 把 `templates/hooks/claude-settings-hooks.json` 的 `hooks` 键合并进项目根 `.claude/settings.json`（已有 `hooks` 则按事件追加，不覆盖其他键）。两条：`SessionStart`（`compact`）压缩后运行 `restore_context.py` 重注入红线与恢复卡；`PreToolUse`（Bash）在 `git commit` 前运行 `commit_guard.py pretooluse`——AI 记号拒绝、主干弹窗确认（单次授权的机械形态）、开发分支放行。
+1. **git 原生 `commit-msg` hook**（宿主无关）：拷 `templates/.githooks/commit-msg` → 每个 git 仓的 `.githooks/commit-msg`（分仓项目前后端各一份；根不是 git 仓则不装根），`chmod +x`，同仓根拷 `templates/.gitattributes`（已有则只追加缺的行——把 `.githooks/*` 与脚本固定 LF，否则 Windows 成员 `autocrlf=true` 检出即变 CRLF），并在该仓执行 `git config core.hooksPath .githooks`；项目主干不叫 master / main / develop / release/* 时同时 `git config --add yzj.trunk {主干名}`。两条都是**本地配置，每位成员 clone 后要执行一次**——写进该仓入口文件「开始工作时」（两份模板已带此行），未执行的成员不受保护，`--no-verify` 也可绕过，属开发者自觉。hook 查找 `commit_guard.py` 的顺序：本仓库技能目录 → `.githooks/` 旁拷贝 → 上一级 / 上两级项目根的技能目录（仓库内优先，防止同一父目录下他项目的脚本被误用）；插件安装的层把脚本拷到 `.githooks/commit_guard.py`。拦截范围：AI 署名尾注、来源尾注、模型名、进度词。**对已执行 hooksPath 的成员的人工提交同样生效**——dry-run 报告里列明，经开发者确认。
+2. **Claude Code hook**：插件安装 → 插件自带；复制安装 → 把 `templates/hooks/claude-settings-hooks.json` 的 `hooks` 键合并进项目根 `.claude/settings.json`（已有 `hooks` 则按事件追加，不覆盖其他键）。两条：`SessionStart`（`compact`）压缩后运行 `restore_context.py` 重注入红线与恢复卡；`PreToolUse`（Bash）在 `git commit` / `merge` / `cherry-pick` / `revert` 前运行 `commit_guard.py pretooluse`——AI 记号拒绝、主干或分支无法判定弹窗确认（单次授权的机械形态）、非规范分支弹窗确认、开发分支放行；脚本缺失 / 无 python 时提示并放行。
 3. **其他宿主**（Codex 等）：hook 机制未核实前不配；靠入口文件「上下文压缩后」节与 `git-commit` 的 `precheck` 手动运行。
 
 ---
@@ -138,7 +138,7 @@ description: >
    | **reviewer（前 / 后端）** | **合并不覆盖**（见下「reviewer 合并标准动作」） |
    | 各域规范 skill（backend / frontend 各 skill） | 同流程 skill；留意项目对示例 / 关键词的本地增补，按"只增不删"保留 |
    | 项目专有 skill（项目独有业务约定，如 `auth-conventions` / `notification-conventions`） | **不动** |
-4. **补骨架**：缺 `.document/design/` → 建 + 拷 `templates/.document/design/README.md`；缺 `.document/plan/STATUS.md` → 建，已有但缺「阶段」「已过门禁」两列 → 只补表头（各行留空，由各需求负责人在下次迁移时填，不改别人的行）；缺 `.document/plan/context/` → 建 + 拷 `README.md`；缺常驻规则层 → 按宿主拷 `templates/common/rules/*`（Claude Code 放 `.claude/rules/`，其他宿主放 `common/rules/` 并在 AGENTS.md 显式引用；项目入口已有契约表的，搬进 `rules/api-contract.md` 或留在原处二选一，不重复维护）；规则层已有但缺 `red-lines.md` → 补；各 git 仓缺 `.githooks/commit-msg` → 按 A-5 补（设 `core.hooksPath` 列入动作清单，经开发者确认）；复制安装的 Claude Code 项目 `.claude/settings.json` 缺 hooks → 合并 `templates/hooks/claude-settings-hooks.json`。
+4. **补骨架**：缺 `.document/design/` → 建 + 拷 `templates/.document/design/README.md`；缺 `.document/plan/STATUS.md` → 建，已有但缺「阶段」「已过门禁」两列 → 只补表头（各行留空，由各需求负责人在下次迁移时填，不改别人的行）；缺 `.document/plan/context/` → 建 + 拷 `README.md`；缺常驻规则层 → 按宿主拷 `templates/common/rules/*`（Claude Code 放 `.claude/rules/`，其他宿主放 `common/rules/` 并在 AGENTS.md 显式引用；项目入口已有契约表的，搬进 `rules/api-contract.md` 或留在原处二选一，不重复维护）；规则层已有但缺 `red-lines.md` → 补；各 git 仓缺 `.githooks/commit-msg` / `.gitattributes` → 按 A-5 补（设 `core.hooksPath` 列入动作清单，经开发者确认）；复制安装的 Claude Code 项目 `.claude/settings.json` 缺 hooks → 合并 `templates/hooks/claude-settings-hooks.json`。
 5. **对齐入口文件**：更新「Project Structure」（补 `design/` + STATUS.md + `plan/context/`）与「Session Workflow」（12 阶段 + 全程规则指向 red-lines + ARCH/NORMAL 分级 + P3 编码前文档分层 + 「上下文压缩后」恢复协议），**保留项目专有段**（契约、多租户、权限、设计系统）；AGENTS.md 的「执行门禁」「上下文压缩后」节缺失则补回。检查并**替换入口中的绝对路径为相对路径**（两条硬约定）。
 6. **修常见问题**：
    - skill `name` 与目录名不一致（如 `name: code-reviewer` 而目录是 `reviewer`）→ 改 `name` 对齐目录
@@ -173,7 +173,7 @@ description: >
 |------|-------------|--------------|
 | **入口文件** | CLAUDE.md（项目根 + 各子仓库，按 cwd 自动加载；多宿主时首行 `@AGENTS.md`） | AGENTS.md（项目根 + 会被单独打开的子仓，各自引用根内相对路径） |
 | **常驻规则** | `.claude/rules/`（自动加载，可用 `paths:` 限定触发范围；`red-lines.md` 不加 `paths:`，压缩后才会从磁盘重新注入） | `common/rules/`（AGENTS.md 显式要求读取，不依赖自动扫描） |
-| **技能目录** | `.claude/skills/`（随 cwd 加载：流程在 root，前后端规范在各子仓库）；或 `yzj-*` 插件（各层 `.claude/settings.json` 启用，见 A-4） | `common/skills/`（AGENTS.md 声明位置；用前必读 SKILL.md 全文）；Codex 可改用 `yzj-*` 插件（`.codex/config.toml` 启用） |
+| **技能目录** | `.claude/skills/`（随 cwd 加载：流程在 root，前后端规范在各子仓库）；或 `yzj-*` 插件（各层 `.claude/settings.json` 启用，见 A-4） | `common/skills/`（AGENTS.md 声明位置；用前必读 SKILL.md 主文件全文，再按路由读子文件）；Codex 可改用 `yzj-*` 插件（`.codex/config.toml` 启用） |
 | **共享文档** | `.document/`（台账 / 恢复卡 `plan/context/` / 计划 / 设计 / 沉淀，dev-session 各阶段引用） | 同左（全项目唯一一份，位置写进 AGENTS.md） |
 
 > 四者齐备后，新会话只要"今天做什么 / 开发 XX"即可触发 `iteration-planner` → `dev-session` 全流程。

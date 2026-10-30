@@ -100,6 +100,8 @@ description: 前端代码审查 skill（Vue 3 + TypeScript 技术栈）。当用
 
 ## 四、审查报告格式
 
+报告一律落档 `design/{yyyy-MM-dd}_{slug}-review.md`（与技术设计文档同 slug；NORMAL 级可精简为逐维度结论表，但必须落盘——dev-session 以它判定 P4 是否完成）。
+
 ```markdown
 ## 前端代码审查报告
 

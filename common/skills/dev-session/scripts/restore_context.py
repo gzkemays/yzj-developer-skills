@@ -8,7 +8,7 @@
     python restore_context.py --root <path>  # 显式指定项目根（含 .document/）
 
 只读、纯标准库、Python 3.8+；任何情况下退出码为 0（fail-open），缺文件时输出手动恢复提示。
-不输出、不记录任何授权状态——授权按 red-lines.md 第 5 条一律重新确认。
+不输出、不记录任何授权状态——授权按 red-lines.md「压缩恢复协议」第 5 步一律重新确认。
 """
 import argparse
 import os
@@ -105,14 +105,16 @@ def status_rows(root, slug):
     if not f.is_file():
         return None, []
     lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
-    header, rows = "", []
+    # 行所在表的表头：进行中 / 已搁置 / 已完成 三张表列数不同，按最近一个 `| 需求 |` 表头配对，避免已完成行印在进行中表头下
+    header, rows, current = "", [], ""
     for ln in lines:
-        if ln.startswith("| 需求 |") and "阶段" in ln:
-            header = ln
-        elif ln.startswith("| 需求 |") and not header:
-            header = ln
-        if ln.startswith("|") and slug in ln:
+        if ln.startswith("| 需求 |"):
+            current = ln
+            if "阶段" in ln and not header:
+                header = ln
+        elif ln.startswith("|") and slug in ln:
             rows.append(ln)
+            header = current or header
     return header, rows
 
 
@@ -198,7 +200,7 @@ def main():
         for c in cards:
             out(f"  - {c.stem}")
     elif len(chosen) > 1:
-        out(f"线索 {hint!r} 匹配到多张卡，请用 --task 指定其一：")
+        out(f"线索 {(args.task or hint)!r} 匹配到多张卡，请用 --task 指定其一：")
         for c in chosen:
             out(f"  - {c.stem}")
         chosen = []

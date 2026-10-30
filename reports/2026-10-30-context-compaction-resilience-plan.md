@@ -1,10 +1,10 @@
 # 2026-10-30 方案：小上下文模型压缩后约束不丢失（通用化 + 主文件引导式瘦身）
 
-> 状态：方案已三轮核对定稿；批次 A、B 试点、质量检查修复、批次 C 均已合并 master（!16、!17、!18）；批次 C 合并后质检发现 2 个阻断（pretooluse 的 stdin 编码、引号内分隔符导致静默放行）与 9 项应修，已在 `fix/2026.10.30-commit-guard-hardening` 修复——整体 shlex 分词 + 解析失败退化为全文扫描、`-am` 短选项簇、`-C <commit>` 与 `-C <dir>` 区分、deny 先于 ask、`#` 行只在编辑器提交时忽略、模型名排除仅限路径 / 文件名语境、hook 查找仓库内优先、主干名 `yzj.trunk` 配置接入、文档口径改为"对已启用 hooksPath 的成员生效"、verify-baseline 增 `.githooks` 检查、hooks.json 无 python 时提示。Codex 侧待实机核实。**批次 B 其余已合并**（!20）：pre-dev-alignment 30→12.7KB（4 references + 3 templates）、git-commit 26→13.6KB（6 references）、yzj-dev-workflow 24→13.7KB（3 references，删第 6 节）、前后端 reviewer 只重排（七步 → 漏检史 → 禁止清单 → 报告格式 → 维度），章节编号不变。合并后质检：`verify-baseline.sh` 原只比对 `SKILL.md`、子文件缺失 / 过期仍报一致，已改为比对整个技能目录（references / templates / scripts）；搬入子文件后 11 处"见下文 / 主文件第 N 章"指针改为经主文件路由表定位；`check-skill-layout.sh` 新增 references 互引检查（templates 与所属阶段子文件互指门禁行允许）。D 未开始。基线日期按"同日只发布一次"规则暂不提升，随下次基线一并发布。
+> 状态：方案已三轮核对定稿；批次 A、B（试点 + 其余）、C 全部合并 master 并各过一轮质检修复（!16–!21），基线 `2026-10-30.1` 已发布（!22，同日再发加序号规则）。合并后全面质检（四路独立审查 + fixture 实测）发现并修复：机械层 6 个阻断（hook 脚本缺失 exit 2 封锁全部 Bash、`cd` 换仓绕过主干门禁、中文紧贴模型名漏检、分离 HEAD 静默放行、merge / cherry-pick / revert 不拦、verify-baseline 字节级比对误报 CRLF）与若干应修；流程技能 8 处互相矛盾（NORMAL 报告是否落档、P8 确认 ≠ 提交授权、入口模板「授权持续有效」、状态机进入条件与 P1 / P9 实际时机、技术设计文档三种文件名、进度判定表缺 P9–P11 与轻量任务行、worktree / 日期门禁只在子文件）；文档漂移（README 验证清单缺红线 / context / hook、B 组 diff 仍只比 SKILL.md、「读 SKILL.md 全文」措辞、Codex 子代理当事实）。以上修复及第二轮复审发现（多行命令换行绕过分词、Git Bash 路径 / 反斜杠路径 / 人名 / 单引号字面量四类误伤、bash -c 包装绕过、P12 收尾提交授权范围、返工期间台账状态等）在 !23 分支 `fix/2026.10.31-full-qa-fixes` 一并修复，待合并。Codex 侧 hook 与子代理能力待实机核实。D 未开始。
 > 合并后质量检查（独立审查 + 机械检查）：无阻断；8 项 should-fix + 9 项 nit 已在 `fix/2026.10.30-compaction-review-fixes` 修复——分支重开序号 `-2` 的定位、项目根取最近而非最远、`check-skill-layout` 引用存在性不再被目录守卫跳过、red-lines 指针逐字对齐原标题、review 报告任何级别落档且文件名统一带日期、slug = business = worktree 目录名写入规则、恢复卡搁置保留 / 取消删除。
 > 试点结果：dev-session 主文件 30.9KB → 8.9KB（约束卡 / 分级 / 路由表 / 回退 / 进度判定），5 个 `references/` 子文件 1.5–6.0KB，2 个 `templates/`；单阶段加载 ≈ 主文件 + 1 子文件 ≈ 15KB。
 > 适用宿主：Claude Code、Codex、以及经各类宿主接入的 DeepSeek 等模型——本方案核心机制一律放在**通用层**，宿主专属只做薄适配。
-> 基线：`2026-10-30`。本方案分 A–D 四批，每批单独提交并发布一次基线。
+> 基线：`2026-10-30.1`（A–C 合并后发布）。本方案分 A–D 四批；D 完成后再发一次基线。
 
 ---
 

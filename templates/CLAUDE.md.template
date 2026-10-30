@@ -57,13 +57,13 @@ P1 分析需求(台账+定级) → P2 加载沉淀 → P3 开发(对齐落档) �
 > 授权提交默认**从当前主干切开发分支** `{feat|opt|fix}/{yyyy.MM.dd}-{business}`（如 `feat/2026.08.18-edit-password`）
 > → 提交 → `push -u origin` → **由开发者自行合并主干**；主干直提须开发者本次明确授权，**单次有效、下次重问、不可自主判断**。
 > 暂存只加自己的改动（逐项 `git add -- <路径>` + `git diff --cached --name-only` 核对）；并行会话多时按 `git-commit` 附录开 Worktree（项目根 `.worktree/`，进度只写根 `.document/`）。
-> 首次 clone 后在每个 git 仓执行一次 `git config core.hooksPath .githooks`（提交信息机械检查；主干名非 master / main / develop 时再 `git config --add yzj.trunk {主干名}`）。
+> 首次 clone 后在每个 git 仓执行一次 `git config core.hooksPath .githooks`（提交信息机械检查；主干名非 master / main / develop / release/* 时再 `git config --add yzj.trunk {主干名}`）。
 
 **全程规则与硬门禁**：常驻摘要见 `.claude/rules/red-lines.md`（纠正即沉淀 / 修复必回溯 / 进度实时更新 / P4 不可跳过 / 修复后重走 P4–P7 / P8–P9 硬门禁 / Git 授权与无 AI 记号 / 编码前文档评审），每条带原章节指针，执行前按指针重读 `dev-session` 等原文；本文件不重复展开。
 
 **变更分级**：ARCH（架构/数据模型/安全/跨域/契约/不可逆）→ 开发者深度评审；NORMAL（常规迭代）→ 知会式确认。拿不准按 ARCH。
 
-**上下文压缩后**：按 `red-lines.md`「压缩恢复协议」——① 先运行 `.claude/skills/dev-session/scripts/restore_context.py`（插件安装的层按插件内路径）读本需求恢复卡 `.document/plan/context/{条目名}.md` 与 STATUS 行；② 按「需重读」重读当前阶段技能的主文件与子文件；③ 输出 `[恢复 | …]` 回执再继续；④ 进入 P4 / P8 / P9 / P11 前按红线指针重读原章节，授权不从摘要继承、一律重新确认。
+**上下文压缩后**：按 `red-lines.md`「压缩恢复协议」——① 先运行 `.claude/skills/dev-session/scripts/restore_context.py`（插件安装的层按插件内路径）读本需求恢复卡 `.document/plan/context/{条目名}.md` 与 STATUS 行；② 按「需重读」重读当前阶段技能的主文件与子文件；③ 输出 `[恢复 | …]` 回执再继续；④ 进入 P4 / P8 / P9 / P11 前按红线指针重读原章节（P12 收尾提交若已换会话或经压缩，同 P11），授权不从摘要继承、一律重新确认。
 
 ## Rules（常驻规则，自动加载）
 

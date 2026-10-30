@@ -3,7 +3,7 @@
 > 任何开发 session 开始前必读；需求状态迁移时必须立即更新本文件（规范见 `progress-tracker` skill）。
 > 条目命名与 output 报告一致：`{yyyy-MM-dd}_{stage}_{slug}`（日期 = 需求启动日）。
 > 状态机：规划中 → 开发中 → 待Review → 待验收 → 已完成；旁路：已搁置 / 已取消。
-> 「阶段」只写当前 dev-session 阶段（P1–P12）；「已过门禁」只列硬门禁（对齐 / P4 / P6 / P8 / P9），产物链接写在该需求的恢复卡 `context/{条目名}.md`。
+> 「阶段」只写当前 dev-session 阶段（P1–P8；P9 起条目移入已完成区，阶段看恢复卡）；「已过门禁」只列硬门禁（对齐 / P4 / P6 / P8 / P9），产物链接写在该需求的恢复卡 `context/{条目名}.md`。
 > 容量红线：进行中 ≤ 20 条（超限先由开发者裁决弃用/搁置再开新）；已完成保留近 20 条（溢出归档 STATUS-ARCHIVE.md，归档前核对落档链接）。
 > 搁置 / 砍范围的内容必落 `backlog-{topic}.md`（格式见 progress-tracker），本表只放原因、恢复条件与指针。
 > 最后更新：{yyyy-MM-dd HH:mm}

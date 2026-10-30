@@ -5,8 +5,10 @@
 #   失败（阻断）  ：主文件引用的技能内 references/*.md、templates/*.md 不存在；references/ templates/ 下存在主文件未引用的孤立文件；
 #                   带约束卡的技能，其 references/*.md 前 5 行缺 "> 门禁" 行；references/*.md 引用同技能的另一个 references/ 文件
 # 阈值只是提醒：规则会随能力累积增长，不做硬限制（见 reports/2026-10-30-context-compaction-resilience-plan.md 决策 13）。
-# 用法：bash scripts/check-skill-layout.sh [技能根...]   默认扫 common/skills backend frontend
+# 用法：bash scripts/check-skill-layout.sh [技能根...]   默认扫 common/skills backend frontend；
+#       也可传目标项目的技能目录（绝对路径或相对当前目录）；含 dev-session / git-commit 的根按流程技能阈值（8KB），其余 16KB
 set -u
+ORIG_PWD=$PWD
 cd "$(dirname "$0")/.." || exit 1
 ROOTS=("$@"); [ ${#ROOTS[@]} -eq 0 ] && ROOTS=(common/skills backend frontend)
 MAIN_LIMIT=8192; SPEC_LIMIT=16384; SUB_LIMIT=12288
@@ -14,13 +16,22 @@ WARN=0; FAIL=0
 warn() { echo "ℹ $*"; WARN=$((WARN+1)); }
 fail() { echo "✗ $*"; FAIL=$((FAIL+1)); }
 size() { wc -c < "$1" | tr -d ' '; }
-# 主文件里形如 references/x.md、templates/x.md 的引用（排除 templates/AGENTS.md.template 这类更长文件名）
-refs_in() { grep -oE '(references|templates)/[A-Za-z0-9._-]+\.md([^A-Za-z0-9._-]|$)' "$1" | sed -E 's/[^A-Za-z0-9._-]$//' | sort -u; }
+# 主文件里形如 references/x.md、templates/x.md 的本技能引用（排除 templates/AGENTS.md.template 这类更长文件名，
+# 也排除 ../other/references/x.md、common/skills/x/references/y.md 这类带前缀路径的跨技能引用）
+refs_in() { grep -oE '(^|[^/A-Za-z0-9_.-])(references|templates)/[A-Za-z0-9._-]+\.md([^A-Za-z0-9._-]|$)' "$1" \
+  | sed -E 's/^[^rt]*//; s/[^A-Za-z0-9._-]$//' | sort -u; }
 
 for root in "${ROOTS[@]}"; do
-  root=${root%/}; root=${root#./}
-  [ -d "$root" ] || continue
-  limit=$MAIN_LIMIT; [ "$root" = common/skills ] || limit=$SPEC_LIMIT
+  root=${root%/}
+  # 显式传入的相对路径先按调用者当前目录解析，再回退仓库根（默认根已是仓库相对路径）；不存在的根明确报失败，不静默通过
+  case "$root" in
+    /*|[A-Za-z]:*) ;;
+    *) if [ $# -gt 0 ] && [ -d "$ORIG_PWD/$root" ]; then root="$ORIG_PWD/$root"; fi;;
+  esac
+  root=${root#./}
+  [ -d "$root" ] || { fail "技能根不存在：$root"; continue; }
+  # 含流程技能（dev-session / git-commit）的根用 8KB 阈值，纯规范技能根（backend / frontend 及其目标项目拷贝）用 16KB
+  limit=$SPEC_LIMIT; { [ -d "$root/dev-session" ] || [ -d "$root/git-commit" ]; } && limit=$MAIN_LIMIT
   for dir in "$root"/*/; do
     dir=${dir%/}; main="$dir/SKILL.md"
     [ -f "$main" ] || continue

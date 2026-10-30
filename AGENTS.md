@@ -9,9 +9,9 @@
 - `common/skills/<name>/SKILL.md` — 通用流程技能（研发生命周期、对齐、进度、记忆、提交等），目标项目**根目录**层使用；个别根级路由入口为同栈专用（如 `yzj-dev-workflow` 仅后端同栈项目安装）。
 - `backend/<name>/SKILL.md` — 后端规范技能（YZJ 四层 + MyBatis-Flex 同栈适用）。
 - `frontend/<name>/SKILL.md` — 前端规范技能（Vue 3 + Naive UI 同栈适用）。
-- `templates/` — 目标项目入口与文档骨架模板（`CLAUDE.md.template`、`AGENTS.md.template`、`common/rules/`（协作原则 / 契约速查 / **红线** `red-lines.md`）、`.document/`（含 `plan/context/` 恢复卡））。
+- `templates/` — 目标项目入口与文档骨架模板（`CLAUDE.md.template`、`AGENTS.md.template`、`common/rules/`（协作原则 / 契约速查 / **红线** `red-lines.md`）、`.document/`（含 `plan/context/` 恢复卡）、`.githooks/` + `.gitattributes`（git 原生 hook 与 LF 固定）、`hooks/`（Claude Code 复制安装的 hooks 片段）、`plugins/`（插件启用配置片段））。
 - `scripts/verify-baseline.sh` — 校验目标项目技能与本仓库基线对齐（兼容 `.claude/skills`、`common/skills` 与 marketplace 插件三种安装）。
-- `scripts/check-skill-layout.sh` — 校验本仓库技能布局：主文件对 `references/` `templates/` 的引用存在、无孤立子文件、带约束卡的技能其子文件带门禁行（阻断）；体积超阈值只告警。拆分技能后、发布前运行。
+- `scripts/check-skill-layout.sh` — 校验本仓库技能布局：主文件对 `references/` `templates/` 的引用存在、无孤立子文件、带约束卡的技能其子文件带门禁行、`references/` 之间不互引（阻断）；体积超阈值只告警。拆分技能后、发布前运行。
 - 机械兜底脚本随技能源分发：`common/skills/git-commit/scripts/commit_guard.py`（commit 信息 AI 记号 / 进度词检查、主干判定；git 原生 `commit-msg` hook 模板在 `templates/.githooks/`）、`common/skills/dev-session/scripts/restore_context.py`（压缩后恢复）。Claude Code 宿主 hook：插件自带 `common/hooks/hooks.json`；复制安装用 `templates/hooks/claude-settings-hooks.json`。其他宿主的 hook 机制核实后再接。
 - marketplace 清单（元数据，非技能副本）：`.claude-plugin/marketplace.json`（Claude Code）、`.agents/plugins/marketplace.json`（Codex）；插件根 `common/`、`backend/`、`frontend/` 各有 `.claude-plugin/plugin.json` + `plugin.json`，对应插件 `yzj-flow` / `yzj-backend` / `yzj-frontend`。`scripts/check-plugin-manifests.sh` 校验清单与技能源、README 基线一致。
 

@@ -16,7 +16,7 @@
 - 变更分级：ARCH / NORMAL
 - 当前阶段：P{N}
 - 下一步：{具体动作，如"按用例文档执行 TC-1～TC-3 自测"}
-- 已过门禁：对齐✅(design/{yyyy-MM-dd}_{slug}.md)　P4✅(design/{yyyy-MM-dd}_{slug}-review.md)　P6✅　P8✅
+- 已过门禁：对齐✅(design/{yyyy-MM-dd}_{slug}-design.md)　P4✅(design/{yyyy-MM-dd}_{slug}-review.md)　P6✅　P8✅
 - 工作位置：分支 {feat|opt|fix}/{yyyy.MM.dd}-{business}；{主工作区 | .worktree/{business}/{repo}}；涉及仓 {backend-repo} / {frontend-repo}
 
 ## 需重读（压缩后按此清单重读；写技能名 + 章节，路径由 restore_context.py 按本项目安装位置解析）

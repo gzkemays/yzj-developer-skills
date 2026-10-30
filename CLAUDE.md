@@ -2,7 +2,7 @@
 
 ## Claude Code 专属补充（仅本仓库维护会话）
 
-本仓库的技能源放在 `common/skills/`（模型无关目录），**不在 `.claude/skills/` 下，Claude Code 不会自动发现**。维护会话按下表路由，命中后**读取对应 SKILL.md 全文再执行**：
+本仓库的技能源放在 `common/skills/`（模型无关目录），**不在 `.claude/skills/` 下，Claude Code 不会自动发现**。维护会话按下表路由，命中后**读取对应 SKILL.md 主文件全文，再按其路由读本次需要的 `references/` 子文件后执行**：
 
 | 用户请求 | 读取并执行 |
 |----------|-----------|
@@ -10,7 +10,7 @@
 | "创建 / 修改 / 评测技能" | `common/skills/skill-creator/SKILL.md` |
 | "提交吧 / commit / push" | `common/skills/git-commit/SKILL.md` |
 | "洁癖 / neat / 把文档和记忆同步到现状"（知识与规范收尾） | `common/skills/neat-freak/SKILL.md` |
-| 修改某个流程 / 规范技能本身 | 该技能的 SKILL.md 全文（`common/skills/` 或 `backend/` / `frontend/`） |
+| 修改某个流程 / 规范技能本身 | 该技能的 SKILL.md 主文件全文 + 涉及的 `references/` `templates/` 子文件（`common/skills/` 或 `backend/` / `frontend/`）；改完跑 `bash scripts/check-skill-layout.sh` |
 
 - 目标项目里 Claude Code 仍使用 `.claude/skills/` + `.claude/rules/` + CLAUDE.md（宿主硬约束），由 project-onboarding 从本仓库 `common/` 复制安装；**本仓库内不维护 `.claude/skills/` 副本**，以免双源漂移。
 - 根目录与 `common/`、`backend/`、`frontend/` 下的 `.claude-plugin/` 是 marketplace / 插件清单（本仓库作为 `yzj-skills` marketplace 发布），不是技能副本；维护会话照旧直接读 `common/skills/` 等源文件，不必安装自己的插件。

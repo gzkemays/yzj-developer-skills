@@ -25,7 +25,7 @@
 
 - **后端**: {如 AI 编码，开发者 Review + 架构决策}
 - **前端**: {如 AI 全权开发与架构调整}
-- **流程**: Claude Code + dev-session 12 阶段 + 本计划文档驱动迭代
+- **流程**: {AI 宿主，如 Claude Code / Codex} + dev-session 12 阶段 + 本计划文档驱动迭代
 
 ## 关键约束
 
