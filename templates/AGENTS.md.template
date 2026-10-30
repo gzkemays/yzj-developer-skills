@@ -15,7 +15,7 @@
 
 发现上下文被压缩、看到会话摘要、或想不起当前阶段的门禁细节时，先按 `common/rules/red-lines.md`「压缩恢复协议」恢复：
 
-1. 运行 `common/skills/dev-session/scripts/restore_context.py`（无 Python 时手动）读本需求的恢复卡 `.document/plan/context/{slug}.md` 与 STATUS 对应行；
+1. 运行 `common/skills/dev-session/scripts/restore_context.py`（无 Python 时手动）读本需求的恢复卡 `.document/plan/context/{条目名}.md` 与 STATUS 对应行；
 2. 按恢复卡「需重读」重读当前阶段技能的主文件与子文件；
 3. 输出定位回执 `[恢复 | 需求 … | 阶段 Px | 已过 … | 下一步 …]` 再继续；
 4. 进入 P4 / P8 / P9 / P11 前按红线指针重读原章节；授权不从摘要继承，一律重新确认。
@@ -61,7 +61,7 @@
 ## 共享文档
 
 - `.document/plan/STATUS.md`：需求与并行开发状态（含「阶段」「已过门禁」两列）。
-- `.document/plan/context/{slug}.md`：每需求一张恢复卡（P1 建、阶段迁移时更新、P12 删），压缩后按它恢复。
+- `.document/plan/context/{条目名}.md`：每需求一张恢复卡（与台账条目同名；P1 建、阶段迁移时更新、完成后删、搁置保留），压缩后按它恢复。
 - `.document/plan/`：计划、任务清单与 backlog。
 - `.document/design/`、`.document/adr/`：技术设计、用例与决策。
 - `.document/developer/memory/MEMORY.md`：团队记忆索引。

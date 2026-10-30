@@ -37,11 +37,12 @@ def find_root(start, explicit):
         candidate = Path(*parts[: parts.index(".worktree")])
         if (candidate / ".document").is_dir():
             return candidate
-    # .document/ 全项目只有根这一份（git-commit 8.4）：取最靠上的、带台账的那个，避免子仓 / 树内副本抢先命中
+    # 取最靠近 cwd 的、带台账的 .document/：同一父目录常并存多个项目（AGENTS.md 头部），不能往上越过本项目去取父目录的；
+    # 子仓 / 树内副本通常没有 plan/STATUS.md，不会抢先命中；worktree 场景已在上面处理
     chain = [p for p in (start, *start.parents) if (p / ".document").is_dir()]
     with_status = [p for p in chain if (p / ".document" / "plan" / "STATUS.md").is_file()]
     if with_status:
-        return with_status[-1]
+        return with_status[0]
     return chain[0] if chain else None
 
 
@@ -77,10 +78,7 @@ def list_cards(root):
     return sorted(p for p in d.glob("*.md") if p.name.lower() != "readme.md")
 
 
-def pick_card(cards, task, hint):
-    key = task or hint
-    if not key:
-        return cards if len(cards) == 1 else []
+def match_cards(cards, key):
     exact = [c for c in cards if c.stem == key]
     if exact:
         return exact
@@ -88,6 +86,18 @@ def pick_card(cards, task, hint):
     if suffix:
         return suffix
     return [c for c in cards if key in c.stem]
+
+
+def pick_card(cards, task, hint):
+    key = task or hint
+    if not key:
+        return cards if len(cards) == 1 else []
+    found = match_cards(cards, key)
+    # 重开分支按 git-commit 2.2 追加 -2 / -3 序号，恢复卡 slug 不带序号：原值不中再去掉序号试一次
+    stripped = re.sub(r"-\d+$", "", key)
+    if not found and stripped != key:
+        found = match_cards(cards, stripped)
+    return found
 
 
 def status_rows(root, slug):
@@ -147,7 +157,9 @@ def main():
     ap.add_argument("--task", default="")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--root", default="")
-    args = ap.parse_args()
+    args, unknown = ap.parse_known_args()  # 未知参数只提示不中断（fail-open）
+    if unknown:
+        print(f"忽略未知参数：{' '.join(unknown)}")
 
     cwd = Path.cwd()
     root = find_root(cwd, args.root)
@@ -178,7 +190,10 @@ def main():
     hint, src = business_hint(cwd)
     chosen = pick_card(cards, args.task, hint) if cards else []
     if cards and not chosen:
-        out(f"定位线索：{src + ' = ' + hint if hint else '无（不在 worktree 内，分支名也非 feat|opt|fix/日期-business 形式）'}")
+        if args.task:
+            out(f"--task {args.task} 未匹配任何恢复卡（按文件名 / `_{args.task}` 后缀 / 子串 / 去尾部序号均未命中）")
+        else:
+            out(f"定位线索：{src + ' = ' + hint if hint else '无（不在 worktree 内，分支名也非 feat|opt|fix/日期-business 形式）'}")
         out("无法唯一确定本需求，请用 --task 指定其一：")
         for c in cards:
             out(f"  - {c.stem}")
@@ -226,7 +241,9 @@ def main():
 
 if __name__ == "__main__":
     try:
-        sys.exit(main())
-    except Exception as e:  # fail-open：脚本自身故障不阻塞恢复
+        main()
+    except SystemExit:
+        pass  # --help 等正常退出
+    except BaseException as e:  # fail-open：脚本自身故障不阻塞恢复
         print(f"restore_context 运行异常（{e!r}）——按 red-lines.md「压缩恢复协议」手动恢复。")
-        sys.exit(0)
+    sys.exit(0)

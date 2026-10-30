@@ -22,7 +22,7 @@ description: >
 | **规则 1 纠正即沉淀** | 开发者任何阶段纠正 AI（否决方案 / 指出代码问题 / 提醒规范 / 推翻设计）→ 完成修正 → **立即**按 `team-memory` 写 feedback memory（开发者原话 + Why + How to apply）并更新 `MEMORY.md` 索引 → 响应中告知"已沉淀至 memory：`{文件名}`"。不推迟到 P10（P10 只核对不补救）；同一问题被纠正第二次 = 机制失效，升级为强约束并记入对应 reviewer 漏检史 | `team-memory` |
 | **规则 2 修复必回溯** | 任何 bug 修复 / 违规修正 / 优化落地后按 `similar-issue-sweep` 全库扫同类并一并处理；只修被指出的一处 = 流程违规 | `similar-issue-sweep` |
 | **规则 3 进度实时更新** | 状态迁移**当下**改 `STATUS.md`（状态 / 阶段 / 已过门禁）并同步本需求**恢复卡** `plan/context/{条目名}.md`，不等收尾；台账是并行开发下唯一可信进度源，恢复卡是压缩后重新定位的依据 | `progress-tracker`；下文「进度判定」 |
-| **规则 4 P4 不可跳过** | 任何 P3 编码（含改一行）完成后、进 P5 前必过前/后端 reviewer 硬流程，"改动小 / 有把握"不是理由；**P6/P7 发现问题后的修复同样是编码**，修完重走 P4 → P5 再回对应门禁，禁止只复测失败用例 | `references/p4-p5-review-test.md` |
+| **规则 4 P4 不可跳过** | 任何 P3 编码（含改一行）完成后、进 P5 前必过前/后端 reviewer 硬流程，"改动小 / 有把握"不是理由；**P6/P7 发现问题后的修复同样是编码**，修完重走 P4 → P5 再回对应门禁，禁止只复测失败用例 | `references/p4-p5-review-test.md`；`references/p6-p8-developer-gates.md`（P7 不通过）；下文「回退规则」 |
 
 ## 变更分级（P1 判定，决定 P6-P8 深度）
 
@@ -73,16 +73,16 @@ description: >
 |----------|----------|
 | STATUS 无本需求条目 | P1 |
 | 有条目，`design/{slug}.md`（或 L1 简化计划）缺 | P3 对齐前（P2 可快速重做） |
-| 设计文档在，无 review 报告（`design/{slug}-review.md` 或知会摘要） | P3 编码 / P4 |
-| review 报告在，`design/{slug}-testcases.md` 缺 | P5 第 0 步 |
+| 设计文档在，无 review 报告 `design/{yyyy-MM-dd}_{slug}-review.md`（任何级别 P4 都落档，NORMAL 可精简为逐维度结论表） | P3 编码 / P4 |
+| review 报告在，`design/{yyyy-MM-dd}_{slug}-testcases.md` 缺 | P5 第 0 步 |
 | 用例文档在且「执行记录」P5 列未填完 | P5 执行 |
 | STATUS 状态 = 待Review / 待验收 | P6–P8（等开发者） |
 | 状态 = 已完成但 `developer/output/{条目名}.md` 缺 | P12 |
 | 信号矛盾（如有用例无 review 报告、台账与恢复卡不一致） | **停下**向开发者报告，不擅自补跑 |
 
-**恢复卡**：`.document/plan/context/{条目名}.md`，P1 建、每次阶段迁移时与台账同步更新、P12 删（模板 `plan/context/README.md`）。只写阶段、门禁、工作位置、需重读清单、关键决策、未完成项；**不写授权**。worktree 会话同样写项目根（`git-commit` 8.4）。
+**恢复卡**：`.document/plan/context/{条目名}.md`（条目名 = `{yyyy-MM-dd}_{stage}_{slug}`，**slug 取分支 business 段、与 worktree 目录名一致**，否则 `restore_context.py` 无法按分支 / 路径自动定位），P1 建、每次阶段迁移时与台账同步更新；P12 完成后删，搁置保留，取消时删（模板 `plan/context/README.md`）。只写阶段、门禁、工作位置、需重读清单、关键决策、未完成项；**不写授权**。worktree 会话同样写项目根（`git-commit` 8.4）。
 
-**阶段回执**：每个阶段出口输出一行固定格式 `[Px ✅ | 依据 … | 下一步 Py]`（如 `[P4 ✅ | 依据 design/xx-review.md 全维度 ✅、回溯 0 处 | 下一步 P5]`），与台账 / 恢复卡更新同一步——格式固定，便于压缩摘要保留。
+**阶段回执**：每个阶段出口输出一行固定格式 `[Px ✅ | 依据 … | 下一步 Py]`（如 `[P4 ✅ | 依据 design/2026-10-30_xx-review.md 全维度 ✅、回溯 0 处 | 下一步 P5]`），与台账 / 恢复卡更新同一步——格式固定，便于压缩摘要保留。
 
 **压缩恢复**（发现摘要、想不起当前门禁细节时，按 `red-lines.md`「压缩恢复协议」）：
 1. 运行本技能 `scripts/restore_context.py`（从项目根或 worktree 内任意目录；无 Python 时手动读卡）——输出红线、本需求恢复卡、STATUS 对应行、需重读文件清单；多需求并行且定位不到时按它列出的卡名用 `--task {slug}` 指定

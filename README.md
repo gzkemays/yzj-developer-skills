@@ -20,7 +20,8 @@ skills/
 │   └── .document/             # 项目文档骨架（含 plan/context/ 恢复卡）
 └── scripts/
     ├── verify-baseline.sh     # 基线校验（兼容 .claude/skills、common/skills 与 marketplace 插件三种安装）
-    └── check-plugin-manifests.sh  # 发布前校验插件清单与技能源、README 基线一致
+    ├── check-plugin-manifests.sh  # 发布前校验插件清单与技能源、README 基线一致
+    └── check-skill-layout.sh  # 技能布局校验（路由引用 / 孤立子文件 / 门禁行阻断，体积告警）
 ```
 
 ### marketplace 插件分发（2026-10-29）
@@ -54,7 +55,7 @@ codex plugin marketplace upgrade yzj-skills
 - **插件只分发技能**：入口文件、常驻规则、`.document/` 骨架仍由 `project-onboarding` 落地。
 - **版本 = 基线日期**：插件 `version` 取 README「当前基线」去前导零（`2026-10-29` → `2026.10.29`），只有发布新基线才推送给成员；同一天只发布一次，当日后续改动随下次基线发布。
 
-**发布流程**：改技能源 → 更新 README「当前基线」→ 六份 `plugin.json` 的 `version` 同步改为新基线 → `bash scripts/check-plugin-manifests.sh` 通过 → `claude plugin validate .` 通过 → 提交推送 master。
+**发布流程**：改技能源 → 更新 README「当前基线」→ 六份 `plugin.json` 的 `version` 同步改为新基线 → `bash scripts/check-plugin-manifests.sh` 与 `bash scripts/check-skill-layout.sh` 通过 → `claude plugin validate .` 通过 → 提交推送 master。
 
 ### 接入方式（按宿主）
 
@@ -78,7 +79,7 @@ codex plugin marketplace upgrade yzj-skills
 - **状态外置**：台账「进行中」表增加「阶段」「已过门禁」两列；每个需求一张**恢复卡** `.document/plan/context/{条目名}.md`（P1 建、阶段迁移时更新、P12 删，不记授权）；每阶段出口输出固定格式回执 `[Px ✅ | 依据 … | 下一步 Py]`。进度以磁盘产物为准（dev-session「进度判定、阶段回执与压缩恢复」）。
 - **恢复脚本**：`common/skills/dev-session/scripts/restore_context.py`（纯标准库、只读、fail-open）——按 worktree 路径 / 分支名 / `--task` 定位本需求，输出红线 + 恢复卡 + 台账行 + 需重读文件；并行需求互不混淆。宿主可用 hook 在压缩后自动运行它（批次 C），没有 hook 的宿主按入口文件「上下文压缩后」节手动运行。
 
-- **主文件引导式瘦身**（批次 B，`dev-session` 已试点）：大技能拆为「主文件（≤ 8KB：约束卡 + 路由表 + 进度判定）+ `references/` 按阶段子文件 + `templates/`」，每个子文件开头带自己的门禁行；执行门禁第 1 条相应为"读主文件全文 + 当前阶段子文件"。`reviewer` 例外：P4 兜底门禁全文加载，不拆分，只重排并建议子代理隔离执行。`scripts/check-skill-layout.sh` 校验路由引用、孤立文件、门禁行（阻断）与体积（告警）。
+- **主文件引导式瘦身**（批次 B，`dev-session` 已试点）：大技能拆为「主文件（约 8–10KB：约束卡 + 路由表 + 进度判定；脚本 8KB 处告警）+ `references/` 按阶段子文件 + `templates/`」，每个子文件开头带自己的门禁行；执行门禁第 1 条相应为"读主文件全文 + 当前阶段子文件"。`reviewer` 例外：P4 兜底门禁全文加载，不拆分，只重排并建议子代理隔离执行。`scripts/check-skill-layout.sh` 校验路由引用、孤立文件、门禁行（阻断）与体积（告警）。
 
 后续批次：其余大技能拆分（B）、git / 宿主 hook 机械兜底（C）、小上下文模型实测（D）。
 
@@ -146,7 +147,9 @@ skills/
 │   ├── common/rules/        #   常驻规则模板（red-lines 红线 / collaboration 协作原则 / api-contract 契约速查）
 │   └── .document/           #   项目文档目录骨架（plan/STATUS.md + context/ 恢复卡 + backlog、design、memory、capability、adr）
 └── scripts/                 # 工具脚本
-    └── verify-baseline.sh   #   校验项目 skill 与基线对齐（布局无关，自动识别前/后端与两种技能布局）
+    ├── verify-baseline.sh   #   校验项目 skill 与基线对齐（布局无关，自动识别前/后端与两种技能布局）
+    ├── check-plugin-manifests.sh  # 发布前校验插件清单
+    └── check-skill-layout.sh      # 技能布局校验（主文件引导式）
 ```
 
 ---
@@ -247,7 +250,7 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 - **并行会话多时开 Worktree**（`git-commit` 附录）：放项目根 `.worktree/{business}/{repo}`，进度与沉淀只写根 `.document/`，Windows 后端仓先开 `core.longpaths`
 - AI 一律不做：合并主干 / 开合 PR·MR / `push --force` / 删分支 / `git add -A`·`git commit -am` 盲加
 
-**全程规则**（凌驾于单阶段）：
+**全程规则 / 约束卡**（凌驾于单阶段，常驻摘要见 `red-lines.md`）：
 
 | 规则 | 内容 | 对应 skill |
 |------|------|-----------|

@@ -6,7 +6,9 @@
 
 **执行者**：AI | **关联 skill**：backend `reviewer`、frontend `reviewer`、`api-contract-checker`、`similar-issue-sweep`
 
-**加载方式**：reviewer 是兜底硬门禁，进入 P4 必须**全文加载**（不按维度抽读）。有子代理 / 多会话能力的宿主（Claude Code：`Agent`；Codex：子代理）优先在**新的子代理**中执行——只加载 reviewer 全文 + 本次 diff + 恢复卡，结论写回 `design/{slug}-review.md`，主会话只读报告，避免主会话上下文峰值；无子代理能力时主会话执行，P4 前先完成 P3 收尾与恢复卡更新。
+**加载方式**：reviewer 是兜底硬门禁，进入 P4 必须**全文加载**（不按维度抽读）。有子代理 / 多会话能力的宿主（Claude Code：`Agent`；Codex：子代理）优先在**新的子代理**中执行——只加载 reviewer 全文 + 本次 diff + 恢复卡，结论写回 review 报告，主会话只读报告，避免主会话上下文峰值；无子代理能力时主会话执行，P4 前先完成 P3 收尾与恢复卡更新。
+
+**报告落档（任何级别）**：`design/{yyyy-MM-dd}_{slug}-review.md`（与技术设计文档同 slug）。ARCH 按 reviewer「审查报告格式」全量、多轮在同一份追加；NORMAL 可精简为逐维度结论表 + Step 2 扫描输出，但必须落盘——它是「进度判定」表的磁盘信号，也是 P6 知会的依据。
 
 1. **后端**：按 backend `reviewer` 的**七步硬流程**执行（含进入前的 echo 协议、强制 Grep 扫描、漏检史核对），逐维度 × 逐文件全覆盖，**禁止选择性抽查**
    - 后端仓与基线不同栈、没有自身 reviewer 时：框架专属规则（Controller 形态、TableDef、Operate 继承等）不套用，以该仓现有写法为准；但**代码格式与注释排版**仍按 backend `reviewer` 第三、五节与 Step 2 排版四项审——"以现有风格为准"不是跳过排版审查的理由。存量文件只审本次改动行，新增文件全文审
@@ -17,7 +19,7 @@
 
 **放行门禁**：reviewer 报告每个维度都必须是「✅ + 依据 / ❌ N 处 / 未检查（原因）/ N/A（原因）」之一；存在「未检查」、未处理的 review-scan HIT 或未判定的 CANDIDATE 时 P4 未完成，不得进 P5。「已 Read reviewer 全文」只证明读过规则，不能当审查结论；审查矩阵不得按文件路径或类型生成。
 
-**出口**：审查报告（逐维度结论）+ 回溯扫描结果，所有可自修问题已修复；回执 `[P4 ✅ | 依据 design/{slug}-review.md 全维度 ✅、回溯 N 处 | 下一步 P5]`
+**出口**：审查报告（逐维度结论）已落档 + 回溯扫描结果，所有可自修问题已修复；回执 `[P4 ✅ | 依据 design/{yyyy-MM-dd}_{slug}-review.md 全维度 ✅、回溯 N 处 | 下一步 P5]`
 
 ---
 
