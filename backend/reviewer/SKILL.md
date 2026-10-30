@@ -35,11 +35,15 @@ description: 后端代码审查 skill。当用户要求 review 代码、审查�
 | 弱哈希 / 弱随机 | `"MD5"` / `"SHA-1"` / `Math\.random\(` / `new Random\(` | #45 🔴 |
 | 控制台输出 / 堆栈直打 | `System\.out\.print` / `printStackTrace\(` | logging #1 / #2 🔴 |
 | 绕开主事务 | `REQUIRES_NEW` | #46 🔴 |
+| 单行控制语句 | `^\s*(if\|else if\|for\|while)\s*\(.*\)\s*[^{\s].*;$` | #59 |
+| 全限定名 / 通配 import | 非 import 行出现 `com\.\|org\.\|java\.` 包路径接类名；`^import (static )?.*\.\*;` | #60 |
+| Javadoc 排版 | `/** ` 后紧跟标签（缺标题）；标题行与 `@param` 之间无空 `*` 行；方法 / 构造器用单行 `/** … */` | #61 / 第五节 |
+| 字段与方法体 | 常量、`@Value` 字段、实体 / 模型字段前无 `/** */`；方法体 ≥15 行却没有空行分段或没有 `//` 说明 | #62 / 第三、五节 |
 | 硬编码密钥 | `secret\s*=\s*"` / `password\s*=\s*"` / `@Encryption\(key = "` 字面量 | #47 🔴 |
 
 `this.` 扫描的逐行判定：当前类**实例方法** → 必须 `this.`；**静态方法** → 不需要（建议类名前缀）；lambda/局部函数 → 不需要。**此扫描禁止跳过。**
 
-扫描仅提供候选：必须结合字段定义、调用语义和完整方法签名判定。多行注解/泛型方法、静态导入和参数中的字面量不得因正则未匹配而漏查；“grep 零命中”或“已读全文”都不能代替逐文件结论。转换、文档、枚举三项覆盖本次所有 Java 文件（含 Model、接口、工具类、测试），不局限于 ServiceImpl/Flow/Controller。
+扫描仅提供候选：必须结合字段定义、调用语义和完整方法签名判定。多行注解/泛型方法、静态导入和参数中的字面量不得因正则未匹配而漏查；“grep 零命中”或“已读全文”都不能代替逐文件结论。转换、文档、枚举三项与排版四项（单行控制语句、全限定名 / 通配 import、Javadoc 排版、字段与方法体）覆盖本次所有 Java 文件（含 Model、接口、工具类、测试），不局限于 ServiceImpl/Flow/Controller。排版四项对新增文件全文审，对存量文件只审本次改动行。
 
 **Step 3 — Entity / TableDef 检查**（每个新建/修改的 Entity）：
 - 继承正确（业务表 `CommonBusinessEntity` / 全局表 `CommonEntity`，按项目多租户约定）
@@ -129,9 +133,12 @@ Step 2-6 中**每发现一处违规**，立即在**本次变更的全部文件**
 ## 三、代码格式审查
 
 - **大括号**：空代码块写成 `{}`；非空块左大括号前不换行，后换行
-- **单行字符数**：不超过 120 个
+- **单行字符数**：不超过 120 个（按字符计，中文算 1）
 - **换行规则**：第二行缩进 4 空格，运算符与下文一起换行，点号与下文一起换行，逗号后换行
 - **空格**：方法参数逗号后加空格
+- **控制语句**：`if` / `else` / `for` / `while` 一律花括号 + 换行，禁止 `if (x) throw …;`、`if (x) return;` 这类单行写法；一行只写一条语句，注解与方法签名不同行
+- **import**：类内没有重名就 import 后用简单类名，字段、参数、局部变量不得写全限定名；不用通配 import（含 `import static …*`）
+- **方法体分段**：按逻辑步骤分块，块与块之间空一行，每块前一句 `//` 说明做什么或为什么（不复述代码）；切面、Flow 编排、定时任务这类长方法必须分段，样板见第五节「代码逻辑注释」
 
 ---
 
@@ -197,6 +204,8 @@ public class XxxServiceImpl implements XxxService {
 }
 ```
 
+> 上例只示意成员顺序，压缩了换行；实际代码按第三节书写，注解、方法签名、方法体各自成行。
+
 ---
 
 ## 五、注释规范审查
@@ -214,6 +223,21 @@ public class XxxServiceImpl implements XxxService {
  **/
 ```
 
+定时任务、监听器、切面这类“看类名猜不出何时运行、失败会怎样”的类，首行写清它做什么，空一行后用 `<p>…</p>` 分段写触发时机、失败如何体现、反直觉点，再空一行写标签；任务方法（如 `@YzjJob`）同样要有标题行，不能只写 `@param`：
+
+```java
+/**
+ * 订单超时关闭任务
+ *
+ * <p>每 5 分钟扫描一次待支付超过 30 分钟的订单并关闭，释放占用库存</p>
+ *
+ * <p>单笔关闭失败只记日志，留到下一轮重试，不中断本轮其余订单</p>
+ *
+ * @author hwy
+ * @since 2026/01/01 01:58
+ */
+```
+
 ### 方法注释
 
 - **所有方法**（public / protected / private）均须 Javadoc 注释，不限于 Service 接口
@@ -221,12 +245,54 @@ public class XxxServiceImpl implements XxxService {
 - 非 void 方法使用 `@return` 描述返回含义及适用的空值/空集合语义；void 方法和构造器不写虚假返回说明
 - 复杂流程需简要说明核心影响
 - 覆写方法仅在父类/接口已有完整且仍适用的契约时免重复描述（可用 `{@inheritDoc}`）；需读上游确认，新增边界/副作用另行说明，不能仅凭 `@Override` 跳过缺失文档
+- **排版**：首行一句话标题（不加句号）→ 空 `*` 行 → 需要时 `<p>…</p>` 段落（多段之间也空一行）→ 空 `*` 行 → 标签；标题与标签不能紧贴
+
+```java
+/**
+ * 逆序回滚已完成的操作
+ *
+ * <p>各步骤独立 try-catch，确保单步回滚失败不影响其他步骤的回滚</p>
+ *
+ * @param databaseName    数据库名
+ * @param databaseCreated 是否已创建数据库
+ */
+```
+
+反例：`/** @param x … */`（方法 / 构造器单行注释）、标题下一行直接写 `@param`、只有标签没有标题。
+
+### 字段注释
+
+常量、`@Value` 配置字段、实体 / 模型 / 查询对象 / 协议对象的每个字段都写 `/** … */`，说明业务含义与取值约束；字段可用单行 `/** … */`。注入的 Service / Mapper 可省。
 
 ### 代码逻辑注释
 
 - 双斜线与内容之间有且仅有一个空格
 - 注释前后需要空行
 - 未完成事项用 `TODO`，待修复点用 `FIXME`
+- 长方法按逻辑步骤分段，每段前一句 `//` 说明这一段做什么或为什么：
+
+```java
+private void rollback(String databaseName, boolean databaseCreated) {
+    // 回滚：尝试删除数据库用户（使用 IF EXISTS 保证幂等安全）
+    try {
+        this.jdbcComponent.execute(String.format("DROP USER IF EXISTS '%s'@'%%'", databaseName));
+        log.info("回滚: 已删除数据库用户 {}", databaseName);
+    } catch (Exception e) {
+        log.warn("回滚: 删除数据库用户 {} 失败: {}", databaseName, e.getMessage(), e);
+    }
+
+    // 回滚：删除数据库并回退编号；库不是本次创建的就不能删
+    if (databaseCreated) {
+        try {
+            this.jdbcComponent.execute("DROP DATABASE IF EXISTS " + databaseName);
+            this.databaseIndexService.decrease();
+            log.info("回滚: 已删除数据库 {} 并回退编号", databaseName);
+        } catch (Exception e) {
+            log.warn("回滚: 删除数据库 {} 或回退编号失败: {}", databaseName, e.getMessage(), e);
+        }
+    }
+}
+```
 
 ### Doc 注释精简原则
 
@@ -456,6 +522,10 @@ DOC 不是 README 也不是 ADR。只回答三件事：
 | 56 | 转换默认反射复制属性，未核对输出字段/null/敏感边界且无保留依据 | 🟡 警告；发生敏感字段泄露按安全项升级 |
 | 57 | 已有业务枚举/常量仍硬编码比较、查询或赋值，或重复定义同义常量 | 🟡 警告 |
 | 58 | 类缺真实 author/since，方法缺参数/返回契约，或无上游依据豁免覆写方法文档 | 🟡 警告 |
+| 59 | 控制语句不带花括号（`if (x) throw …;`）或一行多条语句 | 🟡 警告 |
+| 60 | 无重名仍用全限定名；通配 import | 🟡 警告 |
+| 61 | Javadoc 排版不符第五节：缺标题、标题与标签之间无空行、方法用单行注释、类 / 任务注释没写清作用 | 🟡 警告 |
+| 62 | 常量 / 配置 / 实体字段缺注释；长方法无空行分段或无 `//` 说明 | 🟡 警告 |
 
 ---
 
@@ -539,6 +609,7 @@ ARCH 级变更的 Review 报告落档 `design/{yyyy-MM-dd}_{slug}-review.md`（�
 
 | Rule | 出处 | 教训来源 |
 |------|------|----------|
+| 排版与注释不符样板（单行 if、全限定名、Javadoc 无空行 / 无标题、字段无注释、长方法无分段） | #59~#62 / 第三、五节 | 外部项目教训（2026-10-30）：另一模型的实现通过了 P4，开发者 review 才发现；原因是第三、五节只有类注释示例、Step 2 没有排版扫描，审查只看“有没有注释”，没看排版与内容是否说清作用 |
 | 转换默认使用 BeanUtils.copyProperties | #56 / model-conventions 第四节 | 2026-10-28 开发者 review：同域已有显式映射示例仍未复用；不能靠转换类命名判断合规 |
 | 类 author/since 与方法参数说明缺失 | #58 / 第五节 | 2026-10-28 开发者 review：规则已存在但未逐声明核对，文档精简不等于省略契约 |
 | 业务 provider 码硬编码 | #57 / common 第二节 | 2026-10-28 开发者 review：已有枚举仍用 Objects.equals(code, 数字)，应优先使用枚举比较 API |
