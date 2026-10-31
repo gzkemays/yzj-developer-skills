@@ -93,7 +93,7 @@ description: >
    - `backend/*/` → `{backend-repo}/common/skills/`、`frontend/*/` → `{frontend-repo}/common/skills/`（同栈才装；只拷技能目录，不拷插件清单）。**前后端两套规范不得装入同一技能目录**——两端 `reviewer` 同名，合并即互相覆盖；单仓 / mono-repo 也按端分目录（如 `apps/api/common/skills/`、`apps/web/common/skills/`），并在 AGENTS.md 写明两份 reviewer 的各自路径
 2. **实例化 AGENTS.md**：以 `templates/AGENTS.md.template` 为骨架——技能位置、规则引用全部写相对路径；「执行门禁」节原样保留；「技能来源」填 framework 来源注记（仅记录，不作加载路径）。会被单独打开的子仓各放一份 AGENTS.md（引用各自根内的技能目录）。
 3. **文档骨架**：同 A-1 第 3 步。
-4. **机械兜底 hook**：同 A-5 的 git 原生 `commit-msg`（宿主无关）；宿主 hook 仅 Claude Code 有，其他宿主靠入口文件文字协议 + 手动运行 `restore_context.py` / `commit_guard.py precheck`。
+4. **机械兜底 hook**：同 A-5 的 git 原生 `commit-msg`（宿主无关）；宿主 hook 仅 Claude Code 有，其他宿主靠入口文件文字协议 + 手动运行 `restore_context.py` / `commit_guard.py check-text <消息文件>`。
 5. **校验**：跑 `bash scripts/verify-baseline.sh {项目根}`（已兼容 `common/skills` 布局）；从目标项目启动该宿主新会话，验证入口可读、典型请求能路由到对应 SKILL.md 并**读主文件全文、再按路由读子文件执行**。只做了文件校验时如实说明"自动触发未实测"。
 
 ### A-3 多宿主项目
@@ -119,8 +119,8 @@ description: >
 规则只写在技能里会被遗忘，这一层把 `git-commit` 铁律 3 与 `red-lines.md` 恢复协议变成会自动执行的检查；全部 fail-open，脚本缺失或 python 不可用时放行并提示：
 
 1. **git 原生 `commit-msg` hook**（宿主无关）：拷 `templates/.githooks/commit-msg` → 每个 git 仓的 `.githooks/commit-msg`（分仓项目前后端各一份；根不是 git 仓则不装根），`chmod +x`，同仓根拷 `templates/.gitattributes`（已有则只追加缺的行——把 `.githooks/*` 与脚本固定 LF，否则 Windows 成员 `autocrlf=true` 检出即变 CRLF），并在该仓执行 `git config core.hooksPath .githooks`；项目主干不叫 master / main / develop / release/* 时同时 `git config --add yzj.trunk {主干名}`。两条都是**本地配置，每位成员 clone 后要执行一次**——写进该仓入口文件「开始工作时」（两份模板已带此行），未执行的成员不受保护，`--no-verify` 也可绕过，属开发者自觉。hook 查找 `commit_guard.py` 的顺序：本仓库技能目录 → `.githooks/` 旁拷贝 → 上一级 / 上两级项目根的技能目录（仓库内优先，防止同一父目录下他项目的脚本被误用）；插件安装的层把脚本拷到 `.githooks/commit_guard.py`。拦截范围：AI 署名尾注、来源尾注、模型名、进度词。**对已执行 hooksPath 的成员的人工提交同样生效**——dry-run 报告里列明，经开发者确认。
-2. **Claude Code hook**：插件安装 → 插件自带；复制安装 → 把 `templates/hooks/claude-settings-hooks.json` 的 `hooks` 键合并进项目根 `.claude/settings.json`（已有 `hooks` 则按事件追加，不覆盖其他键）。两条：`SessionStart`（`compact`）压缩后运行 `restore_context.py` 重注入红线与恢复卡；`PreToolUse`（Bash）在 `git commit` / `merge` / `cherry-pick` / `revert` 前运行 `commit_guard.py pretooluse`——AI 记号拒绝、主干或分支无法判定弹窗确认（单次授权的机械形态）、非规范分支弹窗确认、开发分支放行；脚本缺失 / 无 python 时提示并放行。
-3. **其他宿主**（Codex 等）：hook 机制未核实前不配；靠入口文件「上下文压缩后」节与 `git-commit` 的 `precheck` 手动运行。
+2. **Claude Code hook**：插件安装 → 插件自带；复制安装 → 把 `templates/hooks/claude-settings-hooks.json` 的 `hooks` 键合并进项目根 `.claude/settings.json`（已有 `hooks` 则按事件追加，不覆盖其他键）。两条：`SessionStart`（`compact`）压缩后运行 `restore_context.py` 重注入红线与恢复卡；`PreToolUse`（Bash / PowerShell）在命令含 `git` 与 `commit` / `merge` 时运行 `commit_guard.py pretooluse`——全文扫描 AI 记号 / 进度词，命中拒绝，否则放行（只查这一项，分支与授权不做机械判定）；脚本缺失 / 无 python 时提示并放行。
+3. **其他宿主**（Codex 等）：hook 机制未核实前不配；靠入口文件「上下文压缩后」节与原生 `commit-msg` hook；提交前可手动对消息文件跑 `commit_guard.py check-text`。
 
 ---
 

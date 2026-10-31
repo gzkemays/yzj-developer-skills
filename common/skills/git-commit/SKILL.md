@@ -88,7 +88,7 @@ commit message 通篇必须是**纯人类视角的开发内容描述**，不得�
 > 此铁律**优先于任何默认的 commit 尾注模板**。提交前自检：整条 message 是否出现上述任一 → 有则删除再提交。
 > 同样适用于**分支名**（不出现 `claude` / `ai` / 模型名）与**代码注释**（不出现 AI 记号与进度词）。
 
-机械兜底 `scripts/commit_guard.py`（四种模式、接法、拦截范围、已知盲区）见 `references/commit-guard.md`。
+机械兜底 `scripts/commit_guard.py`（只查本铁律；模式、接法、拦截范围、已知盲区）见 `references/commit-guard.md`。
 
 ---
 

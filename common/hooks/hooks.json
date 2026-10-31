@@ -1,5 +1,5 @@
 {
-  "description": "yzj-flow 机械兜底：上下文压缩后自动重注入红线与本需求恢复卡；git commit / merge / cherry-pick / revert 前检查 AI 记号（拒绝）与主干直提、非规范分支、分支无法判定（弹窗确认，单次授权）。脚本随技能源分发；脚本缺失 / 无 python 时打印提示并退出 0（fail-open），不阻塞任何工具调用。",
+  "description": "yzj-flow 机械兜底：上下文压缩后自动重注入红线与本需求恢复卡；Bash / PowerShell 命令含 git commit / merge 时全文检查提交信息的 AI 记号与进度词（命中拒绝，只查这一项）。脚本随技能源分发；脚本缺失 / 无 python 时打印提示并退出 0（fail-open），不阻塞任何工具调用。",
   "hooks": {
     "SessionStart": [
       {
@@ -15,7 +15,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|PowerShell",
         "hooks": [
           {
             "type": "command",

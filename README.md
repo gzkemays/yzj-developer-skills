@@ -83,7 +83,7 @@ codex plugin marketplace upgrade yzj-skills
 
 - **主文件引导式瘦身**（批次 B，已完成：`dev-session` 30.9→9KB、`pre-dev-alignment` 30→12.7KB、`git-commit` 26→13.6KB、`yzj-dev-workflow` 24→13.7KB；前后端 `reviewer` 只重排不拆）：大技能拆为「主文件（约 8–10KB：约束卡 + 路由表 + 进度判定；脚本 8KB 处告警）+ `references/` 按阶段子文件 + `templates/`」，每个子文件开头带自己的门禁行；执行门禁第 1 条相应为"读主文件全文 + 当前阶段子文件"。`reviewer` 例外：P4 兜底门禁全文加载，不拆分，只重排并建议子代理隔离执行。`scripts/check-skill-layout.sh` 校验路由引用、孤立文件、门禁行、references 互引（阻断）与体积（告警）。
 
-- **机械兜底**（批次 C）：`common/skills/git-commit/scripts/commit_guard.py` 四种模式——git 原生 `commit-msg` hook（`templates/.githooks/commit-msg`，各仓 `git config core.hooksPath .githooks`——本地配置、成员各执行一次，对已启用成员的人和 AI 提交都拦 AI 署名 / 来源尾注 / 模型名 / 进度词；`--no-verify` 可绕过）、`check-text`（MR 文本）、`precheck`（分支判定与授权提醒，任何宿主）、`pretooluse`（Claude Code `PreToolUse`：AI 记号拒绝，主干 / 非规范分支 / 无法判定分支弹窗确认，开发分支放行；按命令实际作用目录判分支，覆盖 commit / merge / cherry-pick / revert）。Claude Code 宿主 hook 两条（压缩后 `restore_context.py` 重注入、`git commit` / `merge` / `cherry-pick` / `revert` 前 `commit_guard.py`）：`yzj-flow` 插件自带 `common/hooks/hooks.json`，复制安装合并 `templates/hooks/claude-settings-hooks.json`。全部 fail-open。Codex 等宿主的 hook 待实机核实（方案文档第 7 节清单）。
+- **机械兜底**（批次 C；2026-10-31 收窄为只查 AI 记号）：`common/skills/git-commit/scripts/commit_guard.py` 只管一件事——提交信息不带 AI 记号 / 进度词；授权、分支、MR 按 `git-commit` 文字执行，不做机械判定。三种模式：git 原生 `commit-msg` hook（**硬门禁**，检查最终写进提交的信息，与命令写法无关；`templates/.githooks/commit-msg`，各仓 `git config core.hooksPath .githooks`——本地配置、成员各执行一次，对已启用成员的人和 AI 提交都生效；`--no-verify` 可绕过）、`check-text`（MR 文本）、`pretooluse`（Claude Code `PreToolUse`，Bash / PowerShell：命令含 `git` 与 `commit` / `merge` 时全文扫描，命中拒绝，**早期预检**、不解析 shell）。Claude Code 宿主 hook 两条（压缩后 `restore_context.py` 重注入、提交前 `commit_guard.py pretooluse`）：`yzj-flow` 插件自带 `common/hooks/hooks.json`，复制安装合并 `templates/hooks/claude-settings-hooks.json`。全部 fail-open。回归用例 `scripts/test-commit-guard.py`。Codex 等宿主的 hook 待实机核实（方案文档第 7 节清单）。
 
 后续：Codex hook 核实与接入（C 补）、小上下文模型实测（D）、发布新基线。
 
@@ -288,7 +288,7 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 | 需求评审与技术评审混在一份、视觉方案靠口头想象 | L2/L3 **文档分层**：需求/调整文档(用户复核) 与 技术设计文档(开发者技术审核 + 二次评估) 分两道门禁；视觉方案按需出 HTML / 复用组件 DEMO |
 | 开发者陷在逐行 review 中 | dev-session 变更分级：ARCH 深评 / NORMAL 知会，开发者专注方向与架构 |
 | 并行会话互相污染工作区、进度在多棵树间分叉 | `git-commit` 安全暂存（逐项 add + 暂存区核对 + hunk 级）+ Worktree 附录（放项目根、进度只写根 `.document/`、树内命令以树内仓为 cwd、个人 memory 不跨树） |
-| 多会话同写台账 / 索引后写覆盖，合并时不知保留谁 | `progress-tracker`「并行开发的文档冲突约定」：写前重读 / 只改自己的行 / 写完即提交；追加型双方保留；结构化文档归台账负责人独写；根非 git 仓时被覆盖就重写自己的行 |
+| 多会话同写台账 / 索引后写覆盖，合并时不知保留谁 | `progress-tracker`「并行开发的文档冲突约定」：写前重读 / 只改自己的行 / 写完随已获授权的提交入库；追加型双方保留；结构化文档归台账负责人独写；根非 git 仓时被覆盖就重写自己的行 |
 | 任务清单失真（已做标未做、已回滚标已完成）、砍掉的范围被遗忘 | `progress-tracker` 回填 DoD + `[⛔]` 已废弃 + backlog 文档（推迟即落档） |
 | 全栈契约靠口头，后端先改实现再补文档 | 技术设计文档「契约」章节冻结 + 联动需求接口确认停顿点 + 契约变更先改文档 |
 | 项目专有覆写散落在正文，re-sync 时被基线冲掉 | `project-onboarding`「📌 覆写约定」（文件头差异清单 + 行内标记）+ verify-baseline 按文件头声明识别覆写 |
