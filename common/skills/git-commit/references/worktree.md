@@ -43,9 +43,9 @@ worktree **必须放在项目根内** `{project-root}/.worktree/`，**不放项�
 
 ### 8.5 提交、合并与收尾
 
-- 提交推送按 2.3 默认流程（主文件路由表「切开发分支」）：在 worktree 内 `commit` → `push -u origin {分支名}` → 交接四项
+- 提交推送按 2.3 默认流程（主文件路由表「切开发分支」）：在 worktree 内 `commit` → `push -u origin {分支名}` → 创建 MR → 交接四项
 - 基线漂移：主干推进较多时**如实告知开发者**，是否 `rebase` 由开发者决定（AI 不自动变基，同 2.3 默认流程）
-- 收尾由开发者完成：合并分支回主干 → `git worktree remove .worktree/{business}/{repo}`（先按 8.6 拆掉链接）→ 删除已合并分支（AI 不删分支，见 2.6；开发者明确要求时 AI 可代执行 `git worktree remove`）
+- 收尾由开发者完成：合并 MR → `git worktree remove .worktree/{business}/{repo}`（先按 8.6 拆掉链接）→ 删除已合并分支（AI 不删分支，见 2.6；开发者明确要求时 AI 可代执行 `git worktree remove`）
 - 迁移既有未提交改动进 / 出 worktree：`git diff -- <file> > x.patch` + `git -C <tree> apply x.patch`，**不要整仓 stash**——stash 会把他人改动一起带走
 
 ### 8.6 删除前先拆链接（防连带删主工作区）

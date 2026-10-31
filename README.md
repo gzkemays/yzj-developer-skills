@@ -83,7 +83,7 @@ codex plugin marketplace upgrade yzj-skills
 
 - **主文件引导式瘦身**（批次 B，已完成：`dev-session` 30.9→9KB、`pre-dev-alignment` 30→12.7KB、`git-commit` 26→13.6KB、`yzj-dev-workflow` 24→13.7KB；前后端 `reviewer` 只重排不拆）：大技能拆为「主文件（约 8–10KB：约束卡 + 路由表 + 进度判定；脚本 8KB 处告警）+ `references/` 按阶段子文件 + `templates/`」，每个子文件开头带自己的门禁行；执行门禁第 1 条相应为"读主文件全文 + 当前阶段子文件"。`reviewer` 例外：P4 兜底门禁全文加载，不拆分，只重排并建议子代理隔离执行。`scripts/check-skill-layout.sh` 校验路由引用、孤立文件、门禁行、references 互引（阻断）与体积（告警）。
 
-- **机械兜底**（批次 C；2026-10-31 收窄为只查 AI 记号）：`common/skills/git-commit/scripts/commit_guard.py` 只管一件事——提交信息不带 AI 记号 / 进度词；授权、分支、MR 按 `git-commit` 文字执行，不做机械判定。三种模式：git 原生 `commit-msg` hook（**硬门禁**，检查最终写进提交的信息，与命令写法无关；`templates/.githooks/commit-msg`，各仓 `git config core.hooksPath .githooks`——本地配置、成员各执行一次，对已启用成员的人和 AI 提交都生效；`--no-verify` 可绕过）、`check-text`（MR 文本）、`pretooluse`（Claude Code `PreToolUse`，Bash / PowerShell：命令含 `git` 与 `commit` / `merge` 时全文扫描，命中拒绝，**早期预检**、不解析 shell）。Claude Code 宿主 hook 两条（压缩后 `restore_context.py` 重注入、提交前 `commit_guard.py pretooluse`）：`yzj-flow` 插件自带 `common/hooks/hooks.json`，复制安装合并 `templates/hooks/claude-settings-hooks.json`。全部 fail-open。回归用例 `scripts/test-commit-guard.py`。Codex 等宿主的 hook 待实机核实（方案文档第 7 节清单）。
+- **机械兜底**（批次 C；2026-10-31 收窄为只查 AI 记号）：`common/skills/git-commit/scripts/commit_guard.py` 只管一件事——提交信息与 MR 文本不带 AI 记号 / 进度词；授权、分支、MR 按 `git-commit` 文字执行，不做机械判定。三种模式：git 原生 `commit-msg` hook（**硬门禁**，检查最终写进提交的信息，与命令写法无关；`templates/.githooks/commit-msg`，各仓 `git config core.hooksPath .githooks`——本地配置、成员各执行一次，对已启用成员的人和 AI 提交都生效；`--no-verify` 可绕过）、`check-text`（MR 文本）、`pretooluse`（Claude Code `PreToolUse`，Bash / PowerShell：命令含 `git` 与 `commit` / `merge`，或用 `gh pr` / `glab mr` / 平台 API 创建、编辑 MR 时，全文扫描命令与其引用的正文文件，命中拒绝，**早期预检**、不解析 shell）。Claude Code 宿主 hook 两条（压缩后 `restore_context.py` 重注入、提交前 `commit_guard.py pretooluse`）：`yzj-flow` 插件自带 `common/hooks/hooks.json`，复制安装合并 `templates/hooks/claude-settings-hooks.json`。全部 fail-open。回归用例 `scripts/test-commit-guard.py`。Codex 等宿主的 hook 待实机核实（方案文档第 7 节清单）。
 
 后续：Codex hook 核实与接入（C 补）、小上下文模型实测（D）、发布新基线。
 
@@ -251,12 +251,13 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 **P11 提交与分支门禁**（按 `git-commit`）：
 
 - 开发者授权（含笼统的"允许 / 提交吧"）**默认** = 从当前主干切开发分支 `{feat|opt|fix}/{yyyy.MM.dd}-{business}`
-  （如 `feat/2026.08.18-edit-password`）→ 提交 → `push -u origin` → **由开发者自行合并主干**
-- **已在开发分支**（名字合规）→ 原地提交推送，无需额外授权
-- **主干直提**须开发者本次明确说"允许直接从主干提交"，**单次有效、下次必须重问、禁止 AI 自主判断**，且不得沉淀为常驻规则
+  （如 `feat/2026.08.18-edit-password`）→ 提交 → `push -u origin` → 创建 MR → **由开发者审阅合并**
+- **已在开发分支**（名字合规）→ 原地提交推送；该分支已有未合并 MR 则随推送更新，没有则创建
+- 开发者明确要求直接在主干提交时只对该次照做，不建 MR
 - **暂存只加自己的改动**：逐项 `git add -- <路径>` + `git diff --cached --name-only` 核对；共享文件只暂存自己的 hunk；commit 与注释无 AI 记号、无进度词（FIXED / Step / Phase）
 - **并行会话多时开 Worktree**（`git-commit` 附录）：放项目根 `.worktree/{business}/{repo}`，进度与沉淀只写根 `.document/`，Windows 后端仓先开 `core.longpaths`
-- AI 一律不做：合并主干 / 开合 PR·MR / `push --force` / 删分支 / `git add -A`·`git commit -am` 盲加
+- MR 标题 / 描述与 commit 同受"无 AI 记号"约束，创建前过 `commit_guard.py check-text`；建不了（无 CLI / token）把远端返回的创建链接交给开发者
+- AI 一律不做：合并主干 / 合并或关闭 MR / `push --force` / 删分支 / `git add -A`·`git commit -am` 盲加
 
 **全程规则 / 约束卡**（凌驾于单阶段，常驻摘要见 `red-lines.md`）：
 
@@ -315,7 +316,7 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 
 - 每个 skill 一个目录，入口 `SKILL.md`（frontmatter：`name` + 触发场景写入 `description`）
 - 修改流程类 skill（dev-session / reviewer / progress-tracker）需团队过目——它们是所有项目的执行协议
-- 新增 skill 用 `skill-creator` 创建并评测；提交与分支遵循 `git-commit` skill（授权后切 `{feat|opt|fix}/{yyyy.MM.dd}-{business}` 开发分支提交并推送、开发者自行合并主干；feat/opt/fix 三分法，scope 可选，禁止 AI 记号）
+- 新增 skill 用 `skill-creator` 创建并评测；提交与分支遵循 `git-commit` skill（授权后切 `{feat|opt|fix}/{yyyy.MM.dd}-{business}` 开发分支提交、推送并创建 MR，开发者审阅合并；feat/opt/fix 三分法，scope 可选，禁止 AI 记号）
 - 重大流程变更（dev-session / reviewer / 文档门禁 / 契约规则）→ 更新本 README 顶部「当前基线」日期；各引入项目据此判断是否需 re-sync（用「引入后验证」B 组 diff 确认）
 - 发布新基线时同步六份插件清单 `version` 并跑 `scripts/check-plugin-manifests.sh`（见顶部「marketplace 插件分发」发布流程）；新增 / 删除 / 改名技能无需改清单（插件按目录自动发现），但插件改名须在 `marketplace.json` 加 `renames`
-- 项目副本对流程 skill 的专有覆写按「📌 覆写约定」标记（文件头差异清单 + 行内 📌），不散改正文；主干直提、跳过 P4、P8 确认之类的门禁不得被覆写放宽
+- 项目副本对流程 skill 的专有覆写按「📌 覆写约定」标记（文件头差异清单 + 行内 📌），不散改正文；提交授权、跳过 P4、P8 确认之类的门禁不得被覆写放宽

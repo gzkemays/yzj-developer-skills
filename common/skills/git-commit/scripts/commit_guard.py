@@ -6,11 +6,14 @@
     commit_guard.py commit-msg <msgfile>   git 原生 commit-msg hook：命中 → 退出 1 拦截并说明原因（硬门禁）
     commit_guard.py check-text <file>      对任意 UTF-8 文本（MR 标题 / 描述等）做同一检查，命中退出 1
     commit_guard.py pretooluse             Claude Code PreToolUse hook（Bash / PowerShell）：stdin 读 JSON，
-                                           命令含 git commit / merge 时对整条命令文本与 -F 引用的已存在文件
-                                           做同一检查，命中 → deny；否则放行
+                                           命令含 git commit / merge，或创建 / 编辑 MR（gh pr、glab mr、调
+                                           pulls / merge_requests 接口）时，对整条命令文本与其引用的已存在
+                                           正文文件（-F / --file / --body-file / --input / @文件）做同一检查，
+                                           命中 → deny；否则放行
 
 分层：commit-msg 检查的是最终写进提交的信息，与命令怎么写无关，是硬门禁；pretooluse 只是让 AI 在执行前就收到
-拒绝理由的早期预检，不解析 shell——全文扫描，命中的若不是提交信息，把提交拆成单独一条命令即可。
+拒绝理由的早期预检，不解析 shell——全文扫描，命中的若不是提交信息 / MR 正文，把提交或建 MR 拆成单独一条命令即可。
+MR 文本没有 git 侧的硬门禁：pretooluse 只覆盖上述命令写法，网页上手填或其他写法靠创建前跑 check-text。
 规则来源：common/skills/git-commit/SKILL.md 一、铁律 3。纯标准库、Python 3.8+。
 除 commit-msg / check-text 命中外，任何异常都放行（fail-open），不阻塞开发。
 """
@@ -20,11 +23,13 @@ import sys
 from pathlib import Path
 
 # —— 铁律 3：AI 记号 ——
-# 模型名：排除路径 / 文件名语境（前接 . / \、后接 -xxx.ext 或 .ext；Windows 路径如 \Temp\claude\ 常出现在 -F 参数里），其余一律命中（含句末 "Claude."、"Claude-generated"、
-# 紧贴中文的 "由Claude生成"）。边界只认 ASCII 字母数字——Python 的 \w 会把汉字也当单词字符，用 \w 会让中文紧贴的模型名漏检。
-# Opus / Sonnet / Haiku 只认首字母大写，避免 "magnum opus"、"haiku 诗歌" 这类业务词误报。
+# 模型名：Claude / Claude Code / Anthropic 不区分大小写；Opus / Sonnet / Haiku 只认首字母大写，避免 "magnum opus"、
+# "haiku 诗歌" 这类业务词误报。排除路径 / 文件名语境：前接 . / \（.claude/、Windows 路径 \Temp\claude\ 常出现在 -F 参数里），
+# 或后接常见文件扩展名（CLAUDE.md、claude-settings-hooks.json）；claude.ai、anthropic.com、claude-sonnet-4.5 这类域名 /
+# 型号写法照拦。边界只认 ASCII 字母数字——Python 的 \w 会把汉字也当单词字符，用 \w 会让中文紧贴的模型名漏检。
+FILE_EXT = r"(?:md|json|py|sh|txt|ya?ml|toml|js|ts|template|local)(?![A-Za-z0-9_])"
 MODEL_NAME = re.compile(
-    r"(?<![A-Za-z0-9_/.\\])([Cc]laude(\s*[Cc]ode)?|[Aa]nthropic|Opus|Sonnet|Haiku)(?![A-Za-z0-9_])(?!-[\w-]*\.\w+)(?!\.\w)"
+    r"(?<![A-Za-z0-9_/.\\])((?i:claude(\s*code)?|anthropic)|Opus|Sonnet|Haiku)(?![A-Za-z0-9_])(?!(?:-[\w-]*)?\." + FILE_EXT + ")"
 )
 AI_MARKS = [
     (re.compile(r"(?im)^\s*co-authored-by\s*[:：].*$"), "Co-Authored-By 协作者尾注"),
@@ -44,11 +49,17 @@ PROGRESS_WORDS = [
 ]
 # git 自动生成的注释块起始行（编辑器提交时 commit-msg 文件带此块；-m / -F 提交不带，# 行会原样进历史）
 GIT_TEMPLATE_MARK = re.compile(r"^#\s*(Please enter the commit message|请为您的变更输入提交说明|On branch|位于分支)", re.M)
-# pretooluse 触发条件：命令里出现 git，且出现 commit / merge（不解析 shell，宁可多查）
+# pretooluse 触发条件（不解析 shell，宁可多查）：命令里出现 git 且出现 commit / merge；或创建 / 编辑 MR——
+# gh pr create / edit、glab mr create / update，或 curl / gh api / Invoke-RestMethod 等调 pulls / merge_requests 接口
 GIT_WORD = re.compile(r"(?<![\w.-])git(\.exe)?(?![\w.-])", re.I)
 COMMIT_WORD = re.compile(r"(?<![\w-])(commit|merge)(?![\w-])")
-# -F / --file 引用的消息文件（只取已存在的文件读入；同一条命令里才写出的文件，正文本就在命令文本里）
-MSG_FILE = re.compile(r"(?:^|\s)(?:-[a-zA-Z]*F|--file)(?:=|\s+)(\"[^\"]+\"|'[^']+'|[^\s;&|<>()]+)")
+MR_CLI = re.compile(r"(?<![\w.-])(gh(\.exe)?\s+pr\s+(create|edit)|glab(\.exe)?\s+mr\s+(create|update))(?![\w-])", re.I)
+API_CLIENT = re.compile(r"(?<![\w.-])(curl(\.exe)?|gh(\.exe)?\s+api|Invoke-RestMethod|Invoke-WebRequest|irm|iwr)(?![\w-])", re.I)
+MR_API = re.compile(r"/(pulls|merge_requests)(?![\w-])", re.I)
+# 引用的正文文件（只取已存在的文件读入；同一条命令里才写出的文件，正文本就在命令文本里）：-F / --file（git commit 的
+# 消息文件，也是 gh pr 的正文文件）、--body-file、--input（gh api），以及 curl / gh api 的 @文件（-d @x、-F body=@x）
+MSG_FILE = re.compile(r"(?:^|\s)(?:-[a-zA-Z]*F|--file|--body-file|--input)(?:=|\s+)(\"[^\"]+\"|'[^']+'|[^\s;&|<>()]+)")
+AT_FILE = re.compile(r"(?:^|[\s=])[\"']?@(\"[^\"]+\"|'[^']+'|[^\s;&|<>()\"']+)")
 MSYS_PATH = re.compile(r"^/([A-Za-z])(/|$)")  # Git Bash 的 /c/… 路径，Windows 上 Path 不认为是绝对路径
 HOOK_TOOLS = {"Bash", "PowerShell"}
 
@@ -73,7 +84,7 @@ def scan(text, strip_git_comments=False):
 
 
 def explain(hits):
-    lines = ["提交信息违反 git-commit 铁律 3："]
+    lines = ["提交信息 / MR 文本违反 git-commit 铁律 3："]
     lines += [f"  - {kind}「{label}」：{frag}" for kind, label, frag in hits]
     lines.append("删除后重新提交（不要加任何 AI 署名 / 来源尾注；不要用 FIXED / Step N / Phase N 描述进度）。")
     return "\n".join(lines)
@@ -91,10 +102,16 @@ def cmd_commit_msg(path, strip_git_comments):
     return 0
 
 
+def is_target(command):
+    if GIT_WORD.search(command) and COMMIT_WORD.search(command):
+        return True
+    return bool(MR_CLI.search(command) or (API_CLIENT.search(command) and MR_API.search(command)))
+
+
 def referenced_files(command, cwd):
-    """命令里 -F / --file 指向的、此刻已存在的消息文件内容。"""
+    """命令里 -F / --file / --body-file / --input / @文件 指向的、此刻已存在的正文文件内容。"""
     texts = []
-    for m in MSG_FILE.finditer(command):
+    for m in list(MSG_FILE.finditer(command)) + list(AT_FILE.finditer(command)):
         p = m.group(1).strip("\"'")
         if p == "-":
             continue
@@ -125,13 +142,13 @@ def cmd_pretooluse():
     if payload.get("tool_name") not in HOOK_TOOLS:
         return 0
     command = (payload.get("tool_input") or {}).get("command") or ""
-    if not (GIT_WORD.search(command) and COMMIT_WORD.search(command)):
+    if not is_target(command):
         return 0
     hits = scan(command)
     for text in referenced_files(command, payload.get("cwd") or None):
         hits += [h for h in scan(text) if h not in hits]
     if hits:
-        decide("deny", explain(hits) + "\n（按整条命令全文检查；命中的若不是提交信息，把提交拆成单独一条命令）")
+        decide("deny", explain(hits) + "\n（按整条命令全文检查；命中的若不是提交信息 / MR 正文，把提交或建 MR 拆成单独一条命令）")
     return 0
 
 
