@@ -57,7 +57,7 @@ codex plugin marketplace upgrade yzj-skills
 - **插件分发技能与 hooks**（`yzj-flow` 自带 `common/hooks/hooks.json`）：入口文件、常驻规则、`.document/` 骨架、git 原生 `.githooks/` 仍由 `project-onboarding` 落地。
 - **版本 = 基线日期**：插件 `version` 取 README「当前基线」去前导零（`2026-10-29` → `2026.10.29`），只有发布新基线才推送给成员（成员更新只认版本串**是否变化**，不比大小）；同日再次发布在基线后加序号（`2026-10-30.1` → `2026.10.30.1`），一般当日改动随下次基线发布，确需当天推送才加序号。
 
-**发布流程**：改技能源 → 更新 README「当前基线」→ 六份 `plugin.json` 的 `version` 同步改为新基线 → `bash scripts/check-plugin-manifests.sh` 与 `bash scripts/check-skill-layout.sh` 通过 → `claude plugin validate .` 通过 → 提交推送 master。
+**发布流程**：改技能源 → 更新 README「当前基线」→ 六份 `plugin.json` 的 `version` 同步改为新基线 → `bash scripts/check-plugin-manifests.sh` 与 `bash scripts/check-skill-layout.sh` 通过 → `claude plugin validate .` 通过 → 按 `git-commit` 默认流程提交到开发分支并提 MR（维护者明确要求时才直推 master）。
 
 ### 接入方式（按宿主）
 

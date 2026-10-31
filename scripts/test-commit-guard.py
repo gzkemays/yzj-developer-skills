@@ -30,6 +30,9 @@ MSG_CASES = [
     ("入口文件名不算", "opt: 更新 CLAUDE.md 与 AGENTS.md", False),
     ("型号写法", "opt: 切到 claude-sonnet-4.5", True),
     ("域名写法", "opt: 参考 claude.ai 与 anthropic.com", True),
+    ("URL 里的域名", "opt: 参考 https://docs.anthropic.com/en", True),
+    ("ps1 文件名不算", "opt: 更新 claude-hooks.ps1 与 CLAUDE.MD", False),
+    ("连字符接中文不算文件名", "opt: Claude-辅助修改文档.md", True),
     ("编辑器注释块忽略", "feat: x\n# Please enter the commit message\n# Claude\n", False),
 ]
 
@@ -61,6 +64,9 @@ HOOK_CASES = [
     ("PowerShell 调 pulls", "PowerShell", 'Invoke-RestMethod -Method Post -Uri https://api.example.com/repos/a/b/pulls -Body \'{"body":"Generated with tool"}\'', True),
     ("curl 非 MR 接口不查", "Bash", 'curl -d "Claude" https://example.com/api/issues', False),
     ("gh pr list 不查", "Bash", 'gh pr list --search "Claude"', False),
+    ("gh pr create 正文带 URL", "Bash", 'gh pr create --title "feat: x" --body "见 https://claude.ai/x"', True),
+    ("PowerShell `n 后的尾注", "PowerShell", 'gh pr create --title "feat: x" --body "x`n`nCo-Authored-By: Bot <a@b.com>"', True),
+    ("PowerShell `n 紧贴模型名", "PowerShell", 'git commit -m "feat: x`n`nClaude"', True),
 ]
 
 
@@ -87,12 +93,17 @@ def main():
             print(f"{'OK' if ok else 'XX'} commit-msg  {name}: rc={rc}")
         # -F 引用已存在文件：读入文件内容检查
         (Path(d) / "dirty.txt").write_text("feat: x\n\nGenerated with Claude\n", encoding="utf-8")
+        (Path(d) / "AGENTS.md").write_text("入口说明，提到 Claude Code\n", encoding="utf-8")
         cases = HOOK_CASES + [
             ("-F 已存在文件带尾注", "Bash", "git commit -F dirty.txt", True),
             ("gh pr --body-file 带尾注", "Bash", 'gh pr create --title "feat: x" --body-file dirty.txt', True),
             ("gh pr -F 带尾注", "Bash", 'gh pr create -t "feat: x" -F dirty.txt', True),
             ("curl @文件 带尾注", "Bash", "curl -X POST --data @dirty.txt https://git.example.com/api/v4/projects/1/merge_requests", True),
             ("gh api -F body=@文件 带尾注", "Bash", "gh api repos/a/b/pulls -f title=x -F body=@dirty.txt", True),
+            ("curl --data-urlencode 字段@文件", "Bash", 'curl -X POST --data-urlencode "description@dirty.txt" https://git.example.com/api/v4/projects/1/merge_requests', True),
+            ("curl -d@文件 紧贴", "Bash", "curl -d@dirty.txt https://git.example.com/api/v4/projects/1/merge_requests", True),
+            ("Invoke-RestMethod -InFile", "PowerShell", "Invoke-RestMethod -Method Post -Uri https://api.example.com/repos/a/b/pulls -InFile dirty.txt", True),
+            ("提交信息里的 @文件 是正文不读", "Bash", 'git commit -m "opt: CLAUDE.md 改为 @AGENTS.md 导入"', False),
         ]
         for name, tool, cmd, expect in cases:
             rc, dec = run_hook(tool, cmd, d)

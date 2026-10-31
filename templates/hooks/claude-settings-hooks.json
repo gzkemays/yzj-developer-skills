@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "S=\"$CLAUDE_PROJECT_DIR/.claude/skills/git-commit/scripts/commit_guard.py\"; [ -f \"$S\" ] || { echo \"yzj hook: 未找到 $S，跳过 git commit 检查\" >&2; exit 0; }; for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$S\" pretooluse; done; echo \"yzj hook: 未找到可运行的 python，跳过 git commit 检查\" >&2; exit 0",
+            "command": "S=\"$CLAUDE_PROJECT_DIR/.claude/skills/git-commit/scripts/commit_guard.py\"; [ -f \"$S\" ] || { echo \"yzj hook: 未找到 $S，跳过提交信息 / MR 文本检查\" >&2; exit 0; }; for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$S\" pretooluse; done; echo \"yzj hook: 未找到可运行的 python，跳过提交信息 / MR 文本检查\" >&2; exit 0",
             "timeout": 10
           }
         ]

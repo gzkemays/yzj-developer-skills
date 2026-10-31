@@ -25,16 +25,19 @@ from pathlib import Path
 # —— 铁律 3：AI 记号 ——
 # 模型名：Claude / Claude Code / Anthropic 不区分大小写；Opus / Sonnet / Haiku 只认首字母大写，避免 "magnum opus"、
 # "haiku 诗歌" 这类业务词误报。排除路径 / 文件名语境：前接 . / \（.claude/、Windows 路径 \Temp\claude\ 常出现在 -F 参数里），
-# 或后接常见文件扩展名（CLAUDE.md、claude-settings-hooks.json）；claude.ai、anthropic.com、claude-sonnet-4.5 这类域名 /
-# 型号写法照拦。边界只认 ASCII 字母数字——Python 的 \w 会把汉字也当单词字符，用 \w 会让中文紧贴的模型名漏检。
-FILE_EXT = r"(?:md|json|py|sh|txt|ya?ml|toml|js|ts|template|local)(?![A-Za-z0-9_])"
+# 或后接常见文件扩展名（CLAUDE.md、claude-settings-hooks.json，扩展名不区分大小写）；claude-sonnet-4.5 这类型号写法照拦。
+# 域名（claude.ai、docs.anthropic.com，含 URL 里的）由 VENDOR_DOMAIN 单独拦，不受路径排除影响。
+# 边界只认 ASCII 字母数字——Python 的 \w 会把汉字也当单词字符，用 \w 会让中文紧贴的模型名漏检、"Claude-辅助说明.md" 被当成文件名。
+FILE_EXT = r"(?i:md|mdx|json|py|sh|ps1|bat|cmd|txt|ya?ml|toml|js|ts|template|local)(?![A-Za-z0-9_])"
 MODEL_NAME = re.compile(
-    r"(?<![A-Za-z0-9_/.\\])((?i:claude(\s*code)?|anthropic)|Opus|Sonnet|Haiku)(?![A-Za-z0-9_])(?!(?:-[\w-]*)?\." + FILE_EXT + ")"
+    r"(?<![A-Za-z0-9_/.\\])((?i:claude(\s*code)?|anthropic)|Opus|Sonnet|Haiku)(?![A-Za-z0-9_])(?!(?:-[A-Za-z0-9_-]*)?\." + FILE_EXT + ")"
 )
+VENDOR_DOMAIN = re.compile(r"(?i)(?<![A-Za-z0-9-])(claude\.(ai|com)|anthropic\.com)(?![A-Za-z0-9-])")
 AI_MARKS = [
     (re.compile(r"(?im)^\s*co-authored-by\s*[:：].*$"), "Co-Authored-By 协作者尾注"),
     (re.compile(r"(?i)generated[\s-]+(with|by)\b"), "Generated with / by 来源尾注"),
     (MODEL_NAME, "模型 / 工具名"),
+    (VENDOR_DOMAIN, "模型厂商域名"),
     (re.compile(r"🤖"), "AI 署名 emoji"),
     # "由 AI 生成 / AI 辅助（完成）" 与 "AI-generated / AI-assisted" 作为署名出现在句尾才算；"AI 辅助诊断模块" 这类业务名词不拦
     (re.compile(r"(?m)(由\s*AI\s*(生成|辅助|编写|撰写)|AI\s*(辅助|生成|编写|撰写))\s*(完成)?\s*[。.!！）)]?\s*$"), "\"由 AI 生成 / AI 辅助\" 署名"),
@@ -53,13 +56,15 @@ GIT_TEMPLATE_MARK = re.compile(r"^#\s*(Please enter the commit message|请为您
 # gh pr create / edit、glab mr create / update，或 curl / gh api / Invoke-RestMethod 等调 pulls / merge_requests 接口
 GIT_WORD = re.compile(r"(?<![\w.-])git(\.exe)?(?![\w.-])", re.I)
 COMMIT_WORD = re.compile(r"(?<![\w-])(commit|merge)(?![\w-])")
-MR_CLI = re.compile(r"(?<![\w.-])(gh(\.exe)?\s+pr\s+(create|edit)|glab(\.exe)?\s+mr\s+(create|update))(?![\w-])", re.I)
+MR_CLI = re.compile(r"(?<![\w.-])(gh(\.exe)?\s+pr\s+(create|new|edit)|glab(\.exe)?\s+mr\s+(create|new|update))(?![\w-])", re.I)
 API_CLIENT = re.compile(r"(?<![\w.-])(curl(\.exe)?|gh(\.exe)?\s+api|Invoke-RestMethod|Invoke-WebRequest|irm|iwr)(?![\w-])", re.I)
 MR_API = re.compile(r"/(pulls|merge_requests)(?![\w-])", re.I)
 # 引用的正文文件（只取已存在的文件读入；同一条命令里才写出的文件，正文本就在命令文本里）：-F / --file（git commit 的
-# 消息文件，也是 gh pr 的正文文件）、--body-file、--input（gh api），以及 curl / gh api 的 @文件（-d @x、-F body=@x）
-MSG_FILE = re.compile(r"(?:^|\s)(?:-[a-zA-Z]*F|--file|--body-file|--input)(?:=|\s+)(\"[^\"]+\"|'[^']+'|[^\s;&|<>()]+)")
-AT_FILE = re.compile(r"(?:^|[\s=])[\"']?@(\"[^\"]+\"|'[^']+'|[^\s;&|<>()\"']+)")
+# 消息文件，也是 gh pr 的正文文件）、--body-file、--input（gh api）、-InFile（Invoke-RestMethod），以及只在 API 调用里认的
+# @文件（-d @x、-d@x、-F body=@x、--data-urlencode "description@x"）——git commit 信息里的 "@AGENTS.md" 是正文，不当文件读
+MSG_FILE = re.compile(r"(?:^|\s)(?:-[a-zA-Z]*F|--file|--body-file|--input|(?i:-InFile))(?:=|\s+)(\"[^\"]+\"|'[^']+'|[^\s;&|<>()]+)")
+AT_FILE = re.compile(r"(?:^|[\s=])[\"']?(?:-[A-Za-z]|[A-Za-z_][A-Za-z0-9_.-]*)?@(\"[^\"]+\"|'[^']+'|[^\s;&|<>()\"']+)")
+PS_NEWLINE = re.compile(r"`r`n|`n")  # PowerShell 双引号字符串里的换行转义
 MSYS_PATH = re.compile(r"^/([A-Za-z])(/|$)")  # Git Bash 的 /c/… 路径，Windows 上 Path 不认为是绝对路径
 HOOK_TOOLS = {"Bash", "PowerShell"}
 
@@ -109,9 +114,12 @@ def is_target(command):
 
 
 def referenced_files(command, cwd):
-    """命令里 -F / --file / --body-file / --input / @文件 指向的、此刻已存在的正文文件内容。"""
+    """命令里 -F / --file / --body-file / --input / -InFile 与（仅 API 调用时）@文件 指向的、此刻已存在的正文文件内容。"""
     texts = []
-    for m in list(MSG_FILE.finditer(command)) + list(AT_FILE.finditer(command)):
+    matches = list(MSG_FILE.finditer(command))
+    if API_CLIENT.search(command):
+        matches += list(AT_FILE.finditer(command))
+    for m in matches:
         p = m.group(1).strip("\"'")
         if p == "-":
             continue
@@ -144,7 +152,8 @@ def cmd_pretooluse():
     command = (payload.get("tool_input") or {}).get("command") or ""
     if not is_target(command):
         return 0
-    hits = scan(command)
+    text = PS_NEWLINE.sub("\n", command) if payload.get("tool_name") == "PowerShell" else command
+    hits = scan(text)
     for text in referenced_files(command, payload.get("cwd") or None):
         hits += [h for h in scan(text) if h not in hits]
     if hits:
