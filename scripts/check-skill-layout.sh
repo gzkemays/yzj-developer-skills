@@ -23,12 +23,12 @@ refs_in() { grep -oE '(^|[^/A-Za-z0-9_.-])(references|templates)/[A-Za-z0-9._-]+
 
 for root in "${ROOTS[@]}"; do
   root=${root%/}
-  # 显式传入的相对路径先按调用者当前目录解析，再回退仓库根（默认根已是仓库相对路径）；不存在的根明确报失败，不静默通过
+  # 显式传入的相对路径按调用者当前目录解析（默认根已是仓库相对路径）；不存在的根明确报失败，不回退到本仓库同名目录静默通过
   case "$root" in
     /*|[A-Za-z]:*) ;;
-    *) if [ $# -gt 0 ] && [ -d "$ORIG_PWD/$root" ]; then root="$ORIG_PWD/$root"; fi;;
+    *) if [ $# -gt 0 ]; then root="$ORIG_PWD/$root"; fi;;
   esac
-  root=${root#./}
+  root=${root#./}; root=${root%/.}
   [ -d "$root" ] || { fail "技能根不存在：$root"; continue; }
   # 含流程技能（dev-session / git-commit）的根用 8KB 阈值，纯规范技能根（backend / frontend 及其目标项目拷贝）用 16KB
   limit=$SPEC_LIMIT; { [ -d "$root/dev-session" ] || [ -d "$root/git-commit" ]; } && limit=$MAIN_LIMIT

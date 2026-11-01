@@ -93,7 +93,7 @@ def pick_card(cards, task, hint):
     if not key:
         return cards if len(cards) == 1 else []
     found = match_cards(cards, key)
-    # 重开分支按 git-commit 2.2 追加 -2 / -3 序号，恢复卡 slug 不带序号：原值不中再去掉序号试一次
+    # 重开分支按 git-commit 2.2 追加 -2 / -3 序号，恢复卡 slug 随之带序号；旧卡未带序号时去掉序号再试一次
     stripped = re.sub(r"-\d+$", "", key)
     if not found and stripped != key:
         found = match_cards(cards, stripped)
@@ -112,7 +112,7 @@ def status_rows(root, slug):
             current = ln
             if "阶段" in ln and not header:
                 header = ln
-        elif ln.startswith("|") and slug in ln:
+        elif ln.startswith("|") and slug in ln.split("|")[1]:  # 只认「需求」列，别的行动态里提到本条目不算
             rows.append(ln)
             header = current or header
     return header, rows
