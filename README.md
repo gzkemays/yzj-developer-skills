@@ -85,7 +85,7 @@ codex plugin marketplace upgrade yzj-skills
 
 - **机械兜底**（批次 C；2026-10-31 收窄为只查 AI 记号）：`common/skills/git-commit/scripts/commit_guard.py` 只管一件事——提交信息与 MR 文本不带 AI 记号 / 进度词；授权、分支、MR 按 `git-commit` 文字执行，不做机械判定。三种模式：git 原生 `commit-msg` hook（**硬门禁**，检查最终写进提交的信息，与命令写法无关；`templates/.githooks/commit-msg`，各仓 `git config core.hooksPath .githooks`——本地配置、成员各执行一次，对已启用成员的人和 AI 提交都生效；`--no-verify` 可绕过）、`check-text`（MR 文本）、`pretooluse`（Claude Code `PreToolUse`，Bash / PowerShell：命令含 `git` 与 `commit` / `merge`，或用 `gh pr` / `glab mr` / 平台 API 创建、编辑 MR 时，全文扫描命令与其引用的正文文件，命中拒绝，**早期预检**、不解析 shell）。Claude Code 宿主 hook 两条（压缩后 `restore_context.py` 重注入、提交前 `commit_guard.py pretooluse`）：`yzj-flow` 插件自带 `common/hooks/hooks.json`，复制安装合并 `templates/hooks/claude-settings-hooks.json`。全部 fail-open。回归用例 `scripts/test-commit-guard.py`。Codex 等宿主的 hook 待实机核实（方案文档第 7 节清单）。
 
-后续：Codex hook 核实与接入（C 补）、小上下文模型实测（D）、发布新基线。
+后续：Codex hook 核实与接入（C 补）、小上下文模型实测（D）；D 完成后再发一次基线。
 
 ### 在本仓库使用
 
@@ -104,7 +104,7 @@ codex plugin marketplace upgrade yzj-skills
 > 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
 > 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
 >
-> **当前基线**：`2026-10-30.1`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
+> **当前基线**：`2026-11-02`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
 > **适用宿主**：任意 AI 编码宿主——Claude Code 按 `.claude/` 自动加载，其他宿主经 AGENTS.md 显式加载 `common/`。流程方法论 skill **与技术栈无关**
 > （dev-session / pre-dev-alignment / progress-tracker / team-memory / capability-registry /
 > similar-issue-sweep / dev-output / iteration-planner / project-onboarding / git-commit），任意项目可直接用；
