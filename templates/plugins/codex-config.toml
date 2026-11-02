@@ -2,7 +2,8 @@
 # 前提：每位成员已执行一次
 #   codex plugin marketplace add https://gitee.com/yzjgroup/skills.git
 #   codex plugin add <插件>@yzj-skills
-# 层与插件对应：项目根 → yzj-flow；后端仓 → yzj-backend；前端仓 → yzj-frontend（只保留本层那一节）。
+# 每个独立仓都需要 yzj-flow 与对应端插件；不能假定共同父目录配置跨 Git 边界继承。
+# 同一 Git 仓内已继承的声明不重复添加；后端、前端插件不得在同一启动范围一起启用。
 
 [plugins."yzj-flow@yzj-skills"]
 enabled = true

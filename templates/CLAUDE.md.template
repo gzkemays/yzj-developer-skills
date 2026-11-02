@@ -34,6 +34,8 @@
 | `{project}/{backend-repo}/` | 后端 CLAUDE.md + 后端 skills | 后端业务开发、代码审查 |
 | `{project}/{frontend-repo}/` | 前端 CLAUDE.md + 前端 skills | 前端页面开发、UI/UX 优化 |
 
+独立 Git 子仓不能假定继承共同父目录技能；通用正文集中在共同根时，在子仓 `.claude/skills` 安装带同名元数据和正文链接的共享入口，按 project-onboarding 的发现矩阵验证。相同 Git 仓内已经继承的技能不重复安装。Worktree 路径另验；技能清单通过不等于任务触发已实测。
+
 ## Build Commands
 
 - **Backend compile**: `cd {backend-repo} && {如 mvn compile -pl xxx -am -q}`

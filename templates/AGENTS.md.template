@@ -1,4 +1,4 @@
-# {项目名} · 项目规范入口（通用宿主）
+# {项目名} · 项目规范入口
 
 > 技能来源（仅注记，不作加载路径）：framework skills 仓库，基线 {commit 短号或日期}；接入日期 {yyyy-MM-dd}。
 > 本文件中所有加载路径均为**相对本文件所在目录**的相对路径，项目整体迁移 / 改名后无需修改；禁止写绝对路径。
@@ -6,17 +6,18 @@
 
 ## 开始工作时
 
-- 读取 `common/rules/red-lines.md`（硬门禁 + 压缩恢复协议，常驻）与 `common/rules/collaboration.md`；接口开发或跨端修改时读取 `common/rules/api-contract.md`。这些是本文件显式引用的文档，不依赖目录自动扫描。
-- 技能在 `common/skills/<name>/SKILL.md`（Codex 以 marketplace 插件安装的层改写为"技能由插件 `yzj-*` 提供，按名称路由"，见 project-onboarding A-4；{按实际写明：通用在项目根，前后端规范在各自仓 / 模块目录——两端 `reviewer` 同名，不得合并进同一目录}），按 description 选择；读主文件全文，再按其路由读当前阶段 / 场景的 `references/` 子文件，不只看 description。
+- 读取 `.agents/rules/red-lines.md`（硬门禁 + 压缩恢复协议）与 `.agents/rules/collaboration.md`；接口任务再读 `.agents/rules/api-contract.md`。`.agents/rules` 由本文件显式引用，不是宿主的自动规则目录。
+- Codex 技能在 `.agents/skills/<name>/SKILL.md`；Claude Code 技能在 `.claude/skills/`。插件安装的层改写为实际插件名。通用正文在共同根，端规范在各自仓 / 模块；前后端 reviewer 同名，不混装。
+- 宿主先发现名称和 description，使用技能时读完整 SKILL.md，再按路由读子文件。带 `metadata.framework_ref` 的原生入口须先读取其链接的共享正文；该字段是项目审计标记，不会让宿主自动读取目标。
 - 项目根：本文件所在目录；共享文档根：`.document/`。台账、设计、团队记忆和能力登记只写该处。
 - 首次 clone 后在每个 git 仓执行一次 `git config core.hooksPath .githooks`（启用提交信息机械检查）；主干名非 master / main / develop / release/* 时再 `git config --add yzj.trunk {主干名}`（供 AI 提交时识别主干，hook 不读）。
 - 用户给出的任务范围在本需求内持续有效，不为流程重复提问；业务评审结论与 Git 操作授权分别判断——Git 提交授权单次有效、不从摘要继承。
 
 ## 上下文压缩后（任何宿主）
 
-发现上下文被压缩、看到会话摘要、或想不起当前阶段的门禁细节时，先按 `common/rules/red-lines.md`「压缩恢复协议」恢复：
+发现上下文被压缩、看到会话摘要、或想不起当前阶段的门禁细节时，先按 `.agents/rules/red-lines.md`「压缩恢复协议」恢复：
 
-1. 运行 `common/skills/dev-session/scripts/restore_context.py`（无 Python 时手动）读本需求的恢复卡 `.document/plan/context/{条目名}.md` 与 STATUS 对应行；
+1. 运行 `.agents/skills/dev-session/scripts/restore_context.py`（共享入口改为完整技能所在路径，无 Python 时手动）读本需求的恢复卡 `.document/plan/context/{条目名}.md` 与 STATUS 对应行；
 2. 按恢复卡「需重读」重读当前阶段技能的主文件与子文件；
 3. 输出定位回执 `[恢复 | 需求 … | 阶段 Px | 已过 … | 下一步 …]` 再继续；
 4. 进入 P4 / P8 / P9 / P11 前按红线指针重读原章节（P12 收尾提交若已换会话或经压缩，同 P11）；授权不从摘要继承，一律重新确认。
@@ -39,7 +40,7 @@
 设计系统与 token：{文件相对路径、前缀和约定}。
 对外接口文档：{相对路径}。
 
-独立子仓和 Worktree 以各自 Git 根检查入口，不能假定共同父目录自动加载。会单独打开的仓库内放自己的 AGENTS.md 和必要 `common/skills/`，共享文档写明相对该仓的路径。命令使用本次检出为 cwd。
+独立子仓和 Worktree 以各自 Git 根检查发现边界，不能假定共同父目录自动加载。独立仓在原生技能目录安装通用共享入口；同一 Git 仓内能继承根技能的子目录不重复安装同名入口。Worktree 必须另验入口目标，固定相对路径失效时先补接入，不能把业务工作转回主检出。纯手动路由的其他宿主按其实际目录改写本模板，并在预演中明确不提供原生发现。
 
 ## 技能路由与流程
 

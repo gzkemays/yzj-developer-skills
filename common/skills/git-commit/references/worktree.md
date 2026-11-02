@@ -11,7 +11,7 @@
 
 ### 8.2 放置位置与目录结构（强制）
 
-worktree **必须放在项目根内** `{project-root}/.worktree/`，**不放项目外**——放外面会让项目根的入口与技能层（Claude Code：`.claude/` 流程 skill + rules；其他宿主：AGENTS.md 及其引用的技能目录）与 `.document/`（台账 / 沉淀）脱离祖先链，规则和 skill 加载 / 引用不到。
+worktree **必须放在项目根内** `{project-root}/.worktree/`，便于定位共享文档与完整技能。目录位于项目根下并不代表宿主会跨 Git 边界发现共同根技能；每棵树仍需单独核验入口、原生技能清单和共享路径。
 
 按「**任务目录镜像根结构**」组织：每个需求一个任务目录，内含该需求用到的各仓 worktree，**子目录名与项目根下的仓库目录名一致**：
 
@@ -24,7 +24,7 @@ worktree **必须放在项目根内** `{project-root}/.worktree/`，**不放项�
 
 - 建树命令：`git -C {repo} worktree add {project-root}/.worktree/{business}/{repo} -b {feat|opt|fix}/{yyyy.MM.dd}-{business}`（自当前主干切出，分支名按 2.2——主文件路由表「切开发分支」）
 - worktree 是**单仓**检出：纯后端 / 纯前端只建对应那一个；全栈各建各的，互不影响
-- 编辑任一仓文件时祖先链含：该仓技能层（前 / 后端规范）+ 根技能层（流程）+ 根 `.document/`（Claude Code 下技能层即各级 `.claude/`；其他宿主为入口文件声明的技能目录）→ 规则与技能全识别
+- 每棵树内核验本仓入口和原生技能目录（`.claude/skills` / `.agents/skills`）；主工作区的固定相对共享入口复制到更深的 Worktree 后可能断链。按 project-onboarding 的发现矩阵为该 cwd 接入，逐一验证共享技能、hook 脚本和根 `.document/` 的实际路径；不能把祖先目录存在当成自动继承成功。
 - `.worktree/` 必须进项目根 `.gitignore`（单仓项目尤其注意，否则整棵树会被当成未跟踪文件）
 - 多需求并行各用各的任务目录与分支（同一仓同一分支只能在一个 worktree 检出）
 - **树内一切命令以树内仓目录为 cwd**：构建 / 测试 / 校验命令不用项目根相对路径——项目入口文件里 `cd {backend-repo} && mvn …` 这类命令在 worktree 会话里要按 `{project-root}/.worktree/{business}/{repo}` 解析，否则编译 / 测试的是主工作区那棵树；跨仓引用写 `../{repo}`，镜像结构保证它在根与树内都指向同一需求的另一棵树

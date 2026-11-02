@@ -6,7 +6,7 @@ description: 前端代码审查 skill（Vue 3 + TypeScript 技术栈）。当用
 # 前端代码审查规范
 
 本 skill 与 backend `reviewer` 等价对位：后端有硬性审查流程，前端同样有。
-规范权威来源：`view-conventions` skill + 项目前端**入口规则**（入口文件及其显式引用的规则——Claude Code：前端 `CLAUDE.md`；其他宿主：AGENTS.md + 其引用的 `common/rules/`；承载设计系统、契约约定）+ 项目 memory 中的前端踩坑记录。
+规范权威来源：`view-conventions` skill + 项目前端**入口规则**（入口文件及其显式引用的规则——Claude Code：前端 `CLAUDE.md`；其他宿主：AGENTS.md + 其显式引用的实际规则目录；承载设计系统、契约约定）+ 项目 memory 中的前端踩坑记录。
 
 > **为什么前端也要硬流程**：历史教训表明，前端漏检集中在"机器可查但目测会漏"的项——硬编码颜色、
 > i18n key 路径写错、类型多出后端不存在的字段、表单校验与后端 @Size 不一致。这些必须靠 Grep 扫描兜底。
