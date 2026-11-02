@@ -25,7 +25,7 @@ description: >
 | `stage` | 迭代阶段（从 `00-plan-overview.md` 读取） | `MVP` / `p1` / `P4` |
 | `business` | 业务域英文短名（kebab-case） | `workitem-crud` / `ai-doc-auto-index` |
 
-同一天同一业务多次输出时追加序号：`..._-2.md`。
+同一条目只有一份报告（与台账条目同名）；同一业务重开（原分支已合并 / 废弃，按 `git-commit` 2.2 追加序号 `-2`）时台账另起一条：slug 随分支 business 同带序号（`progress-tracker` 规则 8），报告随条目名，如 `{yyyy-MM-dd}_{stage}_{business}-2.md`。
 
 ---
 

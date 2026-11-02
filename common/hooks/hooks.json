@@ -1,0 +1,29 @@
+{
+  "description": "yzj-flow 机械兜底：上下文压缩后自动重注入红线与本需求恢复卡；Bash / PowerShell 命令含 git commit / merge 或创建 / 编辑 MR 时，全文检查提交信息与 MR 文本的 AI 记号与进度词（命中拒绝，只查这一项）。脚本随技能源分发；脚本缺失 / 无 python 时打印提示并退出 0（fail-open），不阻塞任何工具调用。",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "S=\"${CLAUDE_PLUGIN_ROOT}/skills/dev-session/scripts/restore_context.py\"; [ -f \"$S\" ] || { echo \"yzj hook: 未找到 $S，跳过压缩恢复注入\" >&2; exit 0; }; for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$S\"; done; echo \"yzj hook: 未找到可运行的 python，跳过压缩恢复注入\" >&2; exit 0",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "S=\"${CLAUDE_PLUGIN_ROOT}/skills/git-commit/scripts/commit_guard.py\"; [ -f \"$S\" ] || { echo \"yzj hook: 未找到 $S，跳过提交信息 / MR 文本检查\" >&2; exit 0; }; for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$S\" pretooluse; done; echo \"yzj hook: 未找到可运行的 python，跳过提交信息 / MR 文本检查\" >&2; exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

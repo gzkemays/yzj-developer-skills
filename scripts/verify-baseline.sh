@@ -18,6 +18,9 @@
 #     --show-diff            打印每个差异 skill 的具体 diff
 #     --strict               流程 skill 出现漂移即非零退出（默认仅结构错误才非零）
 #
+# 比对整个技能目录：SKILL.md 主文件之外，基线侧 references/ templates/ scripts/ 下每个子文件都须在项目内存在且一致
+# （主文件引导式拆分后大半正文在子文件里）；缺失计 ✗ 结构错误，漂移与主文件同规则计 Δ / ℹ，项目多出的子文件只提示 ℹ。
+#
 # 流程 skill 在 frontmatter 结束后 20 行内带「本文件 = framework 基线」引用块声明（project-onboarding
 # 「📌 项目覆写约定」的文件头差异清单）时报 📌 而非 Δ，--strict 下不算漂移；只有正文 📌、声明在
 # frontmatter 内或无声明的，一律按普通漂移处理。frontmatter 做轻量检查（块内 name/description 非空），
@@ -229,6 +232,31 @@ for SD in "${SKILLDIRS[@]}"; do
       fi
       [ "$SHOW_DIFF" -eq 1 ] && diff --strip-trailing-cr "$ff" "$pf" | sed 's/^/        /'
     fi
+    # 子文件（references/ templates/ scripts/）：主文件引导式拆分后大半正文在子文件里，基线侧每个子文件都须在项目内
+    # 存在且一致——缺失计结构错误（主文件路由指向它，整目录重拷），漂移按主文件同规则计 Δ / ℹ；项目多出的子文件只提示
+    fwdir="$(dirname "$ff")"
+    for sub in references templates scripts; do
+      [ -d "$fwdir/$sub" ] || continue
+      for sf in "$fwdir/$sub"/*; do
+        [ -f "$sf" ] || continue
+        rel="$sub/$(basename "$sf")"; psf="${SKILL}${rel}"
+        if [ ! -f "$psf" ]; then
+          echo "      ✗  $name/$rel  项目内缺失（主文件路由指向它；整个技能目录重拷）"; ERRORS=$((ERRORS+1))
+        elif ! diff --strip-trailing-cr -q "$sf" "$psf" >/dev/null 2>&1; then
+          n=$(diff --strip-trailing-cr "$sf" "$psf" | grep -c '^[<>]' || true)
+          if is_flow "$name"; then
+            echo "      Δ  $name/$rel  与基线差 ${n} 行  ⚠需确认是否有意"; DRIFT=$((DRIFT+1))
+          else
+            echo "      ℹ  $name/$rel  与基线差 ${n} 行"; SPECIFIC=$((SPECIFIC+1))
+          fi
+          [ "$SHOW_DIFF" -eq 1 ] && diff --strip-trailing-cr "$sf" "$psf" | sed 's/^/        /'
+        fi
+      done
+      for psf in "${SKILL}${sub}"/*; do
+        [ -f "$psf" ] && [ ! -f "$fwdir/$sub/$(basename "$psf")" ] \
+          && echo "      ℹ  $name/$sub/$(basename "$psf")  基线无（项目专有子文件）"
+      done
+    done
   done
   # 同一技能目录同时命中前后端基线技能 → 混装（两端 reviewer 同名互相覆盖的前兆），计结构错误
   if [ "$B_HIT" -eq 1 ] && [ "$F_HIT" -eq 1 ]; then
@@ -300,11 +328,36 @@ RULES=""
 [ -d "$PROJECT/.claude/rules" ] && RULES="$PROJECT/.claude/rules"
 [ -z "$RULES" ] && [ -d "$PROJECT/common/rules" ] && RULES="$PROJECT/common/rules"
 if [ -n "$RULES" ]; then
-  for f in collaboration.md api-contract.md; do
+  for f in red-lines.md collaboration.md api-contract.md; do
     [ -f "$RULES/$f" ] || echo "ℹ ${RULES#$PROJECT/} 缺 $f（可从 templates/common/rules 补；契约表留在入口文件亦可）"
   done
+  # red-lines 带 paths: 时压缩后不会重新注入，失去常驻意义
+  if [ -f "$RULES/red-lines.md" ] && head -n 10 "$RULES/red-lines.md" | grep -q '^paths:'; then
+    echo "ℹ ${RULES#$PROJECT/}/red-lines.md 带 paths: frontmatter——红线须无条件常驻，请去掉 paths:"
+  fi
 else
-  echo "ℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 collaboration.md / api-contract.md"
+  echo "ℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 red-lines.md / collaboration.md / api-contract.md"
+fi
+# 机械兜底 hook 为软检查：每个 git 仓应有 .githooks/commit-msg；.githooks/ 旁的 commit_guard.py 拷贝须与基线一致
+GUARD_SRC="$FW/common/skills/git-commit/scripts/commit_guard.py"
+for repo in "$PROJECT" "$PROJECT"/*/; do
+  repo="${repo%/}"; [ -e "$repo/.git" ] || continue
+  rel="${repo#$PROJECT}"; rel="${rel#/}"; [ -n "$rel" ] || rel="."
+  if [ -f "$repo/.githooks/commit-msg" ]; then
+    # 忽略行尾差异：Windows 成员 autocrlf=true 检出的拷贝是 CRLF，内容仍与基线一致
+    if [ -f "$repo/.githooks/commit_guard.py" ] && [ -f "$GUARD_SRC" ] && ! diff --strip-trailing-cr -q "$repo/.githooks/commit_guard.py" "$GUARD_SRC" >/dev/null 2>&1; then
+      echo "ℹ $rel/.githooks/commit_guard.py 与基线不一致（插件安装层的拷贝，re-sync 时从 common/skills/git-commit/scripts 覆盖）"
+    fi
+  else
+    echo "ℹ $rel 缺 .githooks/commit-msg（templates/.githooks/commit-msg；成员需 git config core.hooksPath .githooks，见 project-onboarding A-5）"
+  fi
+done
+# 恢复卡目录与台账两列为软检查：缺失只提示（既有项目由 project-onboarding B-4 补）
+if [ -f "$PROJECT/.document/plan/STATUS.md" ]; then
+  grep -q '^| 需求 | 状态 | 阶段 | 已过门禁 |' "$PROJECT/.document/plan/STATUS.md" \
+    || echo "ℹ .document/plan/STATUS.md「进行中」表缺「阶段」「已过门禁」两列（templates/.document/plan/STATUS.md；只补表头，不改既有行）"
+  [ -d "$PROJECT/.document/plan/context" ] \
+    || echo "ℹ 缺 .document/plan/context/（恢复卡目录，拷 templates/.document/plan/context/README.md）"
 fi
 
 echo "──────── 小结 ────────"

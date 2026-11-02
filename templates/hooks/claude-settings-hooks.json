@@ -1,0 +1,29 @@
+{
+  "_comment": "复制安装（技能在 .claude/skills/）的 Claude Code 项目：把 hooks 键合并进项目根 .claude/settings.json（已有 hooks 则按事件追加，不覆盖其他键）。插件安装的层不需要——yzj-flow 插件自带 common/hooks/hooks.json。脚本缺失 / 无 python 时打印提示并退出 0（fail-open），不阻塞任何工具调用。模板来源：framework/skills/templates/hooks/claude-settings-hooks.json",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "S=\"$CLAUDE_PROJECT_DIR/.claude/skills/dev-session/scripts/restore_context.py\"; [ -f \"$S\" ] || { echo \"yzj hook: 未找到 $S，跳过压缩恢复注入\" >&2; exit 0; }; for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$S\"; done; echo \"yzj hook: 未找到可运行的 python，跳过压缩恢复注入\" >&2; exit 0",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "S=\"$CLAUDE_PROJECT_DIR/.claude/skills/git-commit/scripts/commit_guard.py\"; [ -f \"$S\" ] || { echo \"yzj hook: 未找到 $S，跳过提交信息 / MR 文本检查\" >&2; exit 0; }; for p in python3 python py; do \"$p\" -c \"import sys\" >/dev/null 2>&1 && exec \"$p\" \"$S\" pretooluse; done; echo \"yzj hook: 未找到可运行的 python，跳过提交信息 / MR 文本检查\" >&2; exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

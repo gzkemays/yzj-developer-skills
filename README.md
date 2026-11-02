@@ -16,11 +16,14 @@ skills/
 ├── templates/
 │   ├── CLAUDE.md.template     # Claude Code 项目入口模板
 │   ├── AGENTS.md.template     # 其他宿主项目入口模板（含不可删减的「执行门禁」）
-│   ├── common/rules/          # 常驻规则模板（协作原则 / 契约速查，宿主无关）
-│   └── .document/             # 项目文档骨架
+│   ├── common/rules/          # 常驻规则模板（红线 red-lines / 协作原则 / 契约速查，宿主无关）
+│   ├── .githooks/commit-msg   # git 原生 hook 模板（调用 commit_guard.py，宿主无关）
+│   ├── hooks/                 # 复制安装的 Claude Code hooks 片段（插件安装由 common/hooks/hooks.json 自带）
+│   └── .document/             # 项目文档骨架（含 plan/context/ 恢复卡）
 └── scripts/
     ├── verify-baseline.sh     # 基线校验（兼容 .claude/skills、common/skills 与 marketplace 插件三种安装）
-    └── check-plugin-manifests.sh  # 发布前校验插件清单与技能源、README 基线一致
+    ├── check-plugin-manifests.sh  # 发布前校验插件清单与技能源、README 基线一致
+    └── check-skill-layout.sh  # 技能布局校验（路由引用 / 孤立子文件 / 门禁行 / references 互引阻断，体积告警）
 ```
 
 ### marketplace 插件分发（2026-10-29）
@@ -51,10 +54,10 @@ codex plugin marketplace upgrade yzj-skills
 
 - **模型 ≠ 宿主**：DeepSeek 等模型经 Claude Code 接入时与 Claude Code 完全一致；经其他无 marketplace 的宿主接入时走复制安装。
 - **与复制安装二选一（按层）**：需要 📌 项目覆写或 reviewer 回注的层继续复制安装；同一层插件与本地副本并存会加载两份，`verify-baseline.sh` 报错。
-- **插件只分发技能**：入口文件、常驻规则、`.document/` 骨架仍由 `project-onboarding` 落地。
-- **版本 = 基线日期**：插件 `version` 取 README「当前基线」去前导零（`2026-10-29` → `2026.10.29`），只有发布新基线才推送给成员；同一天只发布一次，当日后续改动随下次基线发布。
+- **插件分发技能与 hooks**（`yzj-flow` 自带 `common/hooks/hooks.json`）：入口文件、常驻规则、`.document/` 骨架、git 原生 `.githooks/` 仍由 `project-onboarding` 落地。
+- **版本 = 基线日期**：插件 `version` 取 README「当前基线」去前导零（`2026-10-29` → `2026.10.29`），只有发布新基线才推送给成员（成员更新只认版本串**是否变化**，不比大小）；同日再次发布在基线后加序号（`2026-10-30.1` → `2026.10.30.1`），一般当日改动随下次基线发布，确需当天推送才加序号。
 
-**发布流程**：改技能源 → 更新 README「当前基线」→ 六份 `plugin.json` 的 `version` 同步改为新基线 → `bash scripts/check-plugin-manifests.sh` 通过 → `claude plugin validate .` 通过 → 提交推送 master。
+**发布流程**：改技能源 → 更新 README「当前基线」→ 六份 `plugin.json` 的 `version` 同步改为新基线 → `bash scripts/check-plugin-manifests.sh` 与 `bash scripts/check-skill-layout.sh` 通过 → `claude plugin validate .` 通过 → 按 `git-commit` 默认流程提交到开发分支并提 MR（维护者明确要求时才直推 master）。
 
 ### 接入方式（按宿主）
 
@@ -68,11 +71,25 @@ codex plugin marketplace upgrade yzj-skills
 **两条硬约定**贯穿所有入口与模板（详见 `common/skills/project-onboarding`）：
 
 1. **相对路径**：入口文件中的加载引用一律相对入口文件所在目录，**禁止绝对路径**——同一父目录常并存多个项目，且项目会迁移 / 改名；验收口径是"项目整体移动后引用仍成立"。
-2. **执行门禁不得删减**：AGENTS.md 模板的「执行门禁」节是防接入宿主偷懒的兜底（必读全文 / 不跳审查 / 自证产出 / 不虚报验证 / 批准须显式）。
+2. **执行门禁不得删减**：AGENTS.md 模板的「执行门禁」节是防接入宿主偷懒的兜底（读主文件全文 + 当前阶段子文件 / 不跳审查 / 自证产出 / 不虚报验证 / 批准须显式）。
+
+### 上下文压缩后的约束恢复（2026-10-30，所有宿主）
+
+小上下文模型压缩后，会话中途读入的技能正文会被概括，门禁细节随之丢失。对策不依赖模型记忆，分三层（方案与核实依据见 `reports/2026-10-30-context-compaction-resilience-plan.md`）：
+
+- **红线常驻**：`templates/common/rules/red-lines.md`——硬门禁最小集合，每条带原章节指针（结论 + → 指针，不替代原规则），由宿主常驻规则机制加载（Claude Code `.claude/rules/`、不加 `paths:`；其他宿主 AGENTS.md 显式引用）；进入 P4 / P8 / P9 / P11 前按指针重读原文。
+- **状态外置**：台账「进行中」表增加「阶段」「已过门禁」两列；每个需求一张**恢复卡** `.document/plan/context/{条目名}.md`（P1 建、阶段迁移时更新、P12 删，不记授权）；每阶段出口输出固定格式回执 `[Px ✅ | 依据 … | 下一步 Py]`。进度以磁盘产物为准（dev-session「进度判定、阶段回执与压缩恢复」）。
+- **恢复脚本**：`common/skills/dev-session/scripts/restore_context.py`（纯标准库、只读、fail-open）——按 worktree 路径 / 分支名 / `--task` 定位本需求，输出红线 + 恢复卡 + 台账行 + 需重读文件；并行需求互不混淆。宿主可用 hook 在压缩后自动运行它（批次 C），没有 hook 的宿主按入口文件「上下文压缩后」节手动运行。
+
+- **主文件引导式瘦身**（批次 B，已完成：`dev-session` 30.9→9KB、`pre-dev-alignment` 30→12.7KB、`git-commit` 26→13.6KB、`yzj-dev-workflow` 24→13.7KB；前后端 `reviewer` 只重排不拆）：大技能拆为「主文件（约 8–10KB：约束卡 + 路由表 + 进度判定；脚本 8KB 处告警）+ `references/` 按阶段子文件 + `templates/`」，每个子文件开头带自己的门禁行；执行门禁第 1 条相应为"读主文件全文 + 当前阶段子文件"。`reviewer` 例外：P4 兜底门禁全文加载，不拆分，只重排并建议子代理隔离执行。`scripts/check-skill-layout.sh` 校验路由引用、孤立文件、门禁行、references 互引（阻断）与体积（告警）。
+
+- **机械兜底**（批次 C；2026-10-31 收窄为只查 AI 记号）：`common/skills/git-commit/scripts/commit_guard.py` 只管一件事——提交信息与 MR 文本不带 AI 记号 / 进度词；授权、分支、MR 按 `git-commit` 文字执行，不做机械判定。三种模式：git 原生 `commit-msg` hook（**硬门禁**，检查最终写进提交的信息，与命令写法无关；`templates/.githooks/commit-msg`，各仓 `git config core.hooksPath .githooks`——本地配置、成员各执行一次，对已启用成员的人和 AI 提交都生效；`--no-verify` 可绕过）、`check-text`（MR 文本）、`pretooluse`（Claude Code `PreToolUse`，Bash / PowerShell：命令含 `git` 与 `commit` / `merge`，或用 `gh pr` / `glab mr` / 平台 API 创建、编辑 MR 时，全文扫描命令与其引用的正文文件，命中拒绝，**早期预检**、不解析 shell）。Claude Code 宿主 hook 两条（压缩后 `restore_context.py` 重注入、提交前 `commit_guard.py pretooluse`）：`yzj-flow` 插件自带 `common/hooks/hooks.json`，复制安装合并 `templates/hooks/claude-settings-hooks.json`。全部 fail-open。回归用例 `scripts/test-commit-guard.py`。Codex 等宿主的 hook 待实机核实（方案文档第 7 节清单）。
+
+后续：Codex hook 核实与接入（C 补）、小上下文模型实测（D）；D 完成后再发一次基线。
 
 ### 在本仓库使用
 
-从 **`skills/` 仓库目录**启动会话：Claude Code 自动加载根 CLAUDE.md（`@AGENTS.md`），其他宿主读 AGENTS.md。本仓库的技能源在 `common/skills/`，**任何宿主都不自动发现**——按入口文件的路由表读取对应 SKILL.md 全文执行。工作目录若是外层 `framework/`，直接指定相应 SKILL.md 读取。
+从 **`skills/` 仓库目录**启动会话：Claude Code 自动加载根 CLAUDE.md（`@AGENTS.md`），其他宿主读 AGENTS.md。本仓库的技能源在 `common/skills/`，**任何宿主都不自动发现**——按入口文件的路由表读取对应 SKILL.md 主文件全文，再按其路由读本次需要的 `references/` 子文件执行。工作目录若是外层 `framework/`，直接指定相应 SKILL.md 读取。
 
 ### 维护与同步
 
@@ -87,7 +104,7 @@ codex plugin marketplace upgrade yzj-skills
 > 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
 > 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
 >
-> **当前基线**：`2026-10-30`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
+> **当前基线**：`2026-11-02`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
 > **适用宿主**：任意 AI 编码宿主——Claude Code 按 `.claude/` 自动加载，其他宿主经 AGENTS.md 显式加载 `common/`。流程方法论 skill **与技术栈无关**
 > （dev-session / pre-dev-alignment / progress-tracker / team-memory / capability-registry /
 > similar-issue-sweep / dev-output / iteration-planner / project-onboarding / git-commit），任意项目可直接用；
@@ -101,10 +118,10 @@ codex plugin marketplace upgrade yzj-skills
 ```
 skills/
 ├── common/skills/           # 通用能力（装到目标项目根的技能目录）
-│   ├── dev-session/         #   研发生命周期编排（12 阶段 + 门禁 + 全程规则）★ 总入口
+│   ├── dev-session/         #   研发生命周期编排 ★ 总入口——主文件（约束卡 + 分级 + 阶段路由表 + 进度判定）+ references/ 按阶段子文件 + templates/；scripts/restore_context.py
 │   ├── pre-dev-alignment/   #   开发前对齐（前后端统一版 + 结论落档）
-│   ├── iteration-planner/   #   迭代规划（session 开局对齐上下文）
-│   ├── progress-tracker/    #   进度维护（STATUS.md 台账 + 任务清单回填 DoD + backlog 落档）
+│   ├── iteration-planner/   #   迭代规划（session 开局对齐上下文；续作先跑 restore_context）
+│   ├── progress-tracker/    #   进度维护（STATUS.md 台账含阶段 / 已过门禁两列 + 任务清单回填 DoD + backlog 落档）
 │   ├── team-memory/         #   团队记忆体系（纠正即沉淀硬规则）
 │   ├── capability-registry/ #   能力登记册（复用前查册、沉淀后登记、反哺）
 │   ├── similar-issue-sweep/ #   同类问题回溯扫描（修复必回溯）
@@ -131,10 +148,12 @@ skills/
 ├── templates/               # 新项目引入模板
 │   ├── CLAUDE.md.template   #   Claude Code 项目根入口骨架
 │   ├── AGENTS.md.template   #   其他宿主项目入口骨架（含「执行门禁」）
-│   ├── common/rules/        #   常驻规则模板（collaboration 协作原则 / api-contract 契约速查）
-│   └── .document/           #   项目文档目录骨架（plan/STATUS.md + backlog、design、memory、capability、adr）
+│   ├── common/rules/        #   常驻规则模板（red-lines 红线 / collaboration 协作原则 / api-contract 契约速查）
+│   └── .document/           #   项目文档目录骨架（plan/STATUS.md + context/ 恢复卡 + backlog、design、memory、capability、adr）
 └── scripts/                 # 工具脚本
-    └── verify-baseline.sh   #   校验项目 skill 与基线对齐（布局无关，自动识别前/后端与两种技能布局）
+    ├── verify-baseline.sh   #   校验项目 skill 与基线对齐（布局无关，自动识别前/后端与两种技能布局）
+    ├── check-plugin-manifests.sh  # 发布前校验插件清单
+    └── check-skill-layout.sh      # 技能布局校验（主文件引导式）
 ```
 
 ---
@@ -159,7 +178,10 @@ skills/
 5. 拷贝文档骨架 →  {project}/.document/             ← 本仓库 templates/.document/*
 6. 用 templates/CLAUDE.md.template 建项目根 CLAUDE.md，填好占位符；加载引用一律相对路径
    （仓库路径、构建命令、设计系统 token 前缀；契约速查表填在 rules/api-contract.md）
-7. 首次会话验证：说"今天做什么" → 应触发 iteration-planner 读取台账与计划
+7. 机械兜底 →  每个 git 仓 .githooks/commit-msg（← templates/.githooks/）+ .gitattributes（← templates/）
+   并 git config core.hooksPath .githooks；复制安装的 Claude Code 项目把 templates/hooks/claude-settings-hooks.json
+   的 hooks 键合并进 .claude/settings.json（详见 project-onboarding A-5）
+8. 首次会话验证：说"今天做什么" → 应触发 iteration-planner 读取台账与计划
 ```
 
 > **既有项目融入不是无脑覆盖**：流程 skill 按基线对齐；`reviewer` 与项目专有 skill **合并保留**项目沉淀（漏检史、项目注解、设计 token、命名规则）；项目独有 skill 不动。详见 `project-onboarding`「既有项目对比融入」。
@@ -175,17 +197,18 @@ skills/
 
 ```
 - [ ] 项目根入口（CLAUDE.md / AGENTS.md）占位符全部替换，无残留 {xxx}；加载引用全部为相对路径
-- [ ] 根常驻规则层（.claude/rules 或 common/rules）有 collaboration.md + api-contract.md（契约表与入口二选一，不重复维护）
-- [ ] 根技能目录（.claude/skills 或 common/skills）有流程层；后端 / 前端仓库各有技能目录
-- [ ] .document/ 含 plan/STATUS.md、design/、adr/、developer/memory + capability
+- [ ] 根常驻规则层（.claude/rules 或 common/rules）有 red-lines.md + collaboration.md + api-contract.md（契约表与入口二选一，不重复维护）
+- [ ] 根技能目录（.claude/skills 或 common/skills）有流程层（含各技能的 references/ templates/ scripts/ 子目录）；后端 / 前端仓库各有技能目录
+- [ ] .document/ 含 plan/STATUS.md（「进行中」表有「阶段」「已过门禁」两列）、plan/context/、design/、adr/、developer/memory + capability
+- [ ] 各 git 仓有 .githooks/commit-msg + .gitattributes（hook 与脚本固定 LF；成员已 git config core.hooksPath .githooks）；复制安装的 Claude Code 项目 .claude/settings.json 已合并 hooks
 - [ ] 每个 skill 的 name 与目录名一致（无 code-reviewer vs reviewer 类错位）
 ```
 
 **B. 基线一致（版本）—— 多项目验证核心**
 
 ```
-- [ ] 流程 skill 与本仓库当前版逐字一致：
-      diff --strip-trailing-cr {项目技能目录}/{skill}/SKILL.md {framework}/common/skills/{skill}/SKILL.md  → 空
+- [ ] 流程 skill 与本仓库当前版逐字一致（整个技能目录，含 references/ templates/ scripts/）：
+      diff -r --strip-trailing-cr {项目技能目录}/{skill} {framework}/common/skills/{skill}  → 空
 - [ ] reviewer / 规范 skill = 基线 + 项目专有项（diff 差异仅漏检史 / 项目注解 / 设计 token / 命名规则）
 - [ ] 流程 skill 带项目专有硬约束的，差异仅为「📌 项目覆写」标记段，且文件头有差异清单（`project-onboarding`「📌 覆写约定」）
 - [ ] 项目 CLAUDE.md 顶部记录引入时的 framework 基线（commit 短号或日期），落后于「当前基线」即提示 re-sync
@@ -202,7 +225,7 @@ skills/
 
 > 任一项不过 → 回 `project-onboarding` 对应步骤补齐。
 >
-> **一键校验**：`bash scripts/verify-baseline.sh {项目根}`（framework 省略时取本仓库）。它**按标志文件自动识别项目的前/后端仓库布局**（不依赖目录名，支持分仓 / mono-repo / 单栈），逐 skill 输出 `✓ 一致 / Δ 流程漂移 / 📌 项目覆写 / ℹ 项目专有差异 / ⊘ 项目专有 / ✗ 结构错误`，并查 frontmatter `name`/`description` 必备且 `name` 与目录名一致、root 流程 skill 按**已启用宿主布局逐一**齐全、**各端 reviewer 必备**（已装某端规范而缺 reviewer 即报错）、**前后端规范不得同目录混装**、基线路径有效（含空基线哨兵检查）、常驻规则层（`.claude/rules` 或 `common/rules`）是否就位（软提示）；项目覆写按 frontmatter 后 20 行内的「本文件 = framework 基线」引用块声明识别。单栈项目（根目录即前/后端仓）按根级**本级标志**（pom.xml / src/views 等）消歧，允许根技能目录混放通用 + 单端规范；含子仓的公共根只认纯 root。可在各项目本地 / CI 定期跑，实现多项目持续校验。加 `--show-diff` 看差异、`--strict` 让流程漂移即失败。
+> **一键校验**：`bash scripts/verify-baseline.sh {项目根}`（framework 省略时取本仓库）。它**按标志文件自动识别项目的前/后端仓库布局**（不依赖目录名，支持分仓 / mono-repo / 单栈），逐 skill 输出 `✓ 一致 / Δ 流程漂移 / 📌 项目覆写 / ℹ 项目专有差异 / ⊘ 项目专有 / ✗ 结构错误`（比对整个技能目录：`SKILL.md` 之外，基线侧 `references/` `templates/` `scripts/` 子文件缺失计 ✗、漂移同规则计 Δ / ℹ），并查 frontmatter `name`/`description` 必备且 `name` 与目录名一致、root 流程 skill 按**已启用宿主布局逐一**齐全、**各端 reviewer 必备**（已装某端规范而缺 reviewer 即报错）、**前后端规范不得同目录混装**、基线路径有效（含空基线哨兵检查）、常驻规则层（`.claude/rules` 或 `common/rules`）是否就位（软提示）；项目覆写按 frontmatter 后 20 行内的「本文件 = framework 基线」引用块声明识别。单栈项目（根目录即前/后端仓）按根级**本级标志**（pom.xml / src/views 等）消歧，允许根技能目录混放通用 + 单端规范；含子仓的公共根只认纯 root。可在各项目本地 / CI 定期跑，实现多项目持续校验。加 `--show-diff` 看差异、`--strict` 让流程漂移即失败。
 
 ---
 
@@ -228,14 +251,15 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 **P11 提交与分支门禁**（按 `git-commit`）：
 
 - 开发者授权（含笼统的"允许 / 提交吧"）**默认** = 从当前主干切开发分支 `{feat|opt|fix}/{yyyy.MM.dd}-{business}`
-  （如 `feat/2026.08.18-edit-password`）→ 提交 → `push -u origin` → **由开发者自行合并主干**
-- **已在开发分支**（名字合规）→ 原地提交推送，无需额外授权
-- **主干直提**须开发者本次明确说"允许直接从主干提交"，**单次有效、下次必须重问、禁止 AI 自主判断**，且不得沉淀为常驻规则
+  （如 `feat/2026.08.18-edit-password`）→ 提交 → `push -u origin` → 创建 MR → **由开发者审阅合并**
+- **已在开发分支**（名字合规）→ 原地提交推送；该分支已有未合并 MR 则随推送更新，没有则创建
+- 开发者明确要求直接在主干提交时只对该次照做，不建 MR
 - **暂存只加自己的改动**：逐项 `git add -- <路径>` + `git diff --cached --name-only` 核对；共享文件只暂存自己的 hunk；commit 与注释无 AI 记号、无进度词（FIXED / Step / Phase）
 - **并行会话多时开 Worktree**（`git-commit` 附录）：放项目根 `.worktree/{business}/{repo}`，进度与沉淀只写根 `.document/`，Windows 后端仓先开 `core.longpaths`
-- AI 一律不做：合并主干 / 开合 PR·MR / `push --force` / 删分支 / `git add -A`·`git commit -am` 盲加
+- MR 标题 / 描述与 commit 同受"无 AI 记号"约束，创建前过 `commit_guard.py check-text`；建不了（无 CLI / token）把远端返回的创建链接交给开发者
+- AI 一律不做：合并主干 / 合并或关闭 MR / `push --force` / 删分支 / `git add -A`·`git commit -am` 盲加
 
-**全程规则**（凌驾于单阶段）：
+**全程规则 / 约束卡**（凌驾于单阶段，常驻摘要见 `red-lines.md`）：
 
 | 规则 | 内容 | 对应 skill |
 |------|------|-----------|
@@ -265,7 +289,7 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 | 需求评审与技术评审混在一份、视觉方案靠口头想象 | L2/L3 **文档分层**：需求/调整文档(用户复核) 与 技术设计文档(开发者技术审核 + 二次评估) 分两道门禁；视觉方案按需出 HTML / 复用组件 DEMO |
 | 开发者陷在逐行 review 中 | dev-session 变更分级：ARCH 深评 / NORMAL 知会，开发者专注方向与架构 |
 | 并行会话互相污染工作区、进度在多棵树间分叉 | `git-commit` 安全暂存（逐项 add + 暂存区核对 + hunk 级）+ Worktree 附录（放项目根、进度只写根 `.document/`、树内命令以树内仓为 cwd、个人 memory 不跨树） |
-| 多会话同写台账 / 索引后写覆盖，合并时不知保留谁 | `progress-tracker`「并行开发的文档冲突约定」：写前重读 / 只改自己的行 / 写完即提交；追加型双方保留；结构化文档归台账负责人独写；根非 git 仓时被覆盖就重写自己的行 |
+| 多会话同写台账 / 索引后写覆盖，合并时不知保留谁 | `progress-tracker`「并行开发的文档冲突约定」：写前重读 / 只改自己的行 / 写完随已获授权的提交入库；追加型双方保留；结构化文档归台账负责人独写；根非 git 仓时被覆盖就重写自己的行 |
 | 任务清单失真（已做标未做、已回滚标已完成）、砍掉的范围被遗忘 | `progress-tracker` 回填 DoD + `[⛔]` 已废弃 + backlog 文档（推迟即落档） |
 | 全栈契约靠口头，后端先改实现再补文档 | 技术设计文档「契约」章节冻结 + 联动需求接口确认停顿点 + 契约变更先改文档 |
 | 项目专有覆写散落在正文，re-sync 时被基线冲掉 | `project-onboarding`「📌 覆写约定」（文件头差异清单 + 行内标记）+ verify-baseline 按文件头声明识别覆写 |
@@ -292,7 +316,7 @@ P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 �
 
 - 每个 skill 一个目录，入口 `SKILL.md`（frontmatter：`name` + 触发场景写入 `description`）
 - 修改流程类 skill（dev-session / reviewer / progress-tracker）需团队过目——它们是所有项目的执行协议
-- 新增 skill 用 `skill-creator` 创建并评测；提交与分支遵循 `git-commit` skill（授权后切 `{feat|opt|fix}/{yyyy.MM.dd}-{business}` 开发分支提交并推送、开发者自行合并主干；feat/opt/fix 三分法，scope 可选，禁止 AI 记号）
+- 新增 skill 用 `skill-creator` 创建并评测；提交与分支遵循 `git-commit` skill（授权后切 `{feat|opt|fix}/{yyyy.MM.dd}-{business}` 开发分支提交、推送并创建 MR，开发者审阅合并；feat/opt/fix 三分法，scope 可选，禁止 AI 记号）
 - 重大流程变更（dev-session / reviewer / 文档门禁 / 契约规则）→ 更新本 README 顶部「当前基线」日期；各引入项目据此判断是否需 re-sync（用「引入后验证」B 组 diff 确认）
 - 发布新基线时同步六份插件清单 `version` 并跑 `scripts/check-plugin-manifests.sh`（见顶部「marketplace 插件分发」发布流程）；新增 / 删除 / 改名技能无需改清单（插件按目录自动发现），但插件改名须在 `marketplace.json` 加 `renames`
-- 项目副本对流程 skill 的专有覆写按「📌 覆写约定」标记（文件头差异清单 + 行内 📌），不散改正文；主干直提、跳过 P4、P8 确认之类的门禁不得被覆写放宽
+- 项目副本对流程 skill 的专有覆写按「📌 覆写约定」标记（文件头差异清单 + 行内 📌），不散改正文；提交授权、跳过 P4、P8 确认之类的门禁不得被覆写放宽

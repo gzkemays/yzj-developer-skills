@@ -1,0 +1,9 @@
+# 脚本与 hook 固定 LF：git 以 sh 直接执行 .githooks/*，CRLF 会报 "\r: command not found"；
+# Windows 成员 core.autocrlf=true 时若不固定，检出即变 CRLF。文本文件其余按默认自动处理。
+*.sh            text eol=lf
+*.py            text eol=lf
+.githooks/*     text eol=lf
+templates/.githooks/*  text eol=lf
+*.json          text eol=lf
+*.toml          text eol=lf
+*.md            text

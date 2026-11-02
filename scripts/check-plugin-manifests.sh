@@ -8,7 +8,7 @@
 #   {common,backend,frontend}/plugin.json                  Codex 插件清单（portable 格式）
 #
 # 检查项：每个插件两份清单的 name/version/description/skills 逐字一致；所有插件 version 相同，且等于
-# README「当前基线」日期去前导零（2026-10-29 → 2026.10.29）；两份目录清单恰好列出三个插件且 source
+# README「当前基线」日期去前导零（2026-10-29 → 2026.10.29；同日再发加序号 2026-10-30.1 → 2026.10.30.1）；两份目录清单恰好列出三个插件且 source
 # 指向对应目录；插件内每个技能目录有 SKILL.md、frontmatter name 与目录名一致、插件内无同名技能。
 # 清单由人工维护、格式固定（每字段一行），故按行提取而不引入 JSON 解析依赖。
 #
@@ -27,9 +27,10 @@ PLUGINS="yzj-flow:common:skills yzj-backend:backend:. yzj-frontend:frontend:."
 # 取 JSON 中某字段（"key": "value" 同行）的第一个值
 field () { sed -n "s/^[[:space:]]*\"$2\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$1" | head -1; }
 
-BASE="$(sed -n 's/.*\*\*当前基线\*\*：`\([0-9-]*\)`.*/\1/p' README.md | head -1)"
+BASE="$(sed -n 's/.*\*\*当前基线\*\*：`\([0-9.-]*\)`.*/\1/p' README.md | head -1)"
 [ -n "$BASE" ] || fail "README.md 未找到「当前基线」日期"
-EXPECT="$(echo "$BASE" | awk -F- '{ printf "%d.%d.%d", $1, $2, $3 }')"
+# 日期段去前导零、`-` 换 `.`；同日再次发布的 `.N` 序号原样保留（2026-10-30.1 → 2026.10.30.1）
+EXPECT="$(echo "$BASE" | sed -E 's/-0?([0-9])/.\1/g')"
 echo "当前基线 $BASE → 期望插件版本 $EXPECT"
 
 for p in $PLUGINS; do
@@ -56,6 +57,21 @@ for p in $PLUGINS; do
     seen="$seen$n "
   done
   echo "  $name ($dir): $(echo $seen | wc -w) 个技能"
+
+  # 插件 hooks（可选）：hooks/hooks.json 须是合法 JSON，命令里引用的插件内脚本必须存在
+  hj="$dir/hooks/hooks.json"
+  if [ -f "$hj" ]; then
+    PY=""; for c in python3 python py; do "$c" -c "import sys" >/dev/null 2>&1 && { PY="$c"; break; }; done
+    if [ -n "$PY" ]; then
+      "$PY" -c "import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$hj" 2>/dev/null || fail "$hj 不是合法 JSON"
+    else
+      echo "  ℹ 未找到可运行的 python，跳过 $hj 的 JSON 合法性检查"
+    fi
+    for s in $(grep -oE 'CLAUDE_PLUGIN_ROOT\}?/[A-Za-z0-9_./-]+\.(py|sh)' "$hj" | sed -E 's/^CLAUDE_PLUGIN_ROOT\}?\///' | sort -u); do
+      [ -f "$dir/$s" ] || fail "$hj 引用的脚本 $dir/$s 不存在"
+    done
+    echo "  $name hooks: $(grep -oE '"(SessionStart|PreToolUse|PostToolUse|Stop|PreCompact|PostCompact|UserPromptSubmit)"' "$hj" | tr -d '"' | sort -u | tr '\n' ' ')"
+  fi
 done
 
 # 目录清单：恰好三个插件，source 指向对应目录
