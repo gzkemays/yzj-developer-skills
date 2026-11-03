@@ -33,10 +33,12 @@
 | Codex home | `$CODEX_HOME`，默认 `~/.codex` |
 | 全局指令 | `$CODEX_HOME/AGENTS.override.md`，不存在时读 `AGENTS.md` |
 | 项目指令 | 从项目根到当前目录逐级找 `AGENTS.override.md`、`AGENTS.md`、配置的 fallback |
-| 全局 Skills | `$CODEX_HOME/skills/<name>/SKILL.md` |
-| 项目 Skills | 项目 `.codex/skills/<name>/`（以当前 Codex 版本和环境为准） |
+| 全局 Skills | 当前官方路径 `~/.agents/skills/`；既有 `$CODEX_HOME/skills/` 是否兼容以实际宿主清单为准 |
+| 项目 Skills | `.agents/skills/<name>/SKILL.md`；按 cwd 向上到 Git 根发现，独立子仓不能假定继承共同父目录 |
 
 当前官方口径：项目指令链合并后默认最多 32KiB，由 `project_doc_max_bytes` 控制；越靠近当前目录的指令越晚加载。检查 override 和 fallback，不能只找根目录 AGENTS.md。
+
+技能目录依据：[官方技能文档](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills)（2026-11-03 核对）。`common/skills` 是本库维护源或明确选择的手动路由布局，不是 Codex 原生项目技能目录；`.agents/rules` 仍需 AGENTS.md 显式引用。
 
 某些 Codex 环境还提供 `~/.codex/memories/`、rollout summaries 或 Chronicle 派生索引。这类文件可能由宿主管线生成：
 
