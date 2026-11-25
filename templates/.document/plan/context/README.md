@@ -15,7 +15,7 @@
 - 需求：{一句话}
 - 变更分级：ARCH / NORMAL
 - 当前阶段：P{N}
-- 下一步：{具体动作，如"按用例文档执行 TC-1～TC-3 自测"}
+- 下一步：{具体动作，如"按 P4 影响面补齐用例文档 TC-5 回归范围"}
 - 已过门禁：对齐✅(design/{yyyy-MM-dd}_{slug}-design.md)　P4✅(design/{yyyy-MM-dd}_{slug}-review.md)　P6✅　P8✅
 - 工作位置：分支 {feat|opt|fix}/{yyyy.MM.dd}-{business}；{主工作区 | .worktree/{business}/{repo}}；涉及仓 {backend-repo} / {frontend-repo}
 

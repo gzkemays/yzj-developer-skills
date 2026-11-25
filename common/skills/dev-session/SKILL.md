@@ -2,7 +2,7 @@
 name: dev-session
 description: >
   完整研发生命周期编排（团队通用版）。串联 12 个阶段：分析需求 → 加载沉淀 → 开发 → AI Review
-  → 自测 → 开发者 Review → 开发者测试 → 确认通过 → 更新进度 → 沉淀核对 → 提交代码 → 总结成果与知识收尾。
+  → 测试范围与用例 → 开发者 Review → 开发者测试 → 确认通过 → 更新进度 → 沉淀核对 → 提交代码 → 总结成果与知识收尾。
   每阶段定义执行者（AI/开发者）与门禁条件；按「变更分级」决定开发者参与深度——架构级变更开发者深度评审，
   常规迭代仅知会确认，让开发者专注方向与架构决策。
   当用户从项目根目录启动开发任务时触发：
@@ -41,9 +41,9 @@ description: >
 |------|--------|----------------|------------|----------|
 | **P1 分析需求** | AI | `references/p1-p3-develop.md` | `iteration-planner`、`progress-tracker` | 范围 + 分级已确认；台账登记；**恢复卡已建** |
 | **P2 加载沉淀** | AI | 同上 | `team-memory`、`capability-registry` | 相关 memory / 能力 / ADR 已加载并告知 |
-| **P3 开发需求** | AI | 同上 | `pre-dev-alignment`、`yzj-dev-workflow` / frontend skills、`api-contract-checker` | **编码前文档评审门禁**（L2 / L3）通过且已落档；开发中契约要变**先改设计文档再改实现**；代码完成 |
+| **P3 开发需求** | AI | 同上 | `pre-dev-alignment`、`yzj-dev-workflow` / frontend skills、`api-contract-checker`、backend `testing` | **编码前文档评审门禁**（L2 / L3）通过且已落档；开发中契约要变**先改设计文档再改实现**；代码完成 + **单元测试自查通过** |
 | **P4 AI Review** | AI | `references/p4-p5-review-test.md` | 前/后端 `reviewer`（**全文加载**，优先子代理执行）、`api-contract-checker`、`similar-issue-sweep` | 逐维度结论齐备、无「未检查」、自修完毕 |
-| **P5 AI 自测** | AI | 同上 + `templates/testcases.md` | backend `testing` | **先产用例文档**（按实际场景 / 回归按影响面 / 存疑先对齐）→ AI 可测项全过；台账 `待Review` |
+| **P5 测试范围与用例** | AI | 同上 + `templates/testcases.md` | — | **确认测试范围与回归范围 → 产出用例文档**（按实际场景 / 回归按影响面 / 存疑先对齐）；不做用例验收 / E2E（归 P7）；编译 / 构建通过；台账 `待Review` |
 | **P6 开发者 Review** | 开发者 | `references/p6-p8-developer-gates.md` + `templates/review-materials.md` | — | 开发者回复（ARCH 深评 / NORMAL 知会）；台账 `待验收` |
 | **P7 开发者 / AI E2E** | 开发者或受托 AI | 同上 | — | 开发者说"通过"；**不通过 → 修复后重走 P4 → P7** |
 | **P8 开发者确认** | 开发者 | 同上 | — | 明确"确认"才进 P9（NORMAL 并入 P6） |
@@ -62,7 +62,7 @@ description: >
 |--------|--------|------|
 | P6 第一轮（前端视觉）有问题 | P3 | 修复 → P4 → P5 第一轮 → P6 第一轮 |
 | P6 第二轮（功能）有问题 | P3 | 修复 → P4 → P5 第二轮 → P6 第二轮 |
-| P7 有 Bug（手测或 AI E2E） | P3 | **硬规则**：修复（含回溯扫描）→ P4 → P5（更新用例）→ P6 → P7，**禁止跳过任何一环直接复测** |
+| P7 有 Bug（手测或 AI E2E） | P3 | **硬规则**：修复（含补单测、回溯扫描）→ P4 → P5（更新用例）→ P6 → P7，**禁止跳过任何一环直接复测** |
 | P8 不通过 | P6 | 重新 Review |
 
 ### 进度判定、阶段回执与压缩恢复
@@ -75,10 +75,9 @@ description: >
 | 有条目（`规划中`），`design/{yyyy-MM-dd}_{slug}-design.md` 缺 | P3 对齐前（P2 可快速重做）；L1 简化计划可不落档，以恢复卡为准 |
 | 条目 `开发中`、无设计文档（L1 / 轻量任务）、无 review 报告 | P3 编码 / P4，以恢复卡「当前阶段」为准 |
 | 设计文档在，无 review 报告 `design/{yyyy-MM-dd}_{slug}-review.md`（任何级别 P4 都落档，NORMAL 可精简为逐维度结论表） | P3 编码 / P4 |
-| review 报告在，`design/{yyyy-MM-dd}_{slug}-testcases.md` 缺 | P5 第 0 步；轻量任务用例不单独落档，以恢复卡为准 |
-| 用例文档在且「执行记录」P5 列未填完 | P5 执行 |
+| review 报告在，`design/{yyyy-MM-dd}_{slug}-testcases.md` 缺 | P5；轻量任务用例不单独落档，以恢复卡为准 |
 | STATUS 状态 = 待Review / 待验收 | P6–P8（等开发者） |
-| 状态 = 开发中 但 review 报告与用例文档都在 | 磁盘信号与 P5 执行、前端第二轮相同，**只能看恢复卡**：「当前阶段」为 P3（P6 / P7 不通过回退的返工）→ P3 修复 → P4 → P5，不得只复测失败用例；为 P5 → 按上一行续 P5 |
+| 状态 = 开发中 但 review 报告与用例文档都在 | 磁盘信号与 P5 收尾、前端第二轮相同，**只能看恢复卡**：「当前阶段」为 P3（P6 / P7 不通过回退的返工）→ P3 修复 → P4 → P5，不得只复测失败用例；为 P5 → 续 P5 收尾（存疑项对齐 / 构建 / 迁 `待Review`） |
 | 状态 = 已完成（已完成区）且恢复卡在 | 恢复卡「当前阶段」所写的 P9 / P10 / P11 / P12；P11 的提交授权与 P12 收尾提交的确认都重新取得（`git-commit` 一「授权范围」） |
 | 状态 = 已完成、恢复卡已删、`developer/output/{条目名}.md` 在 | 已收尾 |
 | 信号矛盾（如有用例无 review 报告、台账与恢复卡不一致、已完成且恢复卡已删但报告缺） | **停下**向开发者报告，不擅自补跑 |

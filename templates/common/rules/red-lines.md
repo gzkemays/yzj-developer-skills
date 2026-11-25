@@ -11,7 +11,7 @@
 3. P8 开发者确认、P9 台账更新是硬门禁：台账未更新不得宣布"完成"。→ `dev-session`「P8」「P9」；`progress-tracker`「模式 B」
 4. 未获本次明确授权不 commit / push；授权后按默认流程提交 → 推送 → 创建 MR，合并由开发者；commit、MR 文本与分支名不留任何 AI 记号与进度词。→ `git-commit`「一、AI 自主提交：授权与三条铁律」「2.5 创建 MR」「2.6 禁止动作清单」
 5. 开发者纠正 → 立即沉淀 feedback memory；修复一处 → 全库回溯同类。→ `dev-session`「规则 1」「规则 2」；`team-memory`；`similar-issue-sweep`
-6. 审查 / 自测结论附文件级依据；未跑过的命令不得称"已验证"。→ `collaboration.md`「执行自证」；其他宿主另见 AGENTS.md「执行门禁」3、4
+6. 审查 / 测试结论附文件级依据；未跑过的命令不得称"已验证"。→ `collaboration.md`「执行自证」；其他宿主另见 AGENTS.md「执行门禁」3、4
 7. 编码前文档评审门禁（L2 技术设计 / L3 需求 + 技术设计）未通过不得编码。→ `pre-dev-alignment`「任务分级」「Review 门禁机制」；`dev-session`「P3」
 
 ## 压缩恢复协议（发现上下文被压缩 / 看到摘要 / 想不起当前阶段门禁细节时）
