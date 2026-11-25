@@ -43,3 +43,6 @@ __pycache__/
 
 ### 接入 dry-run 报告（只给对应开发者查阅，不入库） ###
 reports/*-dryrun.md
+
+### 接入结果报告（只给对应开发者查阅，不入库） ###
+reports/*-report.md
