@@ -109,7 +109,7 @@ dry-run 还必须核对宿主 × cwd × Git 根 × 原生路径的加载矩阵�
 > 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
 > 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
 >
-> **当前基线**：`2026-11-03`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
+> **当前基线**：`2026-11-25`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
 > **适用宿主**：任意 AI 编码宿主——Claude Code / Codex 分别从 `.claude/skills` / `.agents/skills` 发现技能；其他宿主按已核实的机制接入。流程方法论 skill **与技术栈无关**
 > （dev-session / pre-dev-alignment / progress-tracker / team-memory / capability-registry /
 > similar-issue-sweep / dev-output / iteration-planner / project-onboarding / git-commit），任意项目可直接用；
@@ -241,8 +241,8 @@ skills/
 所有开发任务统一走 `dev-session` 12 阶段：
 
 ```
-P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 开发(文档产出+评审门禁→编码)
-→ P4 AI Review(前后端 reviewer 硬流程+回溯扫描) → P5 自测
+P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 开发(文档产出+评审门禁→编码→单元测试自查)
+→ P4 AI Review(前后端 reviewer 硬流程+回溯扫描) → P5 测试范围与用例(回归范围+用例文档)
 → P6 开发者 Review(ARCH 深评/NORMAL 知会) → P7 开发者测试 → P8 确认
 → P9 更新进度(台账硬门禁) → P10 沉淀核对 → P11 提交 → P12 成果报告+知识收尾(neat-freak 对账)
 ```
