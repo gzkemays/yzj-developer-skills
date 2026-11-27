@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # verify-baseline.sh — 校验目标项目的 skill 是否与 framework 基线对齐。
 #
-# 布局无关：按「标志文件」自动识别项目里每个技能目录（.claude/skills 或 common/skills，
-# 分别对应 Claude Code 与其他宿主的加载布局）属于 后端 / 前端 / 根，
+# 布局无关：按「标志文件」识别 .claude/skills、.agents/skills 和显式手动 common/skills
+# 属于 后端 / 前端 / 根；先校验预期宿主的发现边界，再比较技能正文。
 # 再对应到 framework 的 backend/ · frontend/ · common/skills/ 逐一比对。不依赖仓库目录叫什么名字。
 #
 # 单栈项目（根目录本身就是后端/前端仓，根级直接有 pom.xml / src/views 等标志）允许根技能目录
@@ -13,7 +13,7 @@
 # project-onboarding dry-run 门禁的人工判读兜底。
 #
 # 用法（在 Git Bash / WSL 运行；PowerShell 用 `bash scripts/verify-baseline.sh ...`）：
-#   bash verify-baseline.sh <project-root> [framework-skills-root] [--show-diff] [--strict]
+#   bash verify-baseline.sh <project-root> [framework-skills-root] [--hosts=codex,claude] [--cwd PATH] [--show-diff] [--strict]
 #     framework-skills-root  省略时 = 本脚本所在的 skills 仓库
 #     --show-diff            打印每个差异 skill 的具体 diff
 #     --strict               流程 skill 出现漂移即非零退出（默认仅结构错误才非零）
@@ -32,16 +32,21 @@
 # .scratch/（临时参考副本）、node_modules、.git、.bak-*，避免同一 skill 被重复计数。
 set -uo pipefail
 
-PROJECT=""; FW=""; SHOW_DIFF=0; STRICT=0
-for a in "$@"; do
+PROJECT=""; FW=""; SHOW_DIFF=0; STRICT=0; DISCOVERY_ARGS=()
+while [ "$#" -gt 0 ]; do
+  a="$1"; shift
   case "$a" in
     --show-diff) SHOW_DIFF=1 ;;
     --strict)    STRICT=1 ;;
+    --hosts=*)   DISCOVERY_ARGS+=("$a") ;;
+    --hosts|--cwd)
+      [ "$#" -gt 0 ] || { echo "$a 缺参数"; exit 2; }
+      DISCOVERY_ARGS+=("$a" "$1"); shift ;;
     -*)          echo "未知参数: $a"; exit 2 ;;
     *) if [ -z "$PROJECT" ]; then PROJECT="$a"; elif [ -z "$FW" ]; then FW="$a"; fi ;;
   esac
 done
-[ -n "$PROJECT" ] || { echo "用法: bash verify-baseline.sh <project-root> [framework-skills-root] [--show-diff] [--strict]"; exit 2; }
+[ -n "$PROJECT" ] || { echo "用法: bash verify-baseline.sh <project-root> [framework-skills-root] [--hosts=codex,claude] [--cwd PATH] [--show-diff] [--strict]"; exit 2; }
 [ -n "$FW" ] || FW="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$(cd "$PROJECT" 2>/dev/null && pwd)" || { echo "项目路径不存在"; exit 2; }
 # 基线路径必须真实有效，否则所有技能都会被误判为「项目专有」而静默通过
@@ -52,6 +57,15 @@ FW="$(cd "$FW" 2>/dev/null && pwd)" || { echo "✗ 基线路径不存在: $FW"; 
 for s in common/skills/dev-session backend/reviewer frontend/reviewer; do
   [ -f "$FW/$s/SKILL.md" ] || { echo "✗ 基线无效：缺 $FW/$s/SKILL.md（空目录 / 不完整检出不能作为比较基线）"; exit 2; }
 done
+
+# 校验工具须能执行；不能把缺少解释器当成发现验证通过。
+PY=""
+for c in python3 python py; do "$c" -c "import tomllib" >/dev/null 2>&1 && { PY="$c"; break; }; done
+[ -n "$PY" ] || { echo "✗ 原生发现校验需要可运行的 Python 3.11+"; exit 2; }
+audit_tmp=$(mktemp -d) || exit 2
+trap 'rm -f -- "$audit_tmp/result.json" "$audit_tmp/refs.txt"; rmdir -- "$audit_tmp"' EXIT
+"$PY" "$FW/scripts/check-skill-discovery.py" "$PROJECT" "${DISCOVERY_ARGS[@]}" --json "$audit_tmp/result.json" || exit $?
+PYTHONIOENCODING=utf-8 "$PY" -c 'import json,pathlib,sys; sys.stdout.reconfigure(newline="\n"); d=json.load(open(sys.argv[1],encoding="utf-8")); print("\n".join(pathlib.Path(r["path"]).as_posix() for r in d["valid_refs"]))' "$audit_tmp/result.json" > "$audit_tmp/refs.txt" || exit 2
 
 # 流程方法论 skill：与栈无关，应与基线逐字一致（漂移→需确认是否有意增补）
 FLOW="dev-session pre-dev-alignment progress-tracker iteration-planner team-memory capability-registry similar-issue-sweep dev-output project-onboarding git-commit neat-freak"
@@ -150,25 +164,25 @@ plugin_on () {
                    line==key { s=1; next } line ~ /^\[/ { s=0 }
                    s && line ~ /^enabled[[:space:]]*=[[:space:]]*true/ { f=1 }
                    END { exit !f }' "$d/.codex/config.toml" ;;
+    *) return 1 ;;
   esac
 }
 # 宿主 → 该宿主读取的本地技能目录（双装检查用）
-local_skills_of () { case "$1" in claude) echo ".claude/skills";; codex) echo "common/skills";; esac; }
+local_skills_of () { case "$1" in claude) echo ".claude/skills";; codex) echo ".agents/skills";; generic) echo "common/skills";; esac; }
 
-OK=0; SPECIFIC=0; DRIFT=0; OVERRIDE=0; ERRORS=0; PLUGINS=0
+OK=0; SPECIFIC=0; DRIFT=0; OVERRIDE=0; ERRORS=0; PLUGINS=0; REFS=0
 echo "framework 基线: $FW"
 echo "目标项目:       $PROJECT"
 echo
 
-EXCL=(-not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/.bak-*/*' -not -path '*/.worktree/*'
-  -not -path '*/.claude/worktrees/*' -not -path '*/.scratch/*')
-mapfile -t SKILLDIRS < <(find "$PROJECT" -type d \( -path '*/.claude/skills' -o -path '*/common/skills' \) \
-  "${EXCL[@]}" 2>/dev/null | sort)
+PRUNE=( -type d \( -name .git -o -name node_modules -o -name '.bak-*' -o -name .worktree
+  -o -path '*/.claude/worktrees' -o -name .scratch -o -name target -o -name dist \) -prune -o )
+mapfile -t SKILLDIRS < <(find "$PROJECT" "${PRUNE[@]}" -type d \( -path '*/.claude/skills' -o -path '*/.agents/skills' -o -path '*/common/skills' \) -print 2>/dev/null | sort)
 # 启用了本 marketplace 插件的目录（项目级配置所在目录 = 该宿主会话的启动目录）
-mapfile -t PLUGINHOSTS < <(find "$PROJECT" -type f \( -path '*/.claude/settings.json' -o -path '*/.codex/config.toml' \) \
-  "${EXCL[@]}" 2>/dev/null | xargs -r -d '\n' grep -l "@$MKT" 2>/dev/null | while read -r f; do cd "$(dirname "$f")/.." && pwd; done | sort -u)
+mapfile -t PLUGINHOSTS < <(find "$PROJECT" "${PRUNE[@]}" -type f \( -path '*/.claude/settings.json' -o -path '*/.codex/config.toml' \) \
+  -print 2>/dev/null | xargs -r -d '\n' grep -l "@$MKT" 2>/dev/null | while read -r f; do cd "$(dirname "$f")/.." && pwd; done | sort -u)
 [ "${#SKILLDIRS[@]}" -gt 0 ] || [ "${#PLUGINHOSTS[@]}" -gt 0 ] \
-  || { echo "✗ 未发现任何技能目录（.claude/skills 或 common/skills）或 marketplace 插件启用配置—— 项目尚未引入？"; exit 1; }
+  || { echo "✗ 未发现原生技能目录（.claude/skills / .agents/skills）、显式手动布局或插件启用配置"; exit 1; }
 
 for SD in "${SKILLDIRS[@]}"; do
   HOST="$(cd "$SD/../.." && pwd)"
@@ -205,6 +219,12 @@ for SD in "${SKILLDIRS[@]}"; do
     fi
     [ "${descok:-0}" = 1 ] \
       || { mism="$mism  ✗ 缺 frontmatter description 或值为空"; ERRORS=$((ERRORS+1)); }
+    # 共享入口已由发现审计验证目标、同名、链接和无链式转发；完整正文在共同根另行比对。
+    audit_pf="$pf"
+    command -v cygpath >/dev/null 2>&1 && audit_pf="$(cygpath -m "$pf")"
+    if grep -Fxq -- "$audit_pf" "$audit_tmp/refs.txt"; then
+      echo "   ↪  $name  原生共享入口（目标已通过静态发现审计）$mism"; REFS=$((REFS+1)); continue
+    fi
     ff="$(find_fw "$name" "${PREFS[@]}")"
     if [ -z "$ff" ]; then echo "   ⊘  $name  framework 无 → 项目专有，跳过$mism"; continue; fi
     case "$ff" in __AMBIGUOUS__*)
@@ -313,7 +333,7 @@ done
 # root 必备流程 skill：按「已启用的宿主布局」逐一检查——双宿主项目两套目录各自都要齐，
 # 不得以一侧副本掩盖另一侧缺失（各宿主只读各自的目录）；该宿主在根启用了 yzj-flow 插件即视为齐备
 ROOT_LAYOUTS=0
-for h in claude codex; do
+for h in claude codex generic; do
   RS="$PROJECT/$(local_skills_of "$h")"
   if plugin_on "$PROJECT" "$h" yzj-flow; then ROOT_LAYOUTS=$((ROOT_LAYOUTS+1)); continue; fi
   [ -d "$RS" ] || continue
@@ -322,10 +342,11 @@ for h in claude codex; do
     [ -d "$RS/$f" ] || { echo "✗ root 缺流程 skill: ${RS#$PROJECT/}/$f"; ERRORS=$((ERRORS+1)); }
   done
 done
-[ "$ROOT_LAYOUTS" -gt 0 ] || { echo "✗ 项目根无技能目录（.claude/skills 或 common/skills），也未在根启用 yzj-flow 插件"; ERRORS=$((ERRORS+1)); }
+[ "$ROOT_LAYOUTS" -gt 0 ] || { echo "✗ 项目根无原生技能目录 / 显式手动布局，也未在根启用 yzj-flow 插件"; ERRORS=$((ERRORS+1)); }
 # 常驻规则层为软检查：缺失只提示，不计错误（两种布局任一即可）
 RULES=""
 [ -d "$PROJECT/.claude/rules" ] && RULES="$PROJECT/.claude/rules"
+[ -z "$RULES" ] && [ -d "$PROJECT/.agents/rules" ] && RULES="$PROJECT/.agents/rules"
 [ -z "$RULES" ] && [ -d "$PROJECT/common/rules" ] && RULES="$PROJECT/common/rules"
 if [ -n "$RULES" ]; then
   for f in red-lines.md collaboration.md api-contract.md; do
@@ -336,7 +357,7 @@ if [ -n "$RULES" ]; then
     echo "ℹ ${RULES#$PROJECT/}/red-lines.md 带 paths: frontmatter——红线须无条件常驻，请去掉 paths:"
   fi
 else
-  echo "ℹ 项目根无常驻规则层（.claude/rules 或 common/rules）—— 建议从 templates/common/rules 补 red-lines.md / collaboration.md / api-contract.md"
+  echo "ℹ 项目根无规则层（.claude/rules / .agents/rules / 显式手动 common/rules）—— 从 templates/common/rules 补装；.agents/rules 由入口显式读取"
 fi
 # 机械兜底 hook 为软检查：每个 git 仓应有 .githooks/commit-msg；.githooks/ 旁的 commit_guard.py 拷贝须与基线一致
 GUARD_SRC="$FW/common/skills/git-commit/scripts/commit_guard.py"
@@ -361,7 +382,7 @@ if [ -f "$PROJECT/.document/plan/STATUS.md" ]; then
 fi
 
 echo "──────── 小结 ────────"
-echo "✓ 一致 $OK   ℹ 项目专有差异 $SPECIFIC   📌 项目覆写 $OVERRIDE   Δ 流程漂移(需确认) $DRIFT   🧩 插件启用层 $PLUGINS   ✗ 结构错误 $ERRORS"
+echo "✓ 一致 $OK   ℹ 项目专有差异 $SPECIFIC   📌 项目覆写 $OVERRIDE   ↪ 共享入口 $REFS   Δ 流程漂移(需确认) $DRIFT   🧩 插件启用层 $PLUGINS   ✗ 结构错误 $ERRORS"
 echo "提示: --show-diff 看具体差异；ℹ 多为 reviewer/规范类的正常项目沉淀，需人工/AI 判读；📌 按该文件头部差异清单核对。"
 [ "$ERRORS" -gt 0 ] && exit 1
 { [ "$STRICT" -eq 1 ] && [ "$DRIFT" -gt 0 ]; } && exit 1

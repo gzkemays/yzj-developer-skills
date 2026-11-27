@@ -10,7 +10,7 @@
 - `backend/<name>/SKILL.md` — 后端规范技能（YZJ 四层 + MyBatis-Flex 同栈适用）。
 - `frontend/<name>/SKILL.md` — 前端规范技能（Vue 3 + Naive UI 同栈适用）。
 - `templates/` — 目标项目入口与文档骨架模板（`CLAUDE.md.template`、`AGENTS.md.template`、`common/rules/`（协作原则 / 契约速查 / **红线** `red-lines.md`）、`.document/`（含 `plan/context/` 恢复卡）、`.githooks/` + `.gitattributes`（git 原生 hook 与 LF 固定）、`hooks/`（Claude Code 复制安装的 hooks 片段）、`plugins/`（插件启用配置片段））。
-- `scripts/verify-baseline.sh` — 校验目标项目技能与本仓库基线对齐（兼容 `.claude/skills`、`common/skills` 与 marketplace 插件三种安装）。
+- `scripts/verify-baseline.sh` — 校验目标项目技能与本仓库基线对齐（`.claude/skills`、`.agents/skills`、显式手动布局与插件）；先运行 `scripts/check-skill-discovery.py` 检查预期宿主、Git 边界和共享入口。
 - `scripts/check-skill-layout.sh` — 校验本仓库技能布局：主文件对 `references/` `templates/` 的引用存在、无孤立子文件、带约束卡的技能其子文件带门禁行、`references/` 之间不互引（阻断）；体积超阈值只告警。拆分技能后、发布前运行。
 - 机械兜底脚本随技能源分发：`common/skills/git-commit/scripts/commit_guard.py`（只查 commit 信息的 AI 记号 / 进度词，回归用例 `scripts/test-commit-guard.py`；git 原生 `commit-msg` hook 模板在 `templates/.githooks/`）、`common/skills/dev-session/scripts/restore_context.py`（压缩后恢复）。Claude Code 宿主 hook：插件自带 `common/hooks/hooks.json`；复制安装用 `templates/hooks/claude-settings-hooks.json`。其他宿主的 hook 机制核实后再接。
 - marketplace 清单（元数据，非技能副本）：`.claude-plugin/marketplace.json`（Claude Code）、`.agents/plugins/marketplace.json`（Codex）；插件根 `common/`、`backend/`、`frontend/` 各有 `.claude-plugin/plugin.json` + `plugin.json`，对应插件 `yzj-flow` / `yzj-backend` / `yzj-frontend`。`scripts/check-plugin-manifests.sh` 校验清单与技能源、README 基线一致。
@@ -34,7 +34,7 @@
 | 进入计划评审 | `EnterPlanMode` / `ExitPlanMode` | 在当前会话提交计划 / 文档，等待明确批准 |
 | 个人 memory | `~/.claude/projects/` | 用户已配置并授权的位置；未配置则跳过，不自建宿主私有目录 |
 | 浏览器 / 预览能力 | 内置浏览器与 preview 工具 | 会话实际可用的浏览器 / 预览工具；没有则 build + 类型检查并列出未验证项 |
-| 技能目录（目标项目内） | 各级 `.claude/skills/`（自动发现） | 各级 `common/skills/`（由 AGENTS.md 声明，显式读取） |
+| 技能目录（目标项目内） | 各级 `.claude/skills/`（自动发现） | Codex：各级 `.agents/skills/`（原生发现）；其他宿主按其机制，手动路由须明确声明 |
 | marketplace 插件安装 | `.claude/settings.json` 的 `enabledPlugins`（`yzj-*@yzj-skills`） | Codex：`.codex/config.toml` 的 `[plugins."yzj-*@yzj-skills"]`；无 marketplace 的宿主走复制安装 |
 | Read / Grep / Glob / Edit | 同名内置工具 | 当前会话真实可用的读取 / 搜索 / 列文件 / 编辑能力；命令行搜索优先 `rg` |
 
@@ -43,7 +43,7 @@
 1. 执行技能前**读完其 SKILL.md 主文件全文**，再读主文件路由指向当前阶段 / 场景的子文件；禁止仅凭 description 行事。
    上下文被压缩后，按 `templates/common/rules/red-lines.md`「压缩恢复协议」先恢复定位，进入硬门禁前按其指针重读原章节。
 2. dev-session 的 P4 审查、P8 开发者确认、P9 台账更新、编码前文档评审等硬门禁，不得以"改动小 / 很有把握"跳过。
-3. 审查 / 自测结论必须附文件级依据；grep 零命中**不等于**语义检查通过。
+3. 审查 / 测试结论必须附文件级依据；grep 零命中**不等于**语义检查通过。
 4. 未实际运行命令、未读过文件，不得声称已验证 / 已完成；未覆盖项如实列出。
 5. 计划评审、文档确认、Git 提交 / 推送授权须用户明确批准；沉默或普通知会不扩大权限。
 
@@ -60,9 +60,9 @@
 ## 验证命令
 
 ```text
-bash scripts/verify-baseline.sh <目标项目根> [--show-diff] [--strict]
+bash scripts/verify-baseline.sh <目标项目根> --hosts=codex,claude [--show-diff] [--strict]
 bash scripts/check-plugin-manifests.sh
 bash scripts/check-skill-layout.sh
 ```
 
-文件校验通过不等于自动触发已实测：从目标项目启动新会话，用"今天做什么"、真实开发与审查请求验证路由。
+预演必须列宿主 × 启动目录 × Git 根 × 技能实际路径，区分静态验证、宿主技能清单和任务触发。文件校验通过不等于自动发现或触发已实测：从目标项目启动新会话，用"今天做什么"、真实开发与审查请求验证路由。

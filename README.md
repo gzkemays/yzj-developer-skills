@@ -1,8 +1,8 @@
 # YZJ 团队共享技能库（skills）
 
-## common 通用加载目录（2026-10-28）
+## 技能源与宿主原生安装目录
 
-本仓库以 `common/` 为**模型无关的唯一内容源**：原 `.claude/skills/`（Claude Code 专属路径）迁移为 `common/skills/`，技能正文完成宿主无关化——宿主差异一律写成行内映射「（Claude Code：X；其他宿主：Y）」。曾经的 Codex 生成式适配层（`.agents/` 下的技能副本 + 同步/校验脚本）已删除：**任何模型接入都不再需要定制化处理**，拷贝 / 引用 common 内容 + 一个入口文件即可。现在的 `.agents/plugins/marketplace.json` 只是 Codex marketplace 目录清单，不含技能副本。
+本仓库以 `common/` 为**模型无关的唯一内容源**：原 `.claude/skills/`（Claude Code 专属路径）迁移为 `common/skills/`，技能正文完成宿主无关化——宿主差异一律写成行内映射「（Claude Code：X；其他宿主：Y）」。曾经的 Codex 生成式适配层（`.agents/` 下的技能副本 + 同步/校验脚本）已删除：**技能正文保持同源**，安装路径按宿主处理：目标项目用 `.claude/skills` 或 `.agents/skills`，不能把源库的 `common` 目录当成宿主自动发现目录。现在的 `.agents/plugins/marketplace.json` 只是 Codex marketplace 目录清单，不含技能副本。
 
 ```text
 skills/
@@ -21,7 +21,9 @@ skills/
 │   ├── hooks/                 # 复制安装的 Claude Code hooks 片段（插件安装由 common/hooks/hooks.json 自带）
 │   └── .document/             # 项目文档骨架（含 plan/context/ 恢复卡）
 └── scripts/
-    ├── verify-baseline.sh     # 基线校验（兼容 .claude/skills、common/skills 与 marketplace 插件三种安装）
+    ├── verify-baseline.sh     # 基线校验（原生 .claude/.agents、显式手动布局与插件安装）
+    ├── check-skill-discovery.py # 宿主与启动目录矩阵、Git 边界和共享入口校验
+    ├── test-skill-discovery.py  # 原生发现与断链等回归用例
     ├── check-plugin-manifests.sh  # 发布前校验插件清单与技能源、README 基线一致
     └── check-skill-layout.sh  # 技能布局校验（路由引用 / 孤立子文件 / 门禁行 / references 互引阻断，体积告警）
 ```
@@ -32,7 +34,7 @@ skills/
 
 | 插件 | 插件根 = 技能源 | 安装层 |
 |------|----------------|--------|
-| `yzj-flow` | `common/`（技能在 `common/skills/`） | 项目根 |
+| `yzj-flow` | `common/`（技能在 `common/skills/`） | 项目根及需要单独启动的独立仓 |
 | `yzj-backend` | `backend/` | 后端仓 |
 | `yzj-frontend` | `frontend/` | 前端仓 |
 
@@ -41,7 +43,7 @@ skills/
 ```bash
 # Claude Code（Gitee 必须写完整 URL；私有仓库依赖本机已存的 git 凭据）
 claude plugin marketplace add https://gitee.com/yzjgroup/skills.git
-claude plugin install yzj-flow@yzj-skills --scope project      # 在项目根执行；后端仓装 yzj-backend，前端仓装 yzj-frontend
+claude plugin install yzj-flow@yzj-skills --scope project      # 各独立仓需 flow，再加本端 yzj-backend 或 yzj-frontend
 claude plugin marketplace update yzj-skills                    # 手动更新；或在 /plugin 里开启 auto-update
 
 # Codex
@@ -64,14 +66,17 @@ codex plugin marketplace upgrade yzj-skills
 | 宿主 | 安装目标 | 入口 |
 |------|---------|------|
 | **Claude Code** | `common/skills/*` → 项目根 `.claude/skills/`；`templates/common/rules/*` → `.claude/rules/`；`backend/`、`frontend/` → 各子仓 `.claude/skills/`（宿主只认 `.claude/`，属硬约束） | `templates/CLAUDE.md.template` 实例化 CLAUDE.md |
-| **其他模型** | `common/skills/*` → 项目根 `common/skills/`，`templates/common/rules/*` → `common/rules/`（内容同源直用，无需任何适配） | `templates/AGENTS.md.template` 实例化 AGENTS.md（显式引用技能与规则） |
-| **多宿主** | 以 `common/` 为内容源，另复制一份到各级 `.claude/`；两份同源、re-sync 时一起更新 | 两个入口并存，CLAUDE.md 首行 `@AGENTS.md` |
+| **Codex** | `common/skills/*` → 项目根 `.agents/skills/`；端规范 → 对应端 `.agents/skills/`；规则 → `.agents/rules/` | AGENTS.md 显式引用规则；技能由原生目录发现 |
+| **其他宿主** | 先核实原生目录；确无技能机制时才选择 `common/skills` 手动路由，标为 generic | 按实际机制配置，不承诺原生发现 |
+| **多宿主** | 分别安装同源 `.agents/skills` 与 `.claude/skills`，目标不再增加 common 正文层；独立仓用原生共享入口引用共同根 | 两个入口并存，CLAUDE.md 首行 `@AGENTS.md` |
 | **Claude Code / Codex（插件）** | 不复制技能；各层提交 `.claude/settings.json` / `.codex/config.toml` 启用对应 `yzj-*` 插件，随本仓库发布更新（见上「marketplace 插件分发」） | 同上（CLAUDE.md / AGENTS.md 仍需实例化） |
 
 **两条硬约定**贯穿所有入口与模板（详见 `common/skills/project-onboarding`）：
 
 1. **相对路径**：入口文件中的加载引用一律相对入口文件所在目录，**禁止绝对路径**——同一父目录常并存多个项目，且项目会迁移 / 改名；验收口径是"项目整体移动后引用仍成立"。
 2. **执行门禁不得删减**：AGENTS.md 模板的「执行门禁」节是防接入宿主偷懒的兜底（读主文件全文 + 当前阶段子文件 / 不跳审查 / 自证产出 / 不虚报验证 / 批准须显式）。
+
+dry-run 还必须核对宿主 × cwd × Git 根 × 原生路径的加载矩阵，分别报告静态检查、宿主清单和任务触发。独立子仓不自动继承共同父目录；插件模式也须在各独立仓启用 `yzj-flow` 与所需端插件。Worktree 单独验证。详见 [原生发现与预演验收](common/skills/project-onboarding/references/native-discovery.md)。
 
 ### 上下文压缩后的约束恢复（2026-10-30，所有宿主）
 
@@ -96,7 +101,7 @@ codex plugin marketplace upgrade yzj-skills
 - **单一源、无同步脚本**：修改规范直接改 `common/skills/`、`backend/`、`frontend/` 下的源文件；宿主差异用行内映射表述，不生成宿主专属副本。
 - 技能 `name` 与目录名一致；frontmatter 以 Agent Skills 开放标准字段为主，宿主扩展字段须在 description / 正文写明等效文字约束（见 AGENTS.md「维护约定」）。
 - 组织侧同步副本（如 claude.ai 组织技能库上传过本仓库技能）**不随 git 更新**：基线变更后需重新上传或移除旧副本，否则与仓库形成双源漂移，且会在所有项目的会话里与项目安装副本并存。
-- 校验：`bash scripts/verify-baseline.sh <目标项目根> [--show-diff] [--strict]`（自动识别目标的两种技能布局与前/后端仓）。
+- 校验：`bash scripts/verify-baseline.sh <目标项目根> --hosts=codex,claude [--show-diff] [--strict]`；预演显式传预期宿主，静态检查不会代替宿主实际技能清单。
 - 文件校验通过 ≠ 自动触发已实测：从目标项目启动新会话，用"今天做什么"、真实开发与审查请求验证路由。
 
 ---
@@ -104,8 +109,8 @@ codex plugin marketplace upgrade yzj-skills
 > 团队 Vibe Coding 的总能力池：研发流程、前后端规范、审查硬流程、沉淀体系全部在此维护。
 > 新项目直接引入即获得全部历史沉淀；项目中的新沉淀定期**反哺**回本仓库。
 >
-> **当前基线**：`2026-11-02`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
-> **适用宿主**：任意 AI 编码宿主——Claude Code 按 `.claude/` 自动加载，其他宿主经 AGENTS.md 显式加载 `common/`。流程方法论 skill **与技术栈无关**
+> **当前基线**：`2026-11-25`（重大流程变更时更新；引入项目记录此版本以便对齐校验）。
+> **适用宿主**：任意 AI 编码宿主——Claude Code / Codex 分别从 `.claude/skills` / `.agents/skills` 发现技能；其他宿主按已核实的机制接入。流程方法论 skill **与技术栈无关**
 > （dev-session / pre-dev-alignment / progress-tracker / team-memory / capability-registry /
 > similar-issue-sweep / dev-output / iteration-planner / project-onboarding / git-commit），任意项目可直接用；
 > **栈相关 skill**（`yzj-dev-workflow`、`api-contract-checker`、`backend/*` = YZJ 四层 + MyBatis-Flex、
@@ -151,7 +156,9 @@ skills/
 │   ├── common/rules/        #   常驻规则模板（red-lines 红线 / collaboration 协作原则 / api-contract 契约速查）
 │   └── .document/           #   项目文档目录骨架（plan/STATUS.md + context/ 恢复卡 + backlog、design、memory、capability、adr）
 └── scripts/                 # 工具脚本
-    ├── verify-baseline.sh   #   校验项目 skill 与基线对齐（布局无关，自动识别前/后端与两种技能布局）
+    ├── verify-baseline.sh   #   校验项目 skill 与基线对齐（布局无关，自动识别前/后端与原生技能布局）
+    ├── check-skill-discovery.py # 宿主与启动目录矩阵、Git 边界和共享入口校验
+    ├── test-skill-discovery.py  # 原生发现与断链等回归用例
     ├── check-plugin-manifests.sh  # 发布前校验插件清单
     └── check-skill-layout.sh      # 技能布局校验（主文件引导式）
 ```
@@ -169,7 +176,7 @@ skills/
 手动步骤（也是对 AI 流程的核对清单）：
 
 ```
-（Claude Code 项目；其他宿主把 1/2 的目标换成 {project}/common/skills 与 {project}/common/rules，
+（Claude Code 项目；Codex 把 1/2 的目标换成 {project}/.agents/skills 与 {project}/.agents/rules，
   第 6 步改用 templates/AGENTS.md.template，详见顶部「接入方式」与 project-onboarding）
 1. 拷贝通用能力 →  {project}/.claude/skills/        ← 本仓库 common/skills/*
 2. 拷贝常驻规则 →  {project}/.claude/rules/         ← 本仓库 templates/common/rules/*（契约占位符按项目填）
@@ -197,8 +204,8 @@ skills/
 
 ```
 - [ ] 项目根入口（CLAUDE.md / AGENTS.md）占位符全部替换，无残留 {xxx}；加载引用全部为相对路径
-- [ ] 根常驻规则层（.claude/rules 或 common/rules）有 red-lines.md + collaboration.md + api-contract.md（契约表与入口二选一，不重复维护）
-- [ ] 根技能目录（.claude/skills 或 common/skills）有流程层（含各技能的 references/ templates/ scripts/ 子目录）；后端 / 前端仓库各有技能目录
+- [ ] 根规则层（.claude/rules 或由 AGENTS.md 显式引用的 .agents/rules）有 red-lines.md + collaboration.md + api-contract.md（契约表与入口二选一，不重复维护）
+- [ ] 根原生技能目录（.claude/skills 或 .agents/skills）有流程层（含各技能的 references/ templates/ scripts/ 子目录）；后端 / 前端仓库各有技能目录
 - [ ] .document/ 含 plan/STATUS.md（「进行中」表有「阶段」「已过门禁」两列）、plan/context/、design/、adr/、developer/memory + capability
 - [ ] 各 git 仓有 .githooks/commit-msg + .gitattributes（hook 与脚本固定 LF；成员已 git config core.hooksPath .githooks）；复制安装的 Claude Code 项目 .claude/settings.json 已合并 hooks
 - [ ] 每个 skill 的 name 与目录名一致（无 code-reviewer vs reviewer 类错位）
@@ -225,7 +232,7 @@ skills/
 
 > 任一项不过 → 回 `project-onboarding` 对应步骤补齐。
 >
-> **一键校验**：`bash scripts/verify-baseline.sh {项目根}`（framework 省略时取本仓库）。它**按标志文件自动识别项目的前/后端仓库布局**（不依赖目录名，支持分仓 / mono-repo / 单栈），逐 skill 输出 `✓ 一致 / Δ 流程漂移 / 📌 项目覆写 / ℹ 项目专有差异 / ⊘ 项目专有 / ✗ 结构错误`（比对整个技能目录：`SKILL.md` 之外，基线侧 `references/` `templates/` `scripts/` 子文件缺失计 ✗、漂移同规则计 Δ / ℹ），并查 frontmatter `name`/`description` 必备且 `name` 与目录名一致、root 流程 skill 按**已启用宿主布局逐一**齐全、**各端 reviewer 必备**（已装某端规范而缺 reviewer 即报错）、**前后端规范不得同目录混装**、基线路径有效（含空基线哨兵检查）、常驻规则层（`.claude/rules` 或 `common/rules`）是否就位（软提示）；项目覆写按 frontmatter 后 20 行内的「本文件 = framework 基线」引用块声明识别。单栈项目（根目录即前/后端仓）按根级**本级标志**（pom.xml / src/views 等）消歧，允许根技能目录混放通用 + 单端规范；含子仓的公共根只认纯 root。可在各项目本地 / CI 定期跑，实现多项目持续校验。加 `--show-diff` 看差异、`--strict` 让流程漂移即失败。
+> **一键校验**：`bash scripts/verify-baseline.sh {项目根} --hosts=codex,claude`（framework 省略时取本仓库）。它**按标志文件自动识别项目的前/后端仓库布局**（不依赖目录名，支持分仓 / mono-repo / 单栈），逐 skill 输出 `✓ 一致 / Δ 流程漂移 / 📌 项目覆写 / ℹ 项目专有差异 / ⊘ 项目专有 / ✗ 结构错误`（比对整个技能目录：`SKILL.md` 之外，基线侧 `references/` `templates/` `scripts/` 子文件缺失计 ✗、漂移同规则计 Δ / ℹ），并查 frontmatter `name`/`description` 必备且 `name` 与目录名一致、root 流程 skill 按**已启用宿主布局逐一**齐全、**各端 reviewer 必备**（已装某端规范而缺 reviewer 即报错）、**前后端规范不得同目录混装**、基线路径有效（含空基线哨兵检查）、规则层（`.claude/rules` 或 `.agents/rules`）是否就位（软提示）；项目覆写按 frontmatter 后 20 行内的「本文件 = framework 基线」引用块声明识别。单栈项目（根目录即前/后端仓）按根级**本级标志**（pom.xml / src/views 等）消歧，允许根技能目录混放通用 + 单端规范；含子仓的公共根只认纯 root。可在各项目本地 / CI 定期跑，实现多项目持续校验。加 `--show-diff` 看差异、`--strict` 让流程漂移即失败。
 
 ---
 
@@ -234,8 +241,8 @@ skills/
 所有开发任务统一走 `dev-session` 12 阶段：
 
 ```
-P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 开发(文档产出+评审门禁→编码)
-→ P4 AI Review(前后端 reviewer 硬流程+回溯扫描) → P5 自测
+P1 分析需求(读台账+定级) → P2 加载沉淀(memory+能力册) → P3 开发(文档产出+评审门禁→编码→单元测试自查)
+→ P4 AI Review(前后端 reviewer 硬流程+回溯扫描) → P5 测试范围与用例(回归范围+用例文档)
 → P6 开发者 Review(ARCH 深评/NORMAL 知会) → P7 开发者测试 → P8 确认
 → P9 更新进度(台账硬门禁) → P10 沉淀核对 → P11 提交 → P12 成果报告+知识收尾(neat-freak 对账)
 ```

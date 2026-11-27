@@ -17,8 +17,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-RULE_DIRS = (".claude/rules", "common/rules")
-SKILL_DIRS = (".claude/skills", "common/skills")
+RULE_DIRS = (".agents/rules", ".claude/rules", "common/rules")
+SKILL_DIRS = (".agents/skills", ".claude/skills", "common/skills")
 BRANCH_RE = re.compile(r"^(?:feat|opt|fix)/\d{4}\.\d{2}\.\d{2}-(.+)$")
 
 
@@ -178,7 +178,7 @@ def main():
         out(f"（来源 {red.relative_to(root).as_posix()}）\n")
         out(red.read_text(encoding="utf-8", errors="replace").rstrip())
     else:
-        out("未找到 red-lines.md（.claude/rules 或 common/rules）——请从 framework templates/common/rules 补装；硬门禁以 dev-session 原文为准。")
+        out("未找到 red-lines.md（.agents/rules、.claude/rules 或显式手动布局 common/rules）——请从 framework templates/common/rules 补装；硬门禁以 dev-session 原文为准。")
 
     # 2. 恢复卡
     cards = list_cards(root)
